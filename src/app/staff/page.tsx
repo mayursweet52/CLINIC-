@@ -86,14 +86,40 @@ export default function DoctorDashboard() {
                 </div>
               </div>
 
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Clinical Notes & EMR</h4>
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Clinical Notes</h4>
               <textarea 
-                className="w-full flex-1 p-5 border border-slate-200 rounded-2xl bg-[#fafafa] outline-none focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50/50 transition-all resize-none text-slate-700 leading-relaxed"
+                className="w-full p-5 border border-slate-200 rounded-2xl bg-[#fafafa] outline-none focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50/50 transition-all resize-none text-slate-700 leading-relaxed mb-8 h-32"
                 defaultValue={selectedPatient.history}
-                placeholder="Write medical notes, diagnosis, and prescriptions here..."
+                placeholder="Write medical notes and diagnosis here..."
               ></textarea>
+
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Digital Prescription (e-Rx)</h4>
+                <button className="text-indigo-600 text-sm font-bold hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">+ Add Medicine</button>
+              </div>
+              <div className="bg-[#fafafa] border border-slate-200 rounded-2xl p-4 mb-6">
+                <div className="flex gap-4 mb-3">
+                  <input type="text" placeholder="Medicine Name (e.g. Paracetamol)" className="flex-1 p-3 rounded-xl border border-slate-200 outline-none focus:border-indigo-400" />
+                  <select className="p-3 rounded-xl border border-slate-200 outline-none focus:border-indigo-400 font-medium">
+                    <option>1-0-1 (Morning & Night)</option>
+                    <option>1-1-1 (Three times a day)</option>
+                    <option>0-0-1 (Night only)</option>
+                    <option>SOS (As needed)</option>
+                  </select>
+                  <input type="number" placeholder="Days" className="w-24 p-3 rounded-xl border border-slate-200 outline-none focus:border-indigo-400" />
+                </div>
+                <div className="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-xl">
+                  <div>
+                    <p className="font-bold text-slate-800">Amoxicillin 500mg</p>
+                    <p className="text-xs text-slate-500 font-medium">1-1-1 for 5 Days</p>
+                  </div>
+                  <button className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                  </button>
+                </div>
+              </div>
               
-              <div className="flex justify-end mt-6 gap-3">
+              <div className="flex justify-end mt-auto pt-6 gap-3 border-t border-slate-100">
                 <button className="px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors">Discard</button>
                 <button className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md shadow-indigo-200 hover:shadow-lg transition-all active:scale-95">
                   Save & Complete
