@@ -1,0 +1,6 @@
+{
+  "name": "ClinicOS",
+  "description": "Enterprise Clinic System for patient care, appointments, EMR, billing, pharmacy, and staff operations",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

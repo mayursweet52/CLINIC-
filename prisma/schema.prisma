@@ -113,3 +113,19 @@ enum PayStatus {
   UNPAID
   PARTIAL
 }
+
+model Transaction {
+  id          String   @id @default(uuid())
+  date        DateTime @default(now())
+  description String
+  type        TxType   @default(INCOME)
+  amount      Float
+  category    String?  // Consultation, Pharmacy, Restock, Supplies, Salary, Utility
+  paymentMode String?  // Cash, Card, UPI, Bank Transfer
+  createdAt   DateTime @default(now())
+}
+
+enum TxType {
+  INCOME
+  EXPENSE
+}
