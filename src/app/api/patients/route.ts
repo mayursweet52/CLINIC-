@@ -51,8 +51,11 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         message: 'Patient created successfully',
+        id: newPatient.id,
+        patientCode: newPatient.patientCode,
         patient: {
-          id: newPatient.patientCode,
+          id: newPatient.id,
+          patientCode: newPatient.patientCode,
           name: newPatient.name,
           age: newPatient.age,
           contact: newPatient.contactNumber,
