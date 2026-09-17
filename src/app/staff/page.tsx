@@ -1,13 +1,14 @@
 ﻿"use client";
 import { useState, useEffect } from "react";
-import { Search, Bell, Menu, User, Activity, Clock, FileText, Pill, Save } from "lucide-react";
+import { Search, Bell, Menu, User, Activity, Clock, FileText, Pill, Save, Plus, Trash2 } from "lucide-react";
 
 export default function DoctorDashboard() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [availableMedicines, setAvailableMedicines] = useState<any[]>([]);
 
-  // Vitals form cha state
+  // Vitals form state
   const [vitalsData, setVitalsData] = useState({
     bpSystolic: "",
     bpDiastolic: "",
@@ -16,6 +17,33 @@ export default function DoctorDashboard() {
     symptoms: "",
     doctorNotes: ""
   });
+
+  // e-Prescription state
+  const [prescriptions, setPrescriptions] = useState<any[]>([]);
+  const [newPrescription, setNewPrescription] = useState({
+    medicineId: "",
+    dosage: "1-0-1",
+    durationDays: "5",
+    instructions: "After meals"
+  });
+
+  // Fetch medicines stock
+  const fetchMedicines = async () => {
+    try {
+      const res = await fetch("/api/pharmacy");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setAvailableMedicines(data);
+          if (data.length > 0 && !newPrescription.medicineId) {
+            setNewPrescription(prev => ({ ...prev, medicineId: data[0].id }));
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load medicines", error);
+    }
+  };
 
   // Fetch active queue from database
   const fetchAppointments = async () => {
@@ -28,7 +56,6 @@ export default function DoctorDashboard() {
         return;
       }
 
-      // Fkt active patients dakhav (Completed kivha Cancelled nahi)
       const activeQueue = data.filter((a: any) => 
         a.rawStatus !== "COMPLETED" && 
         a.status !== "Completed" && 
@@ -37,7 +64,6 @@ export default function DoctorDashboard() {
       );
       setAppointments(activeQueue);
       
-      // Jar pahila patient available asel tar tyala default select kara
       setSelectedPatient((prev: any) => {
         if (!prev && activeQueue.length > 0) return activeQueue[0];
         if (prev) {
@@ -53,15 +79,40 @@ export default function DoctorDashboard() {
 
   useEffect(() => {
     fetchAppointments();
+    fetchMedicines();
     
-    // Auto-refresh queue every 15 seconds
     const interval = setInterval(() => {
       fetchAppointments();
     }, 15000);
     return () => clearInterval(interval);
   }, []);
 
-  // Form submit kelyavar vitals save kara aani status complete kara
+  // Add medicine to prescription list
+  const handleAddMedicine = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!newPrescription.medicineId) return;
+
+    const med = availableMedicines.find(m => m.id === newPrescription.medicineId);
+    if (!med) return;
+
+    setPrescriptions(prev => [
+      ...prev,
+      {
+        medicineId: med.id,
+        medicineName: med.name,
+        dosage: newPrescription.dosage || "1-0-1",
+        durationDays: Number(newPrescription.durationDays) || 5,
+        instructions: newPrescription.instructions || "After meals"
+      }
+    ]);
+  };
+
+  // Remove medicine from prescription list
+  const handleRemoveMedicine = (index: number) => {
+    setPrescriptions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Save consultation with vitals and prescriptions
   const handleSaveConsultation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPatient) return;
@@ -74,20 +125,18 @@ export default function DoctorDashboard() {
         body: JSON.stringify({
           appointmentId: selectedPatient.id,
           patientId: selectedPatient.patient?.id || selectedPatient.patientId,
-          ...vitalsData
+          ...vitalsData,
+          prescriptions: prescriptions
         }),
       });
 
       if (res.ok) {
-        alert("Consultation successfully saved! Patient marked as Completed.");
+        alert("Consultation & Prescription successfully saved! Patient marked as Completed.");
         
-        // Form clear kara
+        // Reset form
         setVitalsData({ bpSystolic: "", bpDiastolic: "", pulseBpm: "", weightKg: "", symptoms: "", doctorNotes: "" });
-        
-        // Current selected patient reset kara
+        setPrescriptions([]);
         setSelectedPatient(null);
-        
-        // Queue parat fetch kara (to patient ata disnar nahi karan to Completed zala ahe)
         await fetchAppointments(); 
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -101,7 +150,7 @@ export default function DoctorDashboard() {
     }
   };
 
-  // Jab patient change hoto, form blank kara
+  // On patient change, reset form
   const handlePatientSelect = (appt: any) => {
     setSelectedPatient(appt);
     setVitalsData({
@@ -112,6 +161,7 @@ export default function DoctorDashboard() {
       symptoms: appt.vitals?.symptoms || "",
       doctorNotes: appt.vitals?.doctorNotes || ""
     });
+    setPrescriptions([]);
   };
 
   return (
@@ -244,7 +294,7 @@ export default function DoctorDashboard() {
                       Gender: <span className="text-slate-800 font-bold">{selectedPatient.patient?.gender || 'N/A'}</span>
                     </p>
                   </div>
-                  <button className="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                  <button type="button" className="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
                     View Full History
                   </button>
                 </div>
@@ -301,20 +351,120 @@ export default function DoctorDashboard() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1.5">Clinical Notes & Treatment Plan</label>
-                        <textarea rows={4} placeholder="Detailed diagnosis..." className="w-full bg-white border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow resize-none" 
+                        <textarea rows={3} placeholder="Detailed diagnosis..." className="w-full bg-white border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow resize-none" 
                           value={vitalsData.doctorNotes} onChange={(e) => setVitalsData({...vitalsData, doctorNotes: e.target.value})}></textarea>
                       </div>
                     </div>
                   </div>
 
-                  {/* Prescription Section (Visual Placeholder for now) */}
-                  <div className="opacity-60 pointer-events-none">
+                  {/* e-Prescription Section */}
+                  <div>
                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <Pill className="w-4 h-4" /> e-Prescription (Coming Soon)
+                      <Pill className="w-4 h-4 text-indigo-600" /> e-Prescription (Medicines)
                     </h3>
-                    <div className="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-6 text-center">
-                      <p className="text-sm font-medium text-slate-500">Pharmacy integration will automatically pull medicine stock.</p>
+                    
+                    {/* Add Medicine Control */}
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Select Medicine</label>
+                          <select 
+                            value={newPrescription.medicineId}
+                            onChange={(e) => setNewPrescription({...newPrescription, medicineId: e.target.value})}
+                            className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                          >
+                            {availableMedicines.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name} (Stock: {m.stock})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Dosage</label>
+                          <select 
+                            value={newPrescription.dosage}
+                            onChange={(e) => setNewPrescription({...newPrescription, dosage: e.target.value})}
+                            className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                          >
+                            <option value="1-0-1">1-0-1 (Morning & Night)</option>
+                            <option value="1-1-1">1-1-1 (Thrice a day)</option>
+                            <option value="1-0-0">1-0-0 (Morning only)</option>
+                            <option value="0-0-1">0-0-1 (Night only)</option>
+                            <option value="SOS">SOS (As needed)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Duration (Days)</label>
+                          <input 
+                            type="number" 
+                            min="1"
+                            value={newPrescription.durationDays}
+                            onChange={(e) => setNewPrescription({...newPrescription, durationDays: e.target.value})}
+                            className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Instructions</label>
+                          <select 
+                            value={newPrescription.instructions}
+                            onChange={(e) => setNewPrescription({...newPrescription, instructions: e.target.value})}
+                            className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                          >
+                            <option value="After meals">After meals</option>
+                            <option value="Before meals">Before meals</option>
+                            <option value="With warm water">With warm water</option>
+                            <option value="Empty stomach">Empty stomach</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end">
+                        <button 
+                          type="button"
+                          onClick={handleAddMedicine}
+                          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-2 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" /> Add to Prescription
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Prescribed Items Table */}
+                    {prescriptions.length > 0 && (
+                      <div className="mt-4 border border-slate-200 rounded-xl overflow-hidden">
+                        <table className="w-full text-left text-sm">
+                          <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-bold border-b border-slate-200">
+                            <tr>
+                              <th className="p-3">Medicine</th>
+                              <th className="p-3">Dosage</th>
+                              <th className="p-3">Duration</th>
+                              <th className="p-3">Instructions</th>
+                              <th className="p-3 text-right">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {prescriptions.map((p, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50/50">
+                                <td className="p-3 font-semibold text-slate-800">{p.medicineName}</td>
+                                <td className="p-3 text-slate-600 font-medium">{p.dosage}</td>
+                                <td className="p-3 text-slate-600 font-medium">{p.durationDays} Days</td>
+                                <td className="p-3 text-slate-500">{p.instructions}</td>
+                                <td className="p-3 text-right">
+                                  <button 
+                                    type="button" 
+                                    onClick={() => handleRemoveMedicine(idx)}
+                                    className="text-rose-500 hover:text-rose-700 p-1 hover:bg-rose-50 rounded"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
 
                   {/* Submit Button */}
@@ -322,10 +472,10 @@ export default function DoctorDashboard() {
                     <button 
                       type="submit" 
                       disabled={loading} 
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center gap-2"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center gap-2 cursor-pointer"
                     >
                       <Save className="w-5 h-5" />
-                      {loading ? "Saving Record..." : "Complete Consultation"}
+                      {loading ? "Saving Record..." : "Complete Consultation & Prescribe"}
                     </button>
                   </div>
 

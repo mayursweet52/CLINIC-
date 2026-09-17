@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { ApptStatus } from '@prisma/client';
 
@@ -40,13 +40,29 @@ export async function POST(req: Request) {
       },
     });
 
-    // 2. Patient cha status 'COMPLETED' kara (queue madhun kadhnyasaathi)
+    // 2. Jar prescriptions asel tar Prescription table madhe save kara
+    if (Array.isArray(body.prescriptions) && body.prescriptions.length > 0) {
+      await prisma.prescription.deleteMany({
+        where: { appointmentId: body.appointmentId },
+      });
+      await prisma.prescription.createMany({
+        data: body.prescriptions.map((p: any) => ({
+          appointmentId: body.appointmentId,
+          medicineId: p.medicineId,
+          dosage: p.dosage || '1-0-1',
+          durationDays: parseInt(p.durationDays, 10) || 5,
+          instructions: p.instructions || 'After meals',
+        })),
+      });
+    }
+
+    // 3. Patient cha status 'COMPLETED' kara (queue madhun kadhnyasaathi)
     await prisma.appointment.update({
       where: { id: body.appointmentId },
       data: { status: ApptStatus.COMPLETED },
     });
 
-    return NextResponse.json(newVitals, { status: 201 });
+    return NextResponse.json({ vitals: newVitals, success: true }, { status: 201 });
   } catch (error) {
     console.error("Error saving vitals:", error);
     return NextResponse.json({ error: 'Failed to save consultation details' }, { status: 500 });
