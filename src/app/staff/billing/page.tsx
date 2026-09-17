@@ -2,11 +2,17 @@
 import { useState, useEffect } from 'react';
 
 export default function BillingDashboard() {
-  const [bills, setBills] = useState([
-    { id: 'INV-1001', patient: 'John Doe', date: '2026-09-17', consultFee: 100, pharmacyFee: 45, status: 'Paid', method: 'Card' },
-    { id: 'INV-1002', patient: 'Sarah Smith', date: '2026-09-17', consultFee: 150, pharmacyFee: 0, status: 'Pending', method: '-' },
-    { id: 'INV-1003', patient: 'Mike Johnson', date: '2026-09-16', consultFee: 100, pharmacyFee: 120, status: 'Paid', method: 'UPI' },
-  ]);
+  const [bills, setBills] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/billing')
+      .then(res => res.json())
+      .then(data => {
+        setBills(data);
+        setLoading(false);
+      });
+  }, []);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">

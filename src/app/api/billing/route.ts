@@ -1,14 +1,75 @@
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { PayStatus } from '@prisma/client';
 
 export async function GET() {
-  const invoices = [
-    { id: 'INV-1001', patientId: 1, amount: 150, status: 'Paid', date: '2026-09-16' },
-    { id: 'INV-1002', patientId: 2, amount: 200, status: 'Unpaid', date: '2026-09-17' },
-  ];
-  return NextResponse.json(invoices);
+  try {
+    const billings = await prisma.billing.findMany({
+      include: {
+        appointment: {
+          include: {
+            patient: true
+          }
+        }
+      }
+    });
+
+    const formattedBills = billings.map(bill => ({
+      id: bill.invoiceNo,
+      patient: bill.appointment?.patient?.name || 'Unknown Patient',
+      date: bill.appointment?.appointmentDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+      consultFee: bill.consultationFee,
+      pharmacyFee: bill.medicineCharges,
+      status: bill.paymentStatus === PayStatus.PAID ? 'Paid' : bill.paymentStatus === PayStatus.PARTIAL ? 'Partial' : 'Pending',
+      method: bill.paymentMethod || '-'
+    }));
+
+    return NextResponse.json(formattedBills);
+  } catch (error) {
+    console.error('Error fetching billing:', error);
+    return NextResponse.json({ error: 'Failed to fetch billing' }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  return NextResponse.json({ message: 'Invoice generated successfully', invoice: body }, { status: 201 });
+  try {
+    const body = await request.json();
+    
+    // Auto-generate invoice number
+    const count = await prisma.billing.count();
+    const invoiceNo = `INV-${1000 + count + 1}`;
+    
+    const newBill = await prisma.billing.create({
+      data: {
+        invoiceNo,
+        appointmentId: body.appointmentId,
+        consultationFee: body.consultFee || 100,
+        medicineCharges: body.pharmacyFee || 0,
+        totalAmount: (body.consultFee || 100) + (body.pharmacyFee || 0),
+        paymentStatus: body.status === 'Paid' ? PayStatus.PAID : PayStatus.UNPAID,
+        paymentMethod: body.method || 'Cash'
+      },
+      include: {
+        appointment: {
+          include: { patient: true }
+        }
+      }
+    });
+    
+    return NextResponse.json({ 
+      message: 'Invoice created successfully', 
+      invoice: {
+        id: newBill.invoiceNo,
+        patient: newBill.appointment?.patient?.name || 'Unknown Patient',
+        date: newBill.appointment?.appointmentDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+        consultFee: newBill.consultationFee,
+        pharmacyFee: newBill.medicineCharges,
+        status: newBill.paymentStatus === PayStatus.PAID ? 'Paid' : 'Pending',
+        method: newBill.paymentMethod
+      }
+    }, { status: 201 });
+  } catch (error) {
+    console.error('Error creating bill:', error);
+    return NextResponse.json({ error: 'Failed to create bill' }, { status: 500 });
+  }
 }
