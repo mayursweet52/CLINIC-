@@ -29,11 +29,13 @@ function formatStatus(status: ApptStatus): string {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const org = await prisma.organization.findFirst();
+    const orgId = request.headers.get('x-org-id');
+    if (!orgId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const appointments = await prisma.appointment.findMany({
-      where: { organizationId: org?.id },
+      where: { organizationId: orgId },
       include: {
         patient: true,
         doctor: true,
@@ -72,21 +74,23 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const orgId = request.headers.get('x-org-id');
+    if (!orgId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await request.json();
-    const org = await prisma.organization.findFirst();
 
     let patientId = body.patientId;
     if (!patientId) {
       const patientName = body.patientName || 'Anonymous Patient';
       let existingPatient = await prisma.patient.findFirst({
-        where: { name: patientName, organizationId: org?.id },
+        where: { name: patientName, organizationId: orgId },
       });
 
       if (!existingPatient) {
         const randomCode = 'PAT-' + Math.floor(1000 + Math.random() * 9000);
         existingPatient = await prisma.patient.create({
           data: {
-            organizationId: org?.id as string,
+            organizationId: orgId,
             patientCode: randomCode,
             name: patientName,
             age: Number(body.patientAge) || 30,
@@ -104,7 +108,7 @@ export async function POST(request: Request) {
       const existingDoctor = await prisma.user.findFirst({
         where: {
           name: { contains: doctorName, mode: 'insensitive' },
-          organizationId: org?.id
+          organizationId: orgId
         },
       });
       if (existingDoctor) {
@@ -116,7 +120,7 @@ export async function POST(request: Request) {
 
     const newAppointment = await prisma.appointment.create({
       data: {
-        organizationId: org?.id as string,
+        organizationId: orgId,
         patientId,
         doctorId: doctorId || null,
         appointmentDate: apptDate,

@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const org = await prisma.organization.findFirst();
+    const orgId = request.headers.get('x-org-id');
+    if (!orgId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const patients = await prisma.patient.findMany({
-      where: { organizationId: org?.id },
+      where: { organizationId: orgId },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -30,15 +32,18 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const orgId = request.headers.get('x-org-id');
+    if (!orgId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await request.json();
-
-    const org = await prisma.organization.findFirst();
-    const count = await prisma.patient.count({ where: { organizationId: org?.id } });
-    const patientCode = `PAT-${1001 + count}`;
-
+    
+    // Auto-generate patient code (PAT-100X)
+    const count = await prisma.patient.count({ where: { organizationId: orgId } });
+    const patientCode = `PAT-${1000 + count + 1}`;
+    
     const newPatient = await prisma.patient.create({
       data: {
-        organizationId: org?.id as string,
+        organizationId: orgId,
         patientCode,
         name: body.name || 'Unknown Patient',
         age: Number(body.age) || 30,

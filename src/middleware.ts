@@ -5,16 +5,16 @@ import * as jose from 'jose';
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-for-businessos-health-12345');
 
 export async function middleware(request: NextRequest) {
-  // Security Headers
-  const headers = new Headers(request.headers);
-  const response = NextResponse.next({ request: { headers } });
-  response.headers.set('X-XSS-Protection', '1; mode=block');
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-
-  // Skip JWT verification for public routes
-  if (request.nextUrl.pathname.startsWith('/staff/login') || request.nextUrl.pathname.startsWith('/health') || request.nextUrl.pathname.startsWith('/api/auth')) {
-    return response;
+  // Public routes to skip
+  if (
+    request.nextUrl.pathname.startsWith('/staff/login') ||
+    request.nextUrl.pathname.startsWith('/health') ||
+    request.nextUrl.pathname.startsWith('/api/auth') ||
+    request.nextUrl.pathname.startsWith('/api/public')
+  ) {
+    const res = NextResponse.next();
+    res.headers.set('X-Frame-Options', 'DENY');
+    return res;
   }
 
   // Check JWT token for protected routes
@@ -31,12 +31,22 @@ export async function middleware(request: NextRequest) {
     try {
       const { payload } = await jose.jwtVerify(token, JWT_SECRET);
       
-      // Pass the context downstream to the API via headers
-      response.headers.set('x-user-id', payload.userId as string);
-      response.headers.set('x-user-role', payload.role as string);
-      response.headers.set('x-org-id', payload.orgId as string);
-      
-      return response;
+      const newHeaders = new Headers(request.headers);
+      newHeaders.set('x-user-id', payload.userId as string);
+      newHeaders.set('x-user-role', payload.role as string);
+      newHeaders.set('x-org-id', payload.orgId as string);
+
+      const modifiedResponse = NextResponse.next({
+        request: {
+          headers: newHeaders,
+        },
+      });
+
+      modifiedResponse.headers.set('X-XSS-Protection', '1; mode=block');
+      modifiedResponse.headers.set('X-Frame-Options', 'DENY');
+      modifiedResponse.headers.set('X-Content-Type-Options', 'nosniff');
+
+      return modifiedResponse;
     } catch (err) {
       // Token is invalid/expired
       if (request.nextUrl.pathname.startsWith('/api/')) {
@@ -46,7 +56,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {

@@ -2,11 +2,13 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { PayStatus } from '@prisma/client';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const org = await prisma.organization.findFirst();
+    const orgId = request.headers.get('x-org-id');
+    if (!orgId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const billings = await prisma.billing.findMany({
-      where: { organizationId: org?.id },
+      where: { organizationId: orgId },
       include: {
         appointment: {
           include: {
@@ -35,16 +37,18 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const orgId = request.headers.get('x-org-id');
+    if (!orgId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await request.json();
-    const org = await prisma.organization.findFirst();
     
     // Auto-generate invoice number
-    const count = await prisma.billing.count({ where: { organizationId: org?.id } });
+    const count = await prisma.billing.count({ where: { organizationId: orgId } });
     const invoiceNo = `INV-${1000 + count + 1}`;
     
     const newBill = await prisma.billing.create({
       data: {
-        organizationId: org?.id as string,
+        organizationId: orgId,
         invoiceNo,
         appointmentId: body.appointmentId,
         consultationFee: body.consultFee || 100,

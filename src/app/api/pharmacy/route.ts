@@ -26,12 +26,14 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const orgId = request.headers.get('x-org-id');
+    if (!orgId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await request.json();
-    const org = await prisma.organization.findFirst();
 
     const newMed = await prisma.medicine.create({
       data: {
-        organizationId: org?.id as string,
+        organizationId: orgId,
         name: body.name || 'New Medicine',
         batchNo: `B-${Math.floor(1000 + Math.random() * 9000)}`,
         stockQuantity: Number(body.stock) || 0,
