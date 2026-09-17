@@ -58,6 +58,7 @@ export async function GET(request: Request) {
       tokenNumber: apt.tokenNumber,
       status: formatStatus(apt.status),
       rawStatus: apt.status,
+      patient: apt.patient,
       vitals: apt.vitals,
       billing: apt.billing,
     }));

@@ -1,119 +1,340 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { Patient } from '@/types';
+﻿"use client";
+import { useState, useEffect } from "react";
+import { Search, Bell, Menu, User, Activity, Clock, FileText, Pill, Save } from "lucide-react";
 
 export default function DoctorDashboard() {
   const [appointments, setAppointments] = useState<any[]>([]);
-  const [selectedAppt, setSelectedAppt] = useState<any | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Vitals form cha state
+  const [vitalsData, setVitalsData] = useState({
+    bpSystolic: "",
+    bpDiastolic: "",
+    pulseBpm: "",
+    weightKg: "",
+    symptoms: "",
+    doctorNotes: ""
+  });
+
+  // Fetch active queue from database
+  const fetchAppointments = async () => {
+    try {
+      const res = await fetch("/api/appointments");
+      const data = await res.json();
+      
+      if (!Array.isArray(data)) {
+        console.error("Appointments is not an array:", data);
+        return;
+      }
+
+      // Fkt active patients dakhav (Completed kivha Cancelled nahi)
+      const activeQueue = data.filter((a: any) => 
+        a.rawStatus !== "COMPLETED" && 
+        a.status !== "Completed" && 
+        a.rawStatus !== "CANCELLED" && 
+        a.status !== "Cancelled"
+      );
+      setAppointments(activeQueue);
+      
+      // Jar pahila patient available asel tar tyala default select kara
+      setSelectedPatient((prev: any) => {
+        if (!prev && activeQueue.length > 0) return activeQueue[0];
+        if (prev) {
+          const stillExists = activeQueue.find((a: any) => a.id === prev.id);
+          return stillExists || (activeQueue.length > 0 ? activeQueue[0] : null);
+        }
+        return null;
+      });
+    } catch (error) {
+      console.error("Failed to fetch appointments", error);
+    }
+  };
 
   useEffect(() => {
-    fetch('/api/appointments')
-      .then(res => res.json())
-      .then(data => {
-        // Only show pending or arrived appointments for today
-        const active = data.filter((a: any) => a.rawStatus !== 'COMPLETED' && a.rawStatus !== 'CANCELLED');
-        setAppointments(active);
-        if (active.length > 0) setSelectedAppt(active[0]);
-      });
+    fetchAppointments();
+    
+    // Auto-refresh queue every 15 seconds
+    const interval = setInterval(() => {
+      fetchAppointments();
+    }, 15000);
+    return () => clearInterval(interval);
   }, []);
 
+  // Form submit kelyavar vitals save kara aani status complete kara
+  const handleSaveConsultation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPatient) return;
+    
+    setLoading(true);
+    try {
+      const res = await fetch("/api/vitals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appointmentId: selectedPatient.id,
+          patientId: selectedPatient.patient?.id || selectedPatient.patientId,
+          ...vitalsData
+        }),
+      });
+
+      if (res.ok) {
+        alert("Consultation successfully saved! Patient marked as Completed.");
+        
+        // Form clear kara
+        setVitalsData({ bpSystolic: "", bpDiastolic: "", pulseBpm: "", weightKg: "", symptoms: "", doctorNotes: "" });
+        
+        // Current selected patient reset kara
+        setSelectedPatient(null);
+        
+        // Queue parat fetch kara (to patient ata disnar nahi karan to Completed zala ahe)
+        await fetchAppointments(); 
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || "Failed to save consultation.");
+      }
+    } catch (error) {
+      console.error("Error saving vitals:", error);
+      alert("Something went wrong!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Jab patient change hoto, form blank kara
+  const handlePatientSelect = (appt: any) => {
+    setSelectedPatient(appt);
+    setVitalsData({
+      bpSystolic: appt.vitals?.bpSystolic ? String(appt.vitals.bpSystolic) : "",
+      bpDiastolic: appt.vitals?.bpDiastolic ? String(appt.vitals.bpDiastolic) : "",
+      pulseBpm: appt.vitals?.pulseBpm ? String(appt.vitals.pulseBpm) : "",
+      weightKg: appt.vitals?.weightKg ? String(appt.vitals.weightKg) : "",
+      symptoms: appt.vitals?.symptoms || "",
+      doctorNotes: appt.vitals?.doctorNotes || ""
+    });
+  };
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-1 pb-6 border-b border-slate-200">
-        <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">Doctor Console</h2>
-        <p className="text-slate-500">Manage patient sessions, log vitals, and update EMR history.</p>
+    <div className="flex h-[calc(100vh-140px)] min-h-[680px] bg-[#F8FAFC] rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+      
+      {/* SIDEBAR */}
+      <div className="w-64 bg-white border-r border-slate-200 flex flex-col hidden md:flex z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+        <div className="p-6 border-b border-slate-100 flex items-center gap-3">
+          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-200">D</div>
+          <div>
+            <h2 className="font-bold text-slate-800 text-lg leading-tight">Dr. Smith</h2>
+            <p className="text-xs text-slate-500 font-medium">Cardiology Dept</p>
+          </div>
+        </div>
+        
+        <div className="p-4">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-2">Main Menu</p>
+          <div className="space-y-1">
+            <a href="#" className="flex items-center gap-3 bg-indigo-50 text-indigo-700 px-3 py-2.5 rounded-xl font-semibold transition-colors">
+              <Activity className="w-5 h-5" /> Today's Queue
+            </a>
+            <a href="/staff/receptionist" className="flex items-center gap-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 px-3 py-2.5 rounded-xl font-medium transition-colors">
+              <User className="w-5 h-5" /> Reception Desk
+            </a>
+            <a href="/staff/pharmacy" className="flex items-center gap-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 px-3 py-2.5 rounded-xl font-medium transition-colors">
+              <Pill className="w-5 h-5" /> Pharmacy Stock
+            </a>
+          </div>
+        </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Left Side: Queue */}
-        <div className="w-full lg:w-1/3 flex flex-col h-[700px]">
-            <div className="flex items-center justify-between mb-4 px-1">
-            <h3 className="font-semibold text-slate-800 tracking-tight text-lg">Active Queue</h3>
-            <span className="bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full text-xs font-bold">{appointments.length}</span>
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        
+        {/* TOP HEADER */}
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10">
+          <div className="flex items-center gap-4">
+            <button className="md:hidden text-slate-500 hover:bg-slate-100 p-2 rounded-lg transition-colors"><Menu className="w-5 h-5" /></button>
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input type="text" placeholder="Search patient name, ID..." className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all" />
+            </div>
           </div>
-          <div className="overflow-y-auto flex-1 space-y-3 pr-2 scrollbar-hide">
-            {appointments.map(appt => (
-              <button
-                key={appt.id}
-                onClick={() => setSelectedAppt(appt)}
-                className={`w-full text-left p-5 rounded-2xl border transition-all duration-200 group ${
-                  selectedAppt?.id === appt.id 
-                    ? 'bg-white border-indigo-200 shadow-[0_8px_30px_rgb(0,0,0,0.06)] ring-1 ring-indigo-50/50' 
-                    : 'bg-white/50 border-slate-200/60 hover:bg-white hover:border-slate-300 hover:shadow-sm'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <p className="font-bold text-slate-900 text-lg">{appt.patientName}</p>
-                  <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md ${selectedAppt?.id === appt.id ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-700'}`}>
-                    TOKEN #{appt.tokenNumber}
-                  </span>
+          <div className="flex items-center gap-4">
+            <button className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
+            </button>
+            <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border border-indigo-200">
+              S
+            </div>
+          </div>
+        </header>
+
+        {/* MAIN CONTENT AREA */}
+        <main className="flex-1 p-6 flex gap-6 overflow-hidden">
+          
+          {/* PATIENT QUEUE (LEFT SIDE) */}
+          <div className="w-[320px] flex-shrink-0 flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h2 className="font-bold text-slate-800 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-indigo-600" /> Live Queue
+              </h2>
+              <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-full">
+                {appointments.length} Left
+              </span>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {appointments.length === 0 ? (
+                <div className="text-center p-8 text-slate-400">
+                  <User className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p className="text-sm font-medium">No patients waiting</p>
                 </div>
-                <p className="text-sm text-slate-500 font-medium">Time: {appt.time} • Status: {appt.status}</p>
-              </button>
-            ))}
+              ) : (
+                appointments.map((appt) => {
+                  const isSelected = selectedPatient?.id === appt.id;
+                  return (
+                    <div 
+                      key={appt.id}
+                      onClick={() => handlePatientSelect(appt)}
+                      className={`p-4 rounded-xl cursor-pointer transition-all border ${isSelected ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className={`font-bold text-lg ${isSelected ? 'text-indigo-700' : 'text-slate-800'}`}>
+                          #{appt.tokenNumber || appt.token || 'N/A'}
+                        </span>
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-amber-100 text-amber-700 rounded-md">
+                          {appt.status}
+                        </span>
+                      </div>
+                      <h3 className={`font-semibold ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
+                        {appt.patientName || appt.patient?.name || 'Unknown Patient'}
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> {appt.time || appt.timeSlot || 'Walk-in'}
+                      </p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Right Side: EMR Module */}
-        <div className="w-full lg:w-2/3 bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 flex flex-col h-[700px] relative overflow-hidden">
-          {/* Subtle decoration */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-[80px] -mr-32 -mt-32 pointer-events-none"></div>
-
-          {selectedAppt ? (
-            <div className="relative z-10 flex flex-col h-full">
-              <div className="flex justify-between items-start pb-6 mb-8 border-b border-slate-100">
-                <div>
-                  <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">{selectedAppt.patientName}</h3>
-                  <div className="flex gap-3 text-sm font-medium text-slate-500">
-                    <span className="bg-slate-100 px-2 py-1 rounded-md">Token: {selectedAppt.tokenNumber}</span>
-                    <span className="bg-slate-100 px-2 py-1 rounded-md">ID: {selectedAppt.patientId.split('-')[0]}...</span>
+          {/* DOCTOR CONSULTATION FORM (RIGHT SIDE) */}
+          <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-y-auto relative">
+            
+            {!selectedPatient ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50">
+                <FileText className="w-16 h-16 mb-4 opacity-20" />
+                <h3 className="text-xl font-bold text-slate-500 mb-2">Ready for Consultation</h3>
+                <p className="text-sm">Select a patient from the queue to start.</p>
+              </div>
+            ) : (
+              <div className="p-8">
+                
+                {/* Patient Header */}
+                <div className="flex justify-between items-start mb-8 pb-6 border-b border-slate-100">
+                  <div>
+                    <div className="flex items-center gap-3 mb-1">
+                      <h1 className="text-3xl font-extrabold text-slate-900">
+                        {selectedPatient.patientName || selectedPatient.patient?.name || 'Unknown Patient'}
+                      </h1>
+                      <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wide">
+                        In Session
+                      </span>
+                    </div>
+                    <p className="text-slate-500 font-medium">
+                      Token: <span className="text-slate-800 font-bold">#{selectedPatient.tokenNumber || selectedPatient.token}</span> • 
+                      Age: <span className="text-slate-800 font-bold">{selectedPatient.patient?.age || 'N/A'}</span> • 
+                      Gender: <span className="text-slate-800 font-bold">{selectedPatient.patient?.gender || 'N/A'}</span>
+                    </p>
                   </div>
+                  <button className="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                    View Full History
+                  </button>
                 </div>
-                <span className="bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold px-4 py-2 rounded-full text-sm flex items-center gap-2 shadow-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
-                  In Session
-                </span>
-              </div>
 
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Patient Vitals</h4>
-              <div className="grid grid-cols-3 gap-4 mb-10">
-                <div className="p-5 bg-[#fafafa] rounded-2xl border border-slate-100 hover:border-indigo-100 transition-colors group">
-                  <p className="text-xs text-slate-500 font-bold mb-2 uppercase tracking-wide">Blood Pressure</p>
-                  <input type="text" defaultValue={selectedAppt.vitals?.bpSystolic ? `${selectedAppt.vitals.bpSystolic}/${selectedAppt.vitals.bpDiastolic}` : "120/80"} className="w-full bg-transparent font-extrabold text-2xl text-slate-900 outline-none group-hover:text-indigo-600 transition-colors" />
-                </div>
-                <div className="p-5 bg-[#fafafa] rounded-2xl border border-slate-100 hover:border-indigo-100 transition-colors group">
-                  <p className="text-xs text-slate-500 font-bold mb-2 uppercase tracking-wide">Pulse (BPM)</p>
-                  <input type="text" defaultValue={selectedAppt.vitals?.pulseBpm || "72"} className="w-full bg-transparent font-extrabold text-2xl text-slate-900 outline-none group-hover:text-indigo-600 transition-colors" />
-                </div>
-                <div className="p-5 bg-[#fafafa] rounded-2xl border border-slate-100 hover:border-indigo-100 transition-colors group">
-                  <p className="text-xs text-slate-500 font-bold mb-2 uppercase tracking-wide">Weight (kg)</p>
-                  <input type="text" defaultValue={selectedAppt.vitals?.weightKg || "68"} className="w-full bg-transparent font-extrabold text-2xl text-slate-900 outline-none group-hover:text-indigo-600 transition-colors" />
-                </div>
-              </div>
+                {/* Consultation Form */}
+                <form onSubmit={handleSaveConsultation} className="space-y-8 max-w-4xl">
+                  
+                  {/* Vitals Section */}
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <Activity className="w-4 h-4" /> Patient Vitals
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <label className="block text-xs font-bold text-slate-500 mb-2">Blood Pressure</label>
+                        <div className="flex items-center gap-2">
+                          <input type="number" required placeholder="120" className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-center font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" 
+                            value={vitalsData.bpSystolic} onChange={(e) => setVitalsData({...vitalsData, bpSystolic: e.target.value})} />
+                          <span className="text-slate-400 text-xl font-light">/</span>
+                          <input type="number" required placeholder="80" className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-center font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" 
+                            value={vitalsData.bpDiastolic} onChange={(e) => setVitalsData({...vitalsData, bpDiastolic: e.target.value})} />
+                          <span className="text-xs font-semibold text-slate-400 ml-1">mmHg</span>
+                        </div>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <label className="block text-xs font-bold text-slate-500 mb-2">Heart Rate (Pulse)</label>
+                        <div className="flex items-center gap-2">
+                          <input type="number" required placeholder="72" className="w-full bg-white border border-slate-200 rounded-lg p-2.5 font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" 
+                            value={vitalsData.pulseBpm} onChange={(e) => setVitalsData({...vitalsData, pulseBpm: e.target.value})} />
+                          <span className="text-xs font-semibold text-slate-400">BPM</span>
+                        </div>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <label className="block text-xs font-bold text-slate-500 mb-2">Weight</label>
+                        <div className="flex items-center gap-2">
+                          <input type="number" step="0.1" required placeholder="65.5" className="w-full bg-white border border-slate-200 rounded-lg p-2.5 font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" 
+                            value={vitalsData.weightKg} onChange={(e) => setVitalsData({...vitalsData, weightKg: e.target.value})} />
+                          <span className="text-xs font-semibold text-slate-400">Kg</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Clinical Notes & EMR</h4>
-              <textarea 
-                className="w-full flex-1 p-5 border border-slate-200 rounded-2xl bg-[#fafafa] outline-none focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50/50 transition-all resize-none text-slate-700 leading-relaxed"
-                defaultValue={selectedAppt.vitals?.doctorNotes || ""}
-                placeholder="Write medical notes, diagnosis, and prescriptions here..."
-              ></textarea>
-              
-              <div className="flex justify-end mt-6 gap-3">
-                <button className="px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors">Discard</button>
-                <button className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md shadow-indigo-200 hover:shadow-lg transition-all active:scale-95">
-                  Save & Complete Session
-                </button>
+                  {/* Diagnosis Section */}
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <FileText className="w-4 h-4" /> Diagnosis & Notes
+                    </h3>
+                    <div className="space-y-5">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Primary Symptoms</label>
+                        <input type="text" placeholder="e.g. Fever, Headache for 2 days..." className="w-full bg-white border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" 
+                          value={vitalsData.symptoms} onChange={(e) => setVitalsData({...vitalsData, symptoms: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Clinical Notes & Treatment Plan</label>
+                        <textarea rows={4} placeholder="Detailed diagnosis..." className="w-full bg-white border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow resize-none" 
+                          value={vitalsData.doctorNotes} onChange={(e) => setVitalsData({...vitalsData, doctorNotes: e.target.value})}></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Prescription Section (Visual Placeholder for now) */}
+                  <div className="opacity-60 pointer-events-none">
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <Pill className="w-4 h-4" /> e-Prescription (Coming Soon)
+                    </h3>
+                    <div className="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-6 text-center">
+                      <p className="text-sm font-medium text-slate-500">Pharmacy integration will automatically pull medicine stock.</p>
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="pt-6 border-t border-slate-100 flex justify-end">
+                    <button 
+                      type="submit" 
+                      disabled={loading} 
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center gap-2"
+                    >
+                      <Save className="w-5 h-5" />
+                      {loading ? "Saving Record..." : "Complete Consultation"}
+                    </button>
+                  </div>
+
+                </form>
               </div>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
-                <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-              </div>
-              <p className="font-medium">Select a patient from the queue to start</p>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+          
+        </main>
       </div>
     </div>
   );
