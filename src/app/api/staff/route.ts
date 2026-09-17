@@ -4,7 +4,9 @@ import { Role } from '@prisma/client';
 
 export async function GET() {
   try {
+    const org = await prisma.organization.findFirst();
     const staffMembers = await prisma.user.findMany({
+      where: { organizationId: org?.id },
       select: {
         id: true,
         name: true,
@@ -38,6 +40,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const org = await prisma.organization.findFirst();
 
     const roleEnum =
       body.role?.toUpperCase() === 'DOCTOR'
@@ -58,6 +61,7 @@ export async function POST(request: Request) {
         department: body.department,
       },
       create: {
+        organizationId: org?.id as string,
         name: body.name || 'New Staff Member',
         email,
         passwordHash: body.password || 'default_secret_hash',

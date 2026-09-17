@@ -31,7 +31,9 @@ function formatStatus(status: ApptStatus): string {
 
 export async function GET() {
   try {
+    const org = await prisma.organization.findFirst();
     const appointments = await prisma.appointment.findMany({
+      where: { organizationId: org?.id },
       include: {
         patient: true,
         doctor: true,
@@ -71,21 +73,23 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const org = await prisma.organization.findFirst();
 
     let patientId = body.patientId;
     if (!patientId) {
       const patientName = body.patientName || 'Anonymous Patient';
       let existingPatient = await prisma.patient.findFirst({
-        where: { name: patientName },
+        where: { name: patientName, organizationId: org?.id },
       });
 
       if (!existingPatient) {
         const randomCode = 'PAT-' + Math.floor(1000 + Math.random() * 9000);
         existingPatient = await prisma.patient.create({
           data: {
+            organizationId: org?.id as string,
             patientCode: randomCode,
             name: patientName,
-            age: body.patientAge || 30,
+            age: Number(body.patientAge) || 30,
             gender: body.patientGender || 'Not Specified',
             contactNumber: body.contactNumber || 'N/A',
           },
@@ -100,6 +104,7 @@ export async function POST(request: Request) {
       const existingDoctor = await prisma.user.findFirst({
         where: {
           name: { contains: doctorName, mode: 'insensitive' },
+          organizationId: org?.id
         },
       });
       if (existingDoctor) {
@@ -111,6 +116,7 @@ export async function POST(request: Request) {
 
     const newAppointment = await prisma.appointment.create({
       data: {
+        organizationId: org?.id as string,
         patientId,
         doctorId: doctorId || null,
         appointmentDate: apptDate,

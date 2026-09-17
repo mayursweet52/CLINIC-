@@ -4,7 +4,9 @@ import { PayStatus } from '@prisma/client';
 
 export async function GET() {
   try {
+    const org = await prisma.organization.findFirst();
     const billings = await prisma.billing.findMany({
+      where: { organizationId: org?.id },
       include: {
         appointment: {
           include: {
@@ -34,13 +36,15 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const org = await prisma.organization.findFirst();
     
     // Auto-generate invoice number
-    const count = await prisma.billing.count();
+    const count = await prisma.billing.count({ where: { organizationId: org?.id } });
     const invoiceNo = `INV-${1000 + count + 1}`;
     
     const newBill = await prisma.billing.create({
       data: {
+        organizationId: org?.id as string,
         invoiceNo,
         appointmentId: body.appointmentId,
         consultationFee: body.consultFee || 100,
