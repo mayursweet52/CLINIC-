@@ -11,10 +11,18 @@ export default function ReceptionistDashboard() {
       .then(data => setAppointments(data));
   }, []);
 
-  const updateStatus = (id: number, newStatus: string) => {
+  const updateStatus = async (id: number, newStatus: string) => {
+    // Optimistic UI update
     setAppointments(appointments.map(app => 
       app.id === id ? { ...app, status: newStatus } : app
     ));
+
+    // Connect with API
+    await fetch('/api/appointments', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status: newStatus })
+    });
   };
 
   return (

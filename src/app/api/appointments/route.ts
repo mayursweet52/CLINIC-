@@ -33,3 +33,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 }
+
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const index = appointments.findIndex(a => a.id === body.id);
+    
+    if (index !== -1) {
+      appointments[index].status = body.status;
+      return NextResponse.json({ message: 'Status updated', appointment: appointments[index] });
+    }
+    return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
+  } catch (error) {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
+}
