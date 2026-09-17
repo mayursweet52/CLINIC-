@@ -1,87 +1,109 @@
-"use client";
+'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function BookAppointment() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  const [doctor, setDoctor] = useState('Dr. Smith (Cardiology)');
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
-    // Call the Backend Microservice
-    await fetch('/api/appointments', {
+    const form = e.target as HTMLFormElement;
+    const data = {
+      patientName: (form.elements.namedItem('patientName') as HTMLInputElement).value,
+      doctor: (form.elements.namedItem('doctor') as HTMLSelectElement).value,
+      date: (form.elements.namedItem('date') as HTMLInputElement).value,
+      time: (form.elements.namedItem('time') as HTMLSelectElement).value,
+    };
+
+    const res = await fetch('/api/appointments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        patientName: 'Current User', 
-        doctor, 
-        date, 
-        time,
-        status: 'Pending' 
-      })
+      body: JSON.stringify(data),
     });
 
-    setTimeout(() => {
-      setLoading(false);
+    if (res.ok) {
       router.push('/patient');
-    }, 500);
+    }
   };
 
   return (
-    <div className="max-w-2xl mx-auto mt-8 font-sans">
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-        <h2 className="text-2xl font-bold mb-6 text-slate-800">Book an Appointment</h2>
+    <div className="max-w-2xl mx-auto animate-in fade-in duration-500">
+      <Link href="/patient" className="inline-flex items-center text-sm font-semibold text-slate-500 hover:text-slate-900 mb-8 transition-colors">
+        ← Back to My Health
+      </Link>
+
+      <div className="bg-white rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-slate-100 p-8 sm:p-12 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-[80px] -mr-32 -mt-32 pointer-events-none"></div>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Select Doctor</label>
-            <select 
-              value={doctor}
-              onChange={(e) => setDoctor(e.target.value)}
-              required 
-              className="block w-full border border-slate-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 transition-colors"
-            >
-              <option>Dr. Smith (Cardiology)</option>
-              <option>Dr. Adams (Pediatrics)</option>
-            </select>
-          </div>
+        <div className="relative z-10">
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 mb-2">Book Consultation</h2>
+          <p className="text-slate-500 text-sm mb-10">Select a specialist and choose an available time slot.</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Preferred Date</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Patient Full Name</label>
               <input 
-                type="date" 
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
+                name="patientName" 
+                type="text" 
                 required 
-                className="block w-full border border-slate-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 transition-colors" 
+                className="w-full px-5 py-4 bg-[#fafafa] border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-50/50 transition-all font-medium text-slate-900"
+                placeholder="John Doe"
               />
             </div>
-
+            
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Preferred Time</label>
-              <input 
-                type="time" 
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
+              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Specialist</label>
+              <select 
+                name="doctor" 
                 required 
-                className="block w-full border border-slate-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 transition-colors" 
-              />
+                className="w-full px-5 py-4 bg-[#fafafa] border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-50/50 transition-all font-bold text-slate-900 cursor-pointer"
+              >
+                <option value="Dr. Smith (Cardiology)">Dr. Smith (Cardiology)</option>
+                <option value="Dr. Adams (Pediatrics)">Dr. Adams (Pediatrics)</option>
+                <option value="Dr. Lee (General)">Dr. Lee (General)</option>
+              </select>
             </div>
-          </div>
+            
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Date</label>
+                <input 
+                  name="date" 
+                  type="date" 
+                  required 
+                  className="w-full px-5 py-4 bg-[#fafafa] border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-50/50 transition-all font-medium text-slate-900 cursor-pointer"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Time Slot</label>
+                <select 
+                  name="time" 
+                  required 
+                  className="w-full px-5 py-4 bg-[#fafafa] border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-50/50 transition-all font-bold text-slate-900 cursor-pointer"
+                >
+                  <option value="09:00 AM">09:00 AM</option>
+                  <option value="11:30 AM">11:30 AM</option>
+                  <option value="02:00 PM">02:00 PM</option>
+                  <option value="04:30 PM">04:30 PM</option>
+                </select>
+              </div>
+            </div>
 
-          <div className="pt-4">
-            <button type="submit" disabled={loading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-              {loading ? 'Confirming...' : 'Confirm Appointment'}
-            </button>
-          </div>
-        </form>
+            <div className="pt-6">
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md shadow-blue-200 hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center"
+              >
+                {loading ? 'Confirming...' : 'Confirm Appointment →'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

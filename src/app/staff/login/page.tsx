@@ -1,63 +1,89 @@
-"use client";
+'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function StaffLogin() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState('Doctor');
+  const router = useRouter();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const form = e.target as HTMLFormElement;
+    const role = (form.elements.namedItem('role') as HTMLSelectElement).value;
+    
     setTimeout(() => {
-      if (role === 'Receptionist') {
-        router.push('/staff/receptionist');
-      } else {
-        router.push('/staff');
-      }
+      if (role === 'Doctor') router.push('/staff');
+      else if (role === 'Receptionist') router.push('/staff/receptionist');
+      else router.push('/staff');
     }, 1000);
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center font-sans">
-      <div className="bg-white p-8 rounded-2xl shadow-lg border border-slate-100 w-full max-w-md">
-        <h2 className="text-3xl font-bold text-center text-indigo-700 mb-2">Staff Login</h2>
-        <p className="text-center text-slate-500 mb-8 text-sm">Enter your staff credentials</p>
-        
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Staff ID / Email</label>
-            <input type="text" required className="block w-full border border-slate-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-slate-50" placeholder="e.g. DOC-1234" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Password</label>
-            <input type="password" required className="block w-full border border-slate-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-slate-50" placeholder="••••••••" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Role</label>
-            <select 
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="block w-full border border-slate-300 rounded-lg py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-slate-50"
-            >
-              <option value="Doctor">Doctor</option>
-              <option value="Receptionist">Receptionist</option>
-              <option value="Admin">Admin</option>
-            </select>
-          </div>
+    <div className="min-h-screen bg-[#fafafa] flex items-center justify-center font-sans relative overflow-hidden">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none"></div>
 
-          <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-100 flex items-start gap-3">
-            <svg className="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-            <p className="text-xs text-indigo-800 leading-relaxed">
-              <strong>Authorized Personnel Only:</strong> Accessing patient records without authorization is strictly prohibited. All actions are logged for security and compliance.
+      <div className="w-full max-w-md relative z-10 p-6">
+        <Link href="/" className="inline-flex items-center text-sm font-semibold text-slate-500 hover:text-slate-900 mb-8 transition-colors">
+          ← Back to Portal
+        </Link>
+
+        <div className="bg-white rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.06)] border border-slate-100 p-8 sm:p-10">
+          <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 text-xl font-bold border border-indigo-100 shadow-sm">
+            S
+          </div>
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 mb-2">Staff Access</h2>
+          <p className="text-slate-500 text-sm mb-8">Authorized personnel only. Secure your session.</p>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Role</label>
+              <select 
+                name="role" 
+                className="w-full px-5 py-4 bg-[#fafafa] border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50/50 transition-all font-bold text-slate-900 cursor-pointer"
+              >
+                <option value="Doctor">Doctor</option>
+                <option value="Receptionist">Receptionist</option>
+                <option value="Admin">Admin</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Staff ID</label>
+              <input 
+                type="text" 
+                required 
+                className="w-full px-5 py-4 bg-[#fafafa] border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50/50 transition-all font-medium text-slate-900" 
+                placeholder="EMP-0000"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Password</label>
+              <input 
+                type="password" 
+                required 
+                className="w-full px-5 py-4 bg-[#fafafa] border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50/50 transition-all font-medium text-slate-900" 
+                placeholder="••••••••"
+              />
+            </div>
+            
+            <div className="pt-2">
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-md shadow-indigo-200 hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center"
+              >
+                {loading ? 'Authenticating...' : 'Secure Login →'}
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-8 pt-8 border-t border-slate-100 text-center">
+            <p className="text-xs text-slate-400">
+              Access is logged and monitored. <span className="font-bold text-slate-600 hover:text-slate-900 cursor-pointer">HIPAA Compliant</span> infrastructure.
             </p>
           </div>
-
-          <button type="submit" disabled={loading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors mt-4">
-            {loading ? 'Authenticating...' : 'Secure Staff Login'}
-          </button>
-        </form>
+        </div>
       </div>
     </div>
   );
