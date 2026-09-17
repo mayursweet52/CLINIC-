@@ -4,20 +4,34 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function StaffLogin() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const form = e.target as HTMLFormElement;
-    const role = (form.elements.namedItem('role') as HTMLSelectElement).value;
+    setError('');
     
-    setTimeout(() => {
-      if (role === 'Doctor') router.push('/staff');
-      else if (role === 'Receptionist') router.push('/staff/receptionist');
-      else router.push('/staff');
-    }, 1000);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Login failed');
+      }
+      
+      router.push('/staff');
+    } catch (err: any) {
+      setError(err.message || 'Invalid email or password');
+      setLoading(false);
+    }
   };
 
   return (
@@ -50,20 +64,24 @@ export default function StaffLogin() {
             </div>
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Staff ID</label>
-              <input 
-                type="text" 
-                required 
-                className="w-full px-5 py-4 bg-[#fafafa] border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50/50 transition-all font-medium text-slate-900" 
-                placeholder="EMP-0000"
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-[#f8fafc] border border-slate-200 text-slate-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-3 text-sm font-medium outline-none transition-all"
+                placeholder="dr.smith@clinic.com"
+                required
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Password</label>
-              <input 
-                type="password" 
-                required 
-                className="w-full px-5 py-4 bg-[#fafafa] border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50/50 transition-all font-medium text-slate-900" 
+              <label className="block mb-2 text-sm font-bold text-slate-700">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-5 py-4 bg-[#fafafa] border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50/50 transition-all font-medium text-slate-900"
                 placeholder="••••••••"
+                required
               />
             </div>
             
