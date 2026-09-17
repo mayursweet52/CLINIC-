@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 
 export default function DoctorDashboard() {
@@ -16,83 +15,97 @@ export default function DoctorDashboard() {
   }, []);
 
   return (
-    <div className="space-y-8">
-      <div className="border-b border-slate-200 pb-4">
-        <h2 className="text-3xl font-bold text-slate-800">Doctor Dashboard</h2>
-        <p className="text-slate-500 mt-2">Manage your patients, view vitals, and update OPD history.</p>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col gap-1 pb-6 border-b border-slate-200">
+        <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">Doctor Console</h2>
+        <p className="text-slate-500">Manage patient sessions, log vitals, and update EMR history.</p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Left Side: Patient Queue */}
-        <div className="w-full md:w-1/3 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden h-[600px] flex flex-col">
-          <div className="p-4 border-b border-slate-200 bg-slate-50">
-            <h3 className="font-semibold text-slate-800">Today's Queue</h3>
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Left Side: Queue */}
+        <div className="w-full lg:w-1/3 flex flex-col h-[700px]">
+          <div className="flex items-center justify-between mb-4 px-1">
+            <h3 className="font-semibold text-slate-800 tracking-tight text-lg">Active Queue</h3>
+            <span className="bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full text-xs font-bold">{patients.length}</span>
           </div>
-          <div className="overflow-y-auto flex-1 p-2 space-y-2">
+          <div className="overflow-y-auto flex-1 space-y-3 pr-2 scrollbar-hide">
             {patients.map(p => (
               <button
                 key={p.id}
                 onClick={() => setSelectedPatient(p)}
-                className={`w-full text-left p-4 rounded-xl border transition-all ${
+                className={`w-full text-left p-5 rounded-2xl border transition-all duration-200 group ${
                   selectedPatient?.id === p.id 
-                    ? 'bg-indigo-50 border-indigo-200 shadow-sm' 
-                    : 'bg-white border-transparent hover:bg-slate-50'
+                    ? 'bg-white border-indigo-200 shadow-[0_8px_30px_rgb(0,0,0,0.06)] ring-1 ring-indigo-50/50' 
+                    : 'bg-white/50 border-slate-200/60 hover:bg-white hover:border-slate-300 hover:shadow-sm'
                 }`}
               >
-                <p className="font-bold text-slate-800">{p.name}</p>
-                <p className="text-sm text-slate-500">Age: {p.age} | Record #{p.id}</p>
+                <div className="flex justify-between items-start mb-2">
+                  <p className="font-bold text-slate-900 text-lg">{p.name}</p>
+                  <span className={`w-2 h-2 rounded-full mt-2 ${selectedPatient?.id === p.id ? 'bg-indigo-500' : 'bg-slate-300 group-hover:bg-slate-400'}`}></span>
+                </div>
+                <p className="text-sm text-slate-500 font-medium">Age: {p.age} • Record #{p.id.toString().padStart(4, '0')}</p>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Right Side: Vitals & History Module */}
-        <div className="w-full md:w-2/3 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col h-[600px]">
+        {/* Right Side: EMR Module */}
+        <div className="w-full lg:w-2/3 bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 flex flex-col h-[700px] relative overflow-hidden">
+          {/* Subtle decoration */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-[80px] -mr-32 -mt-32 pointer-events-none"></div>
+
           {selectedPatient ? (
-            <>
-              <div className="flex justify-between items-start border-b border-slate-100 pb-4 mb-6">
+            <div className="relative z-10 flex flex-col h-full">
+              <div className="flex justify-between items-start pb-6 mb-8 border-b border-slate-100">
                 <div>
-                  <h3 className="text-2xl font-bold text-slate-800">{selectedPatient.name}</h3>
-                  <p className="text-slate-500">Contact: {selectedPatient.contact}</p>
+                  <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">{selectedPatient.name}</h3>
+                  <div className="flex gap-3 text-sm font-medium text-slate-500">
+                    <span className="bg-slate-100 px-2 py-1 rounded-md">{selectedPatient.contact}</span>
+                    <span className="bg-slate-100 px-2 py-1 rounded-md">ID: {selectedPatient.id}</span>
+                  </div>
                 </div>
-                <span className="bg-green-100 text-green-700 font-bold px-4 py-1.5 rounded-full text-sm">
-                  Active Session
+                <span className="bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold px-4 py-2 rounded-full text-sm flex items-center gap-2 shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                  In Session
                 </span>
               </div>
 
-              {/* Vitals Section */}
-              <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Patient Vitals</h4>
-              <div className="grid grid-cols-3 gap-4 mb-8">
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <p className="text-xs text-slate-500 font-semibold mb-1">Blood Pressure</p>
-                  <input type="text" defaultValue="120/80" className="w-full bg-transparent font-bold text-lg text-slate-800 outline-none focus:ring-2 focus:ring-indigo-100 rounded" />
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Patient Vitals</h4>
+              <div className="grid grid-cols-3 gap-4 mb-10">
+                <div className="p-5 bg-[#fafafa] rounded-2xl border border-slate-100 hover:border-indigo-100 transition-colors group">
+                  <p className="text-xs text-slate-500 font-bold mb-2 uppercase tracking-wide">Blood Pressure</p>
+                  <input type="text" defaultValue="120/80" className="w-full bg-transparent font-extrabold text-2xl text-slate-900 outline-none group-hover:text-indigo-600 transition-colors" />
                 </div>
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <p className="text-xs text-slate-500 font-semibold mb-1">Pulse (BPM)</p>
-                  <input type="text" defaultValue="72" className="w-full bg-transparent font-bold text-lg text-slate-800 outline-none focus:ring-2 focus:ring-indigo-100 rounded" />
+                <div className="p-5 bg-[#fafafa] rounded-2xl border border-slate-100 hover:border-indigo-100 transition-colors group">
+                  <p className="text-xs text-slate-500 font-bold mb-2 uppercase tracking-wide">Pulse (BPM)</p>
+                  <input type="text" defaultValue="72" className="w-full bg-transparent font-extrabold text-2xl text-slate-900 outline-none group-hover:text-indigo-600 transition-colors" />
                 </div>
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <p className="text-xs text-slate-500 font-semibold mb-1">Weight (kg)</p>
-                  <input type="text" defaultValue="68" className="w-full bg-transparent font-bold text-lg text-slate-800 outline-none focus:ring-2 focus:ring-indigo-100 rounded" />
+                <div className="p-5 bg-[#fafafa] rounded-2xl border border-slate-100 hover:border-indigo-100 transition-colors group">
+                  <p className="text-xs text-slate-500 font-bold mb-2 uppercase tracking-wide">Weight (kg)</p>
+                  <input type="text" defaultValue="68" className="w-full bg-transparent font-extrabold text-2xl text-slate-900 outline-none group-hover:text-indigo-600 transition-colors" />
                 </div>
               </div>
 
-              {/* OPD History Section */}
-              <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">OPD Medical History</h4>
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Clinical Notes & EMR</h4>
               <textarea 
-                className="w-full flex-1 p-4 border border-slate-200 rounded-xl bg-slate-50 outline-none focus:border-indigo-400 focus:bg-white transition-colors resize-none"
+                className="w-full flex-1 p-5 border border-slate-200 rounded-2xl bg-[#fafafa] outline-none focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50/50 transition-all resize-none text-slate-700 leading-relaxed"
                 defaultValue={selectedPatient.history}
-                placeholder="Write medical notes, diagnosis, and prescription here..."
+                placeholder="Write medical notes, diagnosis, and prescriptions here..."
               ></textarea>
               
-              <div className="flex justify-end mt-4 gap-4">
-                <button className="px-6 py-2 border border-slate-300 rounded-lg font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
-                <button className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700">Save Consultation</button>
+              <div className="flex justify-end mt-6 gap-3">
+                <button className="px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors">Discard</button>
+                <button className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md shadow-indigo-200 hover:shadow-lg transition-all active:scale-95">
+                  Save & Complete
+                </button>
               </div>
-            </>
+            </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-slate-400">
-              Select a patient from the queue to view vitals.
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+              </div>
+              <p className="font-medium">Select a patient from the queue to start</p>
             </div>
           )}
         </div>
