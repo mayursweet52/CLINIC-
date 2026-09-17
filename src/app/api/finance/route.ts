@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-let transactions = [
+const transactions = [
   { id: 1, date: 'Today', description: 'Patient Consultation (John Doe)', type: 'Income', amount: 150 },
   { id: 2, date: 'Today', description: 'Pharmacy Sale (Paracetamol)', type: 'Income', amount: 10 },
   { id: 3, date: 'Yesterday', description: 'Medical Supplies Restock', type: 'Expense', amount: 350 },
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     };
     transactions.push(newTx);
     return NextResponse.json({ message: 'Transaction logged', transaction: newTx }, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
   }
 }

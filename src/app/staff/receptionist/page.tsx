@@ -1,8 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { Appointment } from '@/types';
 
 export default function ReceptionistDashboard() {
-  const [appointments, setAppointments] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
 
   useEffect(() => {
     fetch('/api/appointments')

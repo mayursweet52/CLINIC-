@@ -1,9 +1,10 @@
 'use client';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { Appointment } from '@/types';
 
 export default function PatientDashboard() {
-  const [appointments, setAppointments] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
