@@ -3,15 +3,17 @@ import { useState, useEffect } from 'react';
 import { Patient } from '@/types';
 
 export default function DoctorDashboard() {
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [selectedAppt, setSelectedAppt] = useState<any | null>(null);
 
   useEffect(() => {
-    fetch('/api/patients')
+    fetch('/api/appointments')
       .then(res => res.json())
       .then(data => {
-        setPatients(data);
-        if (data.length > 0) setSelectedPatient(data[0]);
+        // Only show pending or arrived appointments for today
+        const active = data.filter((a: any) => a.rawStatus !== 'COMPLETED' && a.rawStatus !== 'CANCELLED');
+        setAppointments(active);
+        if (active.length > 0) setSelectedAppt(active[0]);
       });
   }, []);
 
@@ -25,26 +27,28 @@ export default function DoctorDashboard() {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left Side: Queue */}
         <div className="w-full lg:w-1/3 flex flex-col h-[700px]">
-          <div className="flex items-center justify-between mb-4 px-1">
+            <div className="flex items-center justify-between mb-4 px-1">
             <h3 className="font-semibold text-slate-800 tracking-tight text-lg">Active Queue</h3>
-            <span className="bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full text-xs font-bold">{patients.length}</span>
+            <span className="bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full text-xs font-bold">{appointments.length}</span>
           </div>
           <div className="overflow-y-auto flex-1 space-y-3 pr-2 scrollbar-hide">
-            {patients.map(p => (
+            {appointments.map(appt => (
               <button
-                key={p.id}
-                onClick={() => setSelectedPatient(p)}
+                key={appt.id}
+                onClick={() => setSelectedAppt(appt)}
                 className={`w-full text-left p-5 rounded-2xl border transition-all duration-200 group ${
-                  selectedPatient?.id === p.id 
+                  selectedAppt?.id === appt.id 
                     ? 'bg-white border-indigo-200 shadow-[0_8px_30px_rgb(0,0,0,0.06)] ring-1 ring-indigo-50/50' 
                     : 'bg-white/50 border-slate-200/60 hover:bg-white hover:border-slate-300 hover:shadow-sm'
                 }`}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <p className="font-bold text-slate-900 text-lg">{p.name}</p>
-                  <span className={`w-2 h-2 rounded-full mt-2 ${selectedPatient?.id === p.id ? 'bg-indigo-500' : 'bg-slate-300 group-hover:bg-slate-400'}`}></span>
+                  <p className="font-bold text-slate-900 text-lg">{appt.patientName}</p>
+                  <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md ${selectedAppt?.id === appt.id ? 'bg-indigo-500 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                    TOKEN #{appt.tokenNumber}
+                  </span>
                 </div>
-                <p className="text-sm text-slate-500 font-medium">Age: {p.age} • Record #{p.id.toString().padStart(4, '0')}</p>
+                <p className="text-sm text-slate-500 font-medium">Time: {appt.time} • Status: {appt.status}</p>
               </button>
             ))}
           </div>
@@ -55,14 +59,14 @@ export default function DoctorDashboard() {
           {/* Subtle decoration */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-[80px] -mr-32 -mt-32 pointer-events-none"></div>
 
-          {selectedPatient ? (
+          {selectedAppt ? (
             <div className="relative z-10 flex flex-col h-full">
               <div className="flex justify-between items-start pb-6 mb-8 border-b border-slate-100">
                 <div>
-                  <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">{selectedPatient.name}</h3>
+                  <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">{selectedAppt.patientName}</h3>
                   <div className="flex gap-3 text-sm font-medium text-slate-500">
-                    <span className="bg-slate-100 px-2 py-1 rounded-md">{selectedPatient.contact}</span>
-                    <span className="bg-slate-100 px-2 py-1 rounded-md">ID: {selectedPatient.id}</span>
+                    <span className="bg-slate-100 px-2 py-1 rounded-md">Token: {selectedAppt.tokenNumber}</span>
+                    <span className="bg-slate-100 px-2 py-1 rounded-md">ID: {selectedAppt.patientId.split('-')[0]}...</span>
                   </div>
                 </div>
                 <span className="bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold px-4 py-2 rounded-full text-sm flex items-center gap-2 shadow-sm">
@@ -75,29 +79,29 @@ export default function DoctorDashboard() {
               <div className="grid grid-cols-3 gap-4 mb-10">
                 <div className="p-5 bg-[#fafafa] rounded-2xl border border-slate-100 hover:border-indigo-100 transition-colors group">
                   <p className="text-xs text-slate-500 font-bold mb-2 uppercase tracking-wide">Blood Pressure</p>
-                  <input type="text" defaultValue="120/80" className="w-full bg-transparent font-extrabold text-2xl text-slate-900 outline-none group-hover:text-indigo-600 transition-colors" />
+                  <input type="text" defaultValue={selectedAppt.vitals?.bpSystolic ? `${selectedAppt.vitals.bpSystolic}/${selectedAppt.vitals.bpDiastolic}` : "120/80"} className="w-full bg-transparent font-extrabold text-2xl text-slate-900 outline-none group-hover:text-indigo-600 transition-colors" />
                 </div>
                 <div className="p-5 bg-[#fafafa] rounded-2xl border border-slate-100 hover:border-indigo-100 transition-colors group">
                   <p className="text-xs text-slate-500 font-bold mb-2 uppercase tracking-wide">Pulse (BPM)</p>
-                  <input type="text" defaultValue="72" className="w-full bg-transparent font-extrabold text-2xl text-slate-900 outline-none group-hover:text-indigo-600 transition-colors" />
+                  <input type="text" defaultValue={selectedAppt.vitals?.pulseBpm || "72"} className="w-full bg-transparent font-extrabold text-2xl text-slate-900 outline-none group-hover:text-indigo-600 transition-colors" />
                 </div>
                 <div className="p-5 bg-[#fafafa] rounded-2xl border border-slate-100 hover:border-indigo-100 transition-colors group">
                   <p className="text-xs text-slate-500 font-bold mb-2 uppercase tracking-wide">Weight (kg)</p>
-                  <input type="text" defaultValue="68" className="w-full bg-transparent font-extrabold text-2xl text-slate-900 outline-none group-hover:text-indigo-600 transition-colors" />
+                  <input type="text" defaultValue={selectedAppt.vitals?.weightKg || "68"} className="w-full bg-transparent font-extrabold text-2xl text-slate-900 outline-none group-hover:text-indigo-600 transition-colors" />
                 </div>
               </div>
 
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Clinical Notes & EMR</h4>
               <textarea 
                 className="w-full flex-1 p-5 border border-slate-200 rounded-2xl bg-[#fafafa] outline-none focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50/50 transition-all resize-none text-slate-700 leading-relaxed"
-                defaultValue={selectedPatient.history}
+                defaultValue={selectedAppt.vitals?.doctorNotes || ""}
                 placeholder="Write medical notes, diagnosis, and prescriptions here..."
               ></textarea>
               
               <div className="flex justify-end mt-6 gap-3">
                 <button className="px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors">Discard</button>
                 <button className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md shadow-indigo-200 hover:shadow-lg transition-all active:scale-95">
-                  Save & Complete
+                  Save & Complete Session
                 </button>
               </div>
             </div>
