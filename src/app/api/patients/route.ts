@@ -3,7 +3,9 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
+    const org = await prisma.organization.findFirst();
     const patients = await prisma.patient.findMany({
+      where: { organizationId: org?.id },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -30,11 +32,13 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const count = await prisma.patient.count();
+    const org = await prisma.organization.findFirst();
+    const count = await prisma.patient.count({ where: { organizationId: org?.id } });
     const patientCode = `PAT-${1001 + count}`;
 
     const newPatient = await prisma.patient.create({
       data: {
+        organizationId: org?.id as string,
         patientCode,
         name: body.name || 'Unknown Patient',
         age: Number(body.age) || 30,

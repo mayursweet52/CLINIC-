@@ -1,20 +1,29 @@
-import { PrismaClient, Role, ApptStatus, PayStatus, TxType } from '@prisma/client';
+import { PrismaClient, Role, ApptStatus, PayStatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Clearing existing data...');
-  await prisma.transaction.deleteMany();
   await prisma.billing.deleteMany();
   await prisma.vitals.deleteMany();
   await prisma.appointment.deleteMany();
   await prisma.patient.deleteMany();
   await prisma.medicine.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.organization.deleteMany();
+
+  console.log('Seeding Organization...');
+  const org = await prisma.organization.create({
+    data: {
+      name: 'City Care Hospital',
+      domain: 'citycare.businessos.co.in',
+    },
+  });
 
   console.log('Seeding Users / Staff...');
   const doctorSmith = await prisma.user.create({
     data: {
+      organizationId: org.id,
       name: 'Dr. Smith',
       email: 'dr.smith@clinic.com',
       passwordHash: 'hashed_password_123',
@@ -26,6 +35,7 @@ async function main() {
 
   const doctorAdams = await prisma.user.create({
     data: {
+      organizationId: org.id,
       name: 'Dr. Adams',
       email: 'dr.adams@clinic.com',
       passwordHash: 'hashed_password_123',
@@ -37,6 +47,7 @@ async function main() {
 
   const receptionistAlice = await prisma.user.create({
     data: {
+      organizationId: org.id,
       name: 'Alice',
       email: 'alice@clinic.com',
       passwordHash: 'hashed_password_123',
@@ -49,6 +60,7 @@ async function main() {
   console.log('Seeding Patients...');
   const patientJohn = await prisma.patient.create({
     data: {
+      organizationId: org.id,
       patientCode: 'PAT-1001',
       name: 'John Doe',
       age: 34,
@@ -63,6 +75,7 @@ async function main() {
 
   const patientJane = await prisma.patient.create({
     data: {
+      organizationId: org.id,
       patientCode: 'PAT-1002',
       name: 'Jane Roe',
       age: 28,
@@ -78,6 +91,7 @@ async function main() {
   console.log('Seeding Appointments & Vitals...');
   const appt1 = await prisma.appointment.create({
     data: {
+      organizationId: org.id,
       patientId: patientJohn.id,
       doctorId: doctorSmith.id,
       appointmentDate: new Date(),
@@ -102,6 +116,7 @@ async function main() {
 
   const appt2 = await prisma.appointment.create({
     data: {
+      organizationId: org.id,
       patientId: patientJane.id,
       doctorId: doctorAdams.id,
       appointmentDate: new Date(),
@@ -113,16 +128,17 @@ async function main() {
   console.log('Seeding Medicines...');
   await prisma.medicine.createMany({
     data: [
-      { name: 'Paracetamol 500mg', genericName: 'Acetaminophen', batchNo: 'B-101', stockQuantity: 150, unitPrice: 5.0, expiryDate: new Date('2027-12-31') },
-      { name: 'Amoxicillin 250mg', genericName: 'Amoxicillin Trihydrate', batchNo: 'B-102', stockQuantity: 45, unitPrice: 12.0, expiryDate: new Date('2027-06-30') },
-      { name: 'Cough Syrup 100ml', genericName: 'Dextromethorphan', batchNo: 'B-103', stockQuantity: 14, unitPrice: 8.5, expiryDate: new Date('2026-11-30') },
-      { name: 'Ibuprofen 400mg', genericName: 'Ibuprofen', batchNo: 'B-104', stockQuantity: 90, unitPrice: 6.0, expiryDate: new Date('2028-01-15') },
+      { organizationId: org.id, name: 'Paracetamol 500mg', genericName: 'Acetaminophen', batchNo: 'B-101', stockQuantity: 150, unitPrice: 5.0, expiryDate: new Date('2027-12-31') },
+      { organizationId: org.id, name: 'Amoxicillin 250mg', genericName: 'Amoxicillin Trihydrate', batchNo: 'B-102', stockQuantity: 45, unitPrice: 12.0, expiryDate: new Date('2027-06-30') },
+      { organizationId: org.id, name: 'Cough Syrup 100ml', genericName: 'Dextromethorphan', batchNo: 'B-103', stockQuantity: 14, unitPrice: 8.5, expiryDate: new Date('2026-11-30') },
+      { organizationId: org.id, name: 'Ibuprofen 400mg', genericName: 'Ibuprofen', batchNo: 'B-104', stockQuantity: 90, unitPrice: 6.0, expiryDate: new Date('2028-01-15') },
     ],
   });
 
   console.log('Seeding Billing & Invoices...');
   await prisma.billing.create({
     data: {
+      organizationId: org.id,
       invoiceNo: 'INV-1001',
       appointmentId: appt1.id,
       consultationFee: 100,
@@ -135,6 +151,7 @@ async function main() {
 
   await prisma.billing.create({
     data: {
+      organizationId: org.id,
       invoiceNo: 'INV-1002',
       appointmentId: appt2.id,
       consultationFee: 150,
@@ -143,16 +160,6 @@ async function main() {
       paymentStatus: PayStatus.UNPAID,
       paymentMethod: 'Cash',
     },
-  });
-
-  console.log('Seeding Transactions...');
-  await prisma.transaction.createMany({
-    data: [
-      { description: 'Patient Consultation (John Doe)', type: TxType.INCOME, amount: 150, category: 'Consultation', paymentMode: 'Card' },
-      { description: 'Pharmacy Sale (Paracetamol)', type: TxType.INCOME, amount: 10, category: 'Pharmacy', paymentMode: 'Cash' },
-      { description: 'Medical Supplies Restock', type: TxType.EXPENSE, amount: 350, category: 'Supplies', paymentMode: 'Bank Transfer' },
-      { description: 'Patient Consultation (Jane Roe)', type: TxType.INCOME, amount: 150, category: 'Consultation', paymentMode: 'UPI' },
-    ],
   });
 
   console.log('Seeding completed successfully!');

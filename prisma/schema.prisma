@@ -7,22 +7,40 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  domain      String?  @unique
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  
+  users        User[]
+  patients     Patient[]
+  appointments Appointment[]
+  medicines    Medicine[]
+  billings     Billing[]
+}
+
 model User {
-  id            String        @id @default(uuid())
-  name          String
-  email         String        @unique
-  passwordHash  String
-  role          Role          @default(RECEPTIONIST)
-  department    String?       // e.g., Cardiology, Pharmacy
-  phone         String?
-  isActive      Boolean       @default(true)
-  createdAt     DateTime      @default(now())
-  appointments  Appointment[] @relation("DoctorAppointments")
+  id             String        @id @default(uuid())
+  organizationId String
+  name           String
+  email          String        @unique
+  passwordHash   String
+  role           Role          @default(STAFF)
+  department     String?
+  phone          String?
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  appointments   Appointment[] @relation("DoctorAppointments")
 }
 
 model Patient {
   id             String        @id @default(uuid())
-  patientCode    String        @unique // e.g., PAT-1001
+  organizationId String
+  patientCode    String
   name           String
   age            Int
   gender         String
@@ -30,21 +48,27 @@ model Patient {
   contactNumber  String
   email          String?
   address        String?
-  medicalHistory String?       // JSON or Text for allergies/chronic conditions
+  medicalHistory String?
   createdAt      DateTime      @default(now())
+  
+  organization   Organization  @relation(fields: [organizationId], references: [id])
   appointments   Appointment[]
   vitals         Vitals[]
+
+  @@unique([organizationId, patientCode])
 }
 
 model Appointment {
   id              String    @id @default(uuid())
+  organizationId  String
   patientId       String
   doctorId        String?
   appointmentDate DateTime
   timeSlot        String
-  tokenNumber     Int       @default(autoincrement()) // Live Queue Token
+  tokenNumber     Int       @default(autoincrement())
   status          ApptStatus @default(PENDING)
   
+  organization    Organization @relation(fields: [organizationId], references: [id])
   patient         Patient   @relation(fields: [patientId], references: [id])
   doctor          User?     @relation("DoctorAppointments", fields: [doctorId], references: [id])
   vitals          Vitals?
@@ -64,12 +88,13 @@ model Vitals {
   doctorNotes    String?
   createdAt      DateTime    @default(now())
 
-  appointment    Appointment@relation(fields: [appointmentId], references: [id])
+  appointment    Appointment @relation(fields: [appointmentId], references: [id])
   patient        Patient     @relation(fields: [patientId], references: [id])
 }
 
 model Medicine {
   id               String   @id @default(uuid())
+  organizationId   String
   name             String
   genericName      String?
   batchNo          String
@@ -77,27 +102,38 @@ model Medicine {
   unitPrice        Float
   expiryDate       DateTime
   reorderThreshold Int      @default(50)
+
+  organization     Organization @relation(fields: [organizationId], references: [id])
 }
 
 model Billing {
   id                String      @id @default(uuid())
-  invoiceNo         String      @unique
+  organizationId    String
+  invoiceNo         String
   appointmentId     String      @unique
-  consultationFee   Float      @default(0)
-  medicineCharges   Float      @default(0)
+  consultationFee   Float       @default(0)
+  medicineCharges   Float       @default(0)
   totalAmount       Float
-  discount          Float      @default(0)
+  discount          Float       @default(0)
   paymentStatus     PayStatus   @default(UNPAID)
-  paymentMethod     String?     // Cash, Card, UPI
+  paymentMethod     String?
   
-  appointment       Appointment @relation(fields: [appointmentId], references: [id])
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  appointment       Appointment  @relation(fields: [appointmentId], references: [id])
+
+  @@unique([organizationId, invoiceNo])
 }
 
 enum Role {
+  OWNER
   ADMIN
+  MANAGER
+  ACCOUNTANT
   DOCTOR
   RECEPTIONIST
   PHARMACIST
+  STAFF
+  VIEWER
 }
 
 enum ApptStatus {
