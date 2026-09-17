@@ -6,9 +6,11 @@ export default function DoctorDashboard() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [availableMedicines, setAvailableMedicines] = useState<any[]>([]);
+  
+  // Medicines Inventory from Database
+  const [medicinesList, setMedicinesList] = useState<any[]>([]);
 
-  // Vitals form state
+  // Vitals form cha state
   const [vitalsData, setVitalsData] = useState({
     bpSystolic: "",
     bpDiastolic: "",
@@ -20,99 +22,83 @@ export default function DoctorDashboard() {
 
   // e-Prescription state
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
-  const [newPrescription, setNewPrescription] = useState({
+  const [currentMed, setCurrentMed] = useState({
     medicineId: "",
-    dosage: "1-0-1",
-    durationDays: "5",
-    instructions: "After meals"
+    dosage: "",
+    durationDays: "",
+    instructions: ""
   });
 
-  // Fetch medicines stock
-  const fetchMedicines = async () => {
+  // Fetch active queue and medicines
+  const fetchData = async () => {
     try {
-      const res = await fetch("/api/pharmacy");
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setAvailableMedicines(data);
-          if (data.length > 0 && !newPrescription.medicineId) {
-            setNewPrescription(prev => ({ ...prev, medicineId: data[0].id }));
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load medicines", error);
-    }
-  };
-
-  // Fetch active queue from database
-  const fetchAppointments = async () => {
-    try {
+      // 1. Fetch Queue
       const res = await fetch("/api/appointments");
       const data = await res.json();
       
-      if (!Array.isArray(data)) {
-        console.error("Appointments is not an array:", data);
-        return;
+      if (Array.isArray(data)) {
+        const activeQueue = data.filter((a: any) => 
+          a.rawStatus !== "COMPLETED" && 
+          a.status !== "Completed" && 
+          a.rawStatus !== "CANCELLED" && 
+          a.status !== "Cancelled"
+        );
+        setAppointments(activeQueue);
+        
+        setSelectedPatient((prev: any) => {
+          if (!prev && activeQueue.length > 0) return activeQueue[0];
+          if (prev) {
+            const stillExists = activeQueue.find((a: any) => a.id === prev.id);
+            return stillExists || (activeQueue.length > 0 ? activeQueue[0] : null);
+          }
+          return null;
+        });
       }
 
-      const activeQueue = data.filter((a: any) => 
-        a.rawStatus !== "COMPLETED" && 
-        a.status !== "Completed" && 
-        a.rawStatus !== "CANCELLED" && 
-        a.status !== "Cancelled"
-      );
-      setAppointments(activeQueue);
-      
-      setSelectedPatient((prev: any) => {
-        if (!prev && activeQueue.length > 0) return activeQueue[0];
-        if (prev) {
-          const stillExists = activeQueue.find((a: any) => a.id === prev.id);
-          return stillExists || (activeQueue.length > 0 ? activeQueue[0] : null);
-        }
-        return null;
-      });
+      // 2. Fetch Medicines from Pharmacy
+      const medRes = await fetch("/api/pharmacy");
+      if (medRes.ok) {
+        const medData = await medRes.json();
+        setMedicinesList(medData);
+      }
     } catch (error) {
-      console.error("Failed to fetch appointments", error);
+      console.error("Failed to fetch data", error);
     }
   };
 
   useEffect(() => {
-    fetchAppointments();
-    fetchMedicines();
-    
+    fetchData();
     const interval = setInterval(() => {
-      fetchAppointments();
+      fetchData();
     }, 15000);
     return () => clearInterval(interval);
   }, []);
 
   // Add medicine to prescription list
-  const handleAddMedicine = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!newPrescription.medicineId) return;
-
-    const med = availableMedicines.find(m => m.id === newPrescription.medicineId);
-    if (!med) return;
-
-    setPrescriptions(prev => [
-      ...prev,
-      {
-        medicineId: med.id,
-        medicineName: med.name,
-        dosage: newPrescription.dosage || "1-0-1",
-        durationDays: Number(newPrescription.durationDays) || 5,
-        instructions: newPrescription.instructions || "After meals"
-      }
-    ]);
+  const addMedicine = () => {
+    if (!currentMed.medicineId || !currentMed.dosage || !currentMed.durationDays) {
+      alert("Please fill all medicine details!");
+      return;
+    }
+    const selectedMedData = medicinesList.find(m => m.id === currentMed.medicineId);
+    
+    setPrescriptions([...prescriptions, { 
+      ...currentMed, 
+      medicineName: selectedMedData?.name || "Unknown Medicine" 
+    }]);
+    
+    // Form clear kara
+    setCurrentMed({ medicineId: "", dosage: "", durationDays: "", instructions: "" });
   };
 
-  // Remove medicine from prescription list
-  const handleRemoveMedicine = (index: number) => {
-    setPrescriptions(prev => prev.filter((_, i) => i !== index));
+  // Remove medicine from list
+  const removeMedicine = (index: number) => {
+    const newList = [...prescriptions];
+    newList.splice(index, 1);
+    setPrescriptions(newList);
   };
 
-  // Save consultation with vitals and prescriptions
+  // Form submit kelyavar vitals aani prescriptions save kara
   const handleSaveConsultation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPatient) return;
@@ -126,31 +112,28 @@ export default function DoctorDashboard() {
           appointmentId: selectedPatient.id,
           patientId: selectedPatient.patient?.id || selectedPatient.patientId,
           ...vitalsData,
-          prescriptions: prescriptions
+          prescriptions: prescriptions // Dawai chi list API la pathwa
         }),
       });
 
       if (res.ok) {
-        alert("Consultation & Prescription successfully saved! Patient marked as Completed.");
-        
-        // Reset form
+        alert("Consultation and Prescription successfully saved!");
         setVitalsData({ bpSystolic: "", bpDiastolic: "", pulseBpm: "", weightKg: "", symptoms: "", doctorNotes: "" });
-        setPrescriptions([]);
+        setPrescriptions([]); // Clear prescriptions
         setSelectedPatient(null);
-        await fetchAppointments(); 
+        await fetchData(); 
       } else {
         const errData = await res.json().catch(() => ({}));
         alert(errData.error || "Failed to save consultation.");
       }
     } catch (error) {
-      console.error("Error saving vitals:", error);
+      console.error("Error saving consultation:", error);
       alert("Something went wrong!");
     } finally {
       setLoading(false);
     }
   };
 
-  // On patient change, reset form
   const handlePatientSelect = (appt: any) => {
     setSelectedPatient(appt);
     setVitalsData({
@@ -161,7 +144,7 @@ export default function DoctorDashboard() {
       symptoms: appt.vitals?.symptoms || "",
       doctorNotes: appt.vitals?.doctorNotes || ""
     });
-    setPrescriptions([]);
+    setPrescriptions([]); // Navin patient select kelyavar juni prescription clear kara
   };
 
   return (
@@ -176,7 +159,6 @@ export default function DoctorDashboard() {
             <p className="text-xs text-slate-500 font-medium">Cardiology Dept</p>
           </div>
         </div>
-        
         <div className="p-4">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-2">Main Menu</p>
           <div className="space-y-1">
@@ -195,7 +177,7 @@ export default function DoctorDashboard() {
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
-        {/* TOP HEADER */}
+        {/* HEADER */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10">
           <div className="flex items-center gap-4">
             <button className="md:hidden text-slate-500 hover:bg-slate-100 p-2 rounded-lg transition-colors"><Menu className="w-5 h-5" /></button>
@@ -294,12 +276,8 @@ export default function DoctorDashboard() {
                       Gender: <span className="text-slate-800 font-bold">{selectedPatient.patient?.gender || 'N/A'}</span>
                     </p>
                   </div>
-                  <button type="button" className="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
-                    View Full History
-                  </button>
                 </div>
 
-                {/* Consultation Form */}
                 <form onSubmit={handleSaveConsultation} className="space-y-8 max-w-4xl">
                   
                   {/* Vitals Section */}
@@ -311,29 +289,22 @@ export default function DoctorDashboard() {
                       <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                         <label className="block text-xs font-bold text-slate-500 mb-2">Blood Pressure</label>
                         <div className="flex items-center gap-2">
-                          <input type="number" required placeholder="120" className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-center font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" 
+                          <input type="number" required placeholder="120" className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-center font-bold focus:ring-2 focus:ring-indigo-500 outline-none" 
                             value={vitalsData.bpSystolic} onChange={(e) => setVitalsData({...vitalsData, bpSystolic: e.target.value})} />
-                          <span className="text-slate-400 text-xl font-light">/</span>
-                          <input type="number" required placeholder="80" className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-center font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" 
+                          <span className="text-slate-400 font-light">/</span>
+                          <input type="number" required placeholder="80" className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-center font-bold focus:ring-2 focus:ring-indigo-500 outline-none" 
                             value={vitalsData.bpDiastolic} onChange={(e) => setVitalsData({...vitalsData, bpDiastolic: e.target.value})} />
-                          <span className="text-xs font-semibold text-slate-400 ml-1">mmHg</span>
                         </div>
                       </div>
                       <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        <label className="block text-xs font-bold text-slate-500 mb-2">Heart Rate (Pulse)</label>
-                        <div className="flex items-center gap-2">
-                          <input type="number" required placeholder="72" className="w-full bg-white border border-slate-200 rounded-lg p-2.5 font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" 
-                            value={vitalsData.pulseBpm} onChange={(e) => setVitalsData({...vitalsData, pulseBpm: e.target.value})} />
-                          <span className="text-xs font-semibold text-slate-400">BPM</span>
-                        </div>
+                        <label className="block text-xs font-bold text-slate-500 mb-2">Heart Rate</label>
+                        <input type="number" required placeholder="72" className="w-full bg-white border border-slate-200 rounded-lg p-2.5 font-bold focus:ring-2 focus:ring-indigo-500 outline-none" 
+                          value={vitalsData.pulseBpm} onChange={(e) => setVitalsData({...vitalsData, pulseBpm: e.target.value})} />
                       </div>
                       <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        <label className="block text-xs font-bold text-slate-500 mb-2">Weight</label>
-                        <div className="flex items-center gap-2">
-                          <input type="number" step="0.1" required placeholder="65.5" className="w-full bg-white border border-slate-200 rounded-lg p-2.5 font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" 
-                            value={vitalsData.weightKg} onChange={(e) => setVitalsData({...vitalsData, weightKg: e.target.value})} />
-                          <span className="text-xs font-semibold text-slate-400">Kg</span>
-                        </div>
+                        <label className="block text-xs font-bold text-slate-500 mb-2">Weight (Kg)</label>
+                        <input type="number" step="0.1" required placeholder="65.5" className="w-full bg-white border border-slate-200 rounded-lg p-2.5 font-bold focus:ring-2 focus:ring-indigo-500 outline-none" 
+                          value={vitalsData.weightKg} onChange={(e) => setVitalsData({...vitalsData, weightKg: e.target.value})} />
                       </div>
                     </div>
                   </div>
@@ -341,121 +312,82 @@ export default function DoctorDashboard() {
                   {/* Diagnosis Section */}
                   <div>
                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <FileText className="w-4 h-4" /> Diagnosis & Notes
+                      <FileText className="w-4 h-4" /> Diagnosis
                     </h3>
-                    <div className="space-y-5">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Primary Symptoms</label>
-                        <input type="text" placeholder="e.g. Fever, Headache for 2 days..." className="w-full bg-white border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" 
-                          value={vitalsData.symptoms} onChange={(e) => setVitalsData({...vitalsData, symptoms: e.target.value})} />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Clinical Notes & Treatment Plan</label>
-                        <textarea rows={3} placeholder="Detailed diagnosis..." className="w-full bg-white border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow resize-none" 
-                          value={vitalsData.doctorNotes} onChange={(e) => setVitalsData({...vitalsData, doctorNotes: e.target.value})}></textarea>
-                      </div>
+                    <div className="space-y-4">
+                      <input type="text" placeholder="Primary Symptoms (e.g. Fever, Cough)" className="w-full bg-white border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                        value={vitalsData.symptoms} onChange={(e) => setVitalsData({...vitalsData, symptoms: e.target.value})} />
+                      <textarea rows={3} placeholder="Clinical Notes..." className="w-full bg-white border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none resize-none" 
+                        value={vitalsData.doctorNotes} onChange={(e) => setVitalsData({...vitalsData, doctorNotes: e.target.value})}></textarea>
                     </div>
                   </div>
 
-                  {/* e-Prescription Section */}
+                  {/* NEW e-Prescription Section */}
                   <div>
                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                       <Pill className="w-4 h-4 text-indigo-600" /> e-Prescription (Medicines)
                     </h3>
                     
-                    {/* Add Medicine Control */}
-                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                        <div>
+                    {/* Add Medicine Form */}
+                    <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 mb-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <div className="md:col-span-2">
                           <label className="block text-xs font-bold text-slate-500 mb-1">Select Medicine</label>
                           <select 
-                            value={newPrescription.medicineId}
-                            onChange={(e) => setNewPrescription({...newPrescription, medicineId: e.target.value})}
-                            className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                            className="w-full bg-white border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            value={currentMed.medicineId} onChange={(e) => setCurrentMed({...currentMed, medicineId: e.target.value})}
                           >
-                            {availableMedicines.map((m) => (
-                              <option key={m.id} value={m.id}>
-                                {m.name} (Stock: {m.stock})
-                              </option>
+                            <option value="">-- Choose Medicine --</option>
+                            {medicinesList.map(med => (
+                              <option key={med.id} value={med.id}>{med.name} (Available: {med.stockQuantity ?? med.stock ?? 0})</option>
                             ))}
                           </select>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-slate-500 mb-1">Dosage</label>
-                          <select 
-                            value={newPrescription.dosage}
-                            onChange={(e) => setNewPrescription({...newPrescription, dosage: e.target.value})}
-                            className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
-                          >
-                            <option value="1-0-1">1-0-1 (Morning & Night)</option>
-                            <option value="1-1-1">1-1-1 (Thrice a day)</option>
-                            <option value="1-0-0">1-0-0 (Morning only)</option>
-                            <option value="0-0-1">0-0-1 (Night only)</option>
-                            <option value="SOS">SOS (As needed)</option>
-                          </select>
+                          <input type="text" placeholder="1-0-1" className="w-full bg-white border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            value={currentMed.dosage} onChange={(e) => setCurrentMed({...currentMed, dosage: e.target.value})} />
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-slate-500 mb-1">Duration (Days)</label>
-                          <input 
-                            type="number" 
-                            min="1"
-                            value={newPrescription.durationDays}
-                            onChange={(e) => setNewPrescription({...newPrescription, durationDays: e.target.value})}
-                            className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1">Instructions</label>
-                          <select 
-                            value={newPrescription.instructions}
-                            onChange={(e) => setNewPrescription({...newPrescription, instructions: e.target.value})}
-                            className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
-                          >
-                            <option value="After meals">After meals</option>
-                            <option value="Before meals">Before meals</option>
-                            <option value="With warm water">With warm water</option>
-                            <option value="Empty stomach">Empty stomach</option>
-                          </select>
+                          <input type="number" placeholder="5" className="w-full bg-white border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            value={currentMed.durationDays} onChange={(e) => setCurrentMed({...currentMed, durationDays: e.target.value})} />
                         </div>
                       </div>
-
-                      <div className="flex justify-end">
-                        <button 
-                          type="button"
-                          onClick={handleAddMedicine}
-                          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-2 transition-colors"
-                        >
-                          <Plus className="w-4 h-4" /> Add to Prescription
+                      <div className="flex gap-4 items-end">
+                        <div className="flex-1">
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Instructions (Optional)</label>
+                          <input type="text" placeholder="After food..." className="w-full bg-white border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            value={currentMed.instructions} onChange={(e) => setCurrentMed({...currentMed, instructions: e.target.value})} />
+                        </div>
+                        <button type="button" onClick={addMedicine} className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-bold py-2.5 px-4 rounded-lg flex items-center gap-2 transition-colors h-[42px] cursor-pointer">
+                          <Plus className="w-4 h-4" /> Add
                         </button>
                       </div>
                     </div>
 
-                    {/* Prescribed Items Table */}
+                    {/* Prescribed Medicines List */}
                     {prescriptions.length > 0 && (
-                      <div className="mt-4 border border-slate-200 rounded-xl overflow-hidden">
+                      <div className="border border-slate-200 rounded-xl overflow-hidden">
                         <table className="w-full text-left text-sm">
-                          <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-bold border-b border-slate-200">
+                          <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
                             <tr>
-                              <th className="p-3">Medicine</th>
-                              <th className="p-3">Dosage</th>
-                              <th className="p-3">Duration</th>
-                              <th className="p-3">Instructions</th>
-                              <th className="p-3 text-right">Action</th>
+                              <th className="p-3 font-semibold">Medicine</th>
+                              <th className="p-3 font-semibold">Dosage</th>
+                              <th className="p-3 font-semibold">Duration</th>
+                              <th className="p-3 font-semibold">Instructions</th>
+                              <th className="p-3 font-semibold text-center">Action</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
                             {prescriptions.map((p, idx) => (
-                              <tr key={idx} className="hover:bg-slate-50/50">
-                                <td className="p-3 font-semibold text-slate-800">{p.medicineName}</td>
-                                <td className="p-3 text-slate-600 font-medium">{p.dosage}</td>
-                                <td className="p-3 text-slate-600 font-medium">{p.durationDays} Days</td>
-                                <td className="p-3 text-slate-500">{p.instructions}</td>
-                                <td className="p-3 text-right">
-                                  <button 
-                                    type="button" 
-                                    onClick={() => handleRemoveMedicine(idx)}
-                                    className="text-rose-500 hover:text-rose-700 p-1 hover:bg-rose-50 rounded"
-                                  >
+                              <tr key={idx} className="bg-white">
+                                <td className="p-3 font-medium text-slate-800">{p.medicineName}</td>
+                                <td className="p-3 font-medium text-indigo-600">{p.dosage}</td>
+                                <td className="p-3">{p.durationDays} days</td>
+                                <td className="p-3 text-slate-500">{p.instructions || '-'}</td>
+                                <td className="p-3 text-center">
+                                  <button type="button" onClick={() => removeMedicine(idx)} className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-md transition-colors cursor-pointer">
                                     <Trash2 className="w-4 h-4" />
                                   </button>
                                 </td>
@@ -469,13 +401,9 @@ export default function DoctorDashboard() {
 
                   {/* Submit Button */}
                   <div className="pt-6 border-t border-slate-100 flex justify-end">
-                    <button 
-                      type="submit" 
-                      disabled={loading} 
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center gap-2 cursor-pointer"
-                    >
+                    <button type="submit" disabled={loading} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 cursor-pointer">
                       <Save className="w-5 h-5" />
-                      {loading ? "Saving Record..." : "Complete Consultation & Prescribe"}
+                      {loading ? "Saving Record..." : "Complete Consultation & Prescription"}
                     </button>
                   </div>
 

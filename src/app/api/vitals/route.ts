@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { ApptStatus } from '@prisma/client';
 
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Patient che Vitals database madhe save kara
+    // 1. Patient che Vitals save kivha update kara
     const newVitals = await prisma.vitals.upsert({
       where: {
         appointmentId: body.appointmentId,
@@ -40,19 +40,23 @@ export async function POST(req: Request) {
       },
     });
 
-    // 2. Jar prescriptions asel tar Prescription table madhe save kara
-    if (Array.isArray(body.prescriptions) && body.prescriptions.length > 0) {
+    // 2. Prescriptions (Aushadhe) save kara
+    if (body.prescriptions && Array.isArray(body.prescriptions) && body.prescriptions.length > 0) {
+      // Clear existing prescriptions for this appointment to avoid duplicates
       await prisma.prescription.deleteMany({
         where: { appointmentId: body.appointmentId },
       });
+
+      const presData = body.prescriptions.map((p: any) => ({
+        appointmentId: body.appointmentId,
+        medicineId: p.medicineId,
+        dosage: p.dosage || '1-0-1',
+        durationDays: parseInt(p.durationDays, 10) || 1,
+        instructions: p.instructions || '',
+      }));
+      
       await prisma.prescription.createMany({
-        data: body.prescriptions.map((p: any) => ({
-          appointmentId: body.appointmentId,
-          medicineId: p.medicineId,
-          dosage: p.dosage || '1-0-1',
-          durationDays: parseInt(p.durationDays, 10) || 5,
-          instructions: p.instructions || 'After meals',
-        })),
+        data: presData
       });
     }
 
@@ -62,9 +66,9 @@ export async function POST(req: Request) {
       data: { status: ApptStatus.COMPLETED },
     });
 
-    return NextResponse.json({ vitals: newVitals, success: true }, { status: 201 });
+    return NextResponse.json({ success: true, vitals: newVitals }, { status: 201 });
   } catch (error) {
-    console.error("Error saving vitals:", error);
+    console.error("Error saving consultation:", error);
     return NextResponse.json({ error: 'Failed to save consultation details' }, { status: 500 });
   }
 }
@@ -80,7 +84,15 @@ export async function GET(req: Request) {
         where: { appointmentId },
         include: {
           patient: true,
-          appointment: true,
+          appointment: {
+            include: {
+              prescriptions: {
+                include: {
+                  medicine: true,
+                },
+              },
+            },
+          },
         },
       });
       return NextResponse.json(vitals);
@@ -90,7 +102,15 @@ export async function GET(req: Request) {
       const vitalsList = await prisma.vitals.findMany({
         where: { patientId },
         include: {
-          appointment: true,
+          appointment: {
+            include: {
+              prescriptions: {
+                include: {
+                  medicine: true,
+                },
+              },
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
       });
