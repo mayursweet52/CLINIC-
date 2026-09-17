@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String        @id @default(uuid())
+  name          String
+  email         String        @unique
+  passwordHash  String
+  role          Role          @default(RECEPTIONIST)
+  department    String?       // e.g., Cardiology, Pharmacy
+  phone         String?
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  appointments  Appointment[] @relation("DoctorAppointments")
+}
+
+model Patient {
+  id             String        @id @default(uuid())
+  patientCode    String        @unique // e.g., PAT-1001
+  name           String
+  age            Int
+  gender         String
+  bloodGroup     String?
+  contactNumber  String
+  email          String?
+  address        String?
+  medicalHistory String?       // JSON or Text for allergies/chronic conditions
+  createdAt      DateTime      @default(now())
+  appointments   Appointment[]
+  vitals         Vitals[]
+}
+
+model Appointment {
+  id              String    @id @default(uuid())
+  patientId       String
+  doctorId        String?
+  appointmentDate DateTime
+  timeSlot        String
+  tokenNumber     Int       @default(autoincrement()) // Live Queue Token
+  status          ApptStatus @default(PENDING)
+  
+  patient         Patient   @relation(fields: [patientId], references: [id])
+  doctor          User?     @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  vitals          Vitals?
+  billing         Billing?
+}
+
+model Vitals {
+  id             String      @id @default(uuid())
+  appointmentId  String      @unique
+  patientId      String
+  bpSystolic     Int?
+  bpDiastolic    Int?
+  pulseBpm       Int?
+  weightKg       Float?
+  temperature    Float?
+  symptoms       String?
+  doctorNotes    String?
+  createdAt      DateTime    @default(now())
+
+  appointment    Appointment@relation(fields: [appointmentId], references: [id])
+  patient        Patient     @relation(fields: [patientId], references: [id])
+}
+
+model Medicine {
+  id               String   @id @default(uuid())
+  name             String
+  genericName      String?
+  batchNo          String
+  stockQuantity    Int      @default(0)
+  unitPrice        Float
+  expiryDate       DateTime
+  reorderThreshold Int      @default(50)
+}
+
+model Billing {
+  id                String      @id @default(uuid())
+  invoiceNo         String      @unique
+  appointmentId     String      @unique
+  consultationFee   Float      @default(0)
+  medicineCharges   Float      @default(0)
+  totalAmount       Float
+  discount          Float      @default(0)
+  paymentStatus     PayStatus   @default(UNPAID)
+  paymentMethod     String?     // Cash, Card, UPI
+  
+  appointment       Appointment @relation(fields: [appointmentId], references: [id])
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+  RECEPTIONIST
+  PHARMACIST
+}
+
+enum ApptStatus {
+  PENDING
+  ARRIVED
+  IN_CONSULTATION
+  COMPLETED
+  CANCELLED
+}
+
+enum PayStatus {
+  PAID
+  UNPAID
+  PARTIAL
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  date        DateTime @default(now())
+  description String
+  type        TxType   @default(INCOME)
+  amount      Float
+  category    String?  // Consultation, Pharmacy, Restock, Supplies, Salary, Utility
+  paymentMode String?  // Cash, Card, UPI, Bank Transfer
+  createdAt   DateTime @default(now())
+}
+
+enum TxType {
+  INCOME
+  EXPENSE
+}

@@ -1,34 +1,64 @@
 import { NextResponse } from 'next/server';
-
-// In-memory "database" for patient records
-const patients = [
-  { id: 1, name: 'John Doe', age: 34, contact: '123-456-7890', history: 'None' },
-  { id: 2, name: 'Jane Roe', age: 28, contact: '098-765-4321', history: 'Asthma' },
-];
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
-  return NextResponse.json(patients);
+  try {
+    const patients = await prisma.patient.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const mappedPatients = patients.map((p) => ({
+      id: p.patientCode || p.id,
+      patientId: p.id,
+      name: p.name,
+      age: p.age,
+      contact: p.contactNumber,
+      history: p.medicalHistory || 'No prior history recorded.',
+    }));
+
+    return NextResponse.json(mappedPatients);
+  } catch (error) {
+    console.error('Error fetching patients:', error);
+    return NextResponse.json(
+      { error: 'Database error fetching patients' },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
-    const newPatient = {
-      id: patients.length + 1,
-      name: body.name || 'Unknown',
-      age: body.age || 0,
-      contact: body.contact || 'N/A',
-      history: body.history || 'No prior history'
-    };
-    
-    patients.push(newPatient);
-    
+
+    const count = await prisma.patient.count();
+    const patientCode = `PAT-${1001 + count}`;
+
+    const newPatient = await prisma.patient.create({
+      data: {
+        patientCode,
+        name: body.name || 'Unknown Patient',
+        age: Number(body.age) || 30,
+        gender: body.gender || 'Other',
+        contactNumber: body.contact || body.contactNumber || '000-000-0000',
+        medicalHistory: body.history || body.medicalHistory || 'New patient.',
+      },
+    });
+
     return NextResponse.json(
-      { message: 'Patient registered successfully', patient: newPatient }, 
+      {
+        message: 'Patient created successfully',
+        patient: {
+          id: newPatient.patientCode,
+          name: newPatient.name,
+          age: newPatient.age,
+          contact: newPatient.contactNumber,
+          history: newPatient.medicalHistory,
+        },
+      },
       { status: 201 }
     );
-  } catch {
+  } catch (error) {
+    console.error('Error creating patient:', error);
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 }
