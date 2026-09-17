@@ -86,6 +86,54 @@ const DEMO_APPOINTMENTS = [
       gender: 'Male',
       contactNumber: '9876543212'
     }
+  },
+  {
+    id: 'apt-demo-4',
+    patientId: 'pat-demo-4',
+    patientName: 'Sunil Jadhav',
+    doctor: 'Dr. Smith',
+    doctorId: 'doc-1',
+    date: new Date().toISOString().split('T')[0],
+    time: '09:30 AM',
+    tokenNumber: 100,
+    status: 'Completed',
+    rawStatus: 'COMPLETED',
+    patient: {
+      id: 'pat-demo-4',
+      name: 'Sunil Jadhav',
+      age: 52,
+      gender: 'Male',
+      contactNumber: '9876543219'
+    },
+    doctorObj: {
+      name: 'Smith'
+    },
+    prescriptions: [
+      {
+        id: 'pres-demo-1',
+        dosage: '1-0-1',
+        durationDays: 5,
+        instructions: 'After meals',
+        medicine: {
+          id: 'med-1',
+          name: 'Paracetamol 500mg',
+          stockQuantity: 150,
+          unitPrice: 15
+        }
+      },
+      {
+        id: 'pres-demo-2',
+        dosage: '1-0-0',
+        durationDays: 5,
+        instructions: 'Before breakfast',
+        medicine: {
+          id: 'med-5',
+          name: 'Pantoprazole 40mg',
+          stockQuantity: 120,
+          unitPrice: 35
+        }
+      }
+    ]
   }
 ];
 
@@ -109,6 +157,11 @@ export async function GET(request: Request) {
         doctor: true,
         vitals: true,
         billing: true,
+        prescriptions: {
+          include: {
+            medicine: true,
+          },
+        },
       },
       orderBy: {
         appointmentDate: 'desc',
@@ -133,6 +186,7 @@ export async function GET(request: Request) {
       patient: apt.patient,
       vitals: apt.vitals,
       billing: apt.billing,
+      prescriptions: apt.prescriptions || [],
     }));
 
     return NextResponse.json(formatted);
