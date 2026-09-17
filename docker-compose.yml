@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # Next.js Full Stack Application (Frontend + API Routes)
+  clinic-web:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: clinic-web
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://clinic_user:clinic_password@postgres-db:5432/clinic_db
+      - REDIS_URL=redis://redis-cache:6379
+    networks:
+      - clinic-network
+    depends_on:
+      - postgres-db
+      - redis-cache
+    command: npm run dev
+
+  # Database Layer: PostgreSQL
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: clinic-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: clinic_user
+      POSTGRES_PASSWORD: clinic_password
+      POSTGRES_DB: clinic_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - clinic-network
+
+  # Caching Layer: Redis
+  redis-cache:
+    image: redis:7-alpine
+    container_name: clinic-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - clinic-network
+
+# Named Volumes for Data Persistence
+volumes:
+  postgres-data:
+  redis-data:
+
+# Custom Bridge Network for Secure Internal Communication
+networks:
+  clinic-network:
+    driver: bridge
