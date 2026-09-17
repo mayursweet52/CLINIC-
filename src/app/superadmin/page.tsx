@@ -15,7 +15,7 @@ export default function SuperAdminDashboard() {
         } else {
           console.error("API Error:", data);
           setOrganizations([]);
-          alert("Database connection failed. Is your database running?");
+          alert(data.error || "Failed to load organizations");
         }
         setLoading(false);
       })

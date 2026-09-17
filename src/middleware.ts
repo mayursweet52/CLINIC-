@@ -10,7 +10,9 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/staff/login') ||
     request.nextUrl.pathname.startsWith('/health') ||
     request.nextUrl.pathname.startsWith('/api/auth') ||
-    request.nextUrl.pathname.startsWith('/api/public')
+    request.nextUrl.pathname.startsWith('/api/public') ||
+    request.nextUrl.pathname.startsWith('/superadmin') ||
+    request.nextUrl.pathname.startsWith('/api/superadmin')
   ) {
     const res = NextResponse.next();
     res.headers.set('X-Frame-Options', 'DENY');
