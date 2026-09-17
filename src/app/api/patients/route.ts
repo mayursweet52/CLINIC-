@@ -1,31 +1,47 @@
 import { NextResponse } from 'next/server';
-
-// In-memory "database" for patient records
-let patients = [
-  { id: 1, name: 'John Doe', age: 34, contact: '123-456-7890', history: 'None' },
-  { id: 2, name: 'Jane Roe', age: 28, contact: '098-765-4321', history: 'Asthma' },
-];
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
-  return NextResponse.json(patients);
+  try {
+    const patients = await prisma.patient.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    
+    // Map Prisma models to the UI expectations
+    const mappedPatients = patients.map(p => ({
+      id: p.patientCode,
+      name: p.name,
+      age: p.age,
+      contact: p.contactNumber,
+      history: p.medicalHistory || 'No prior history recorded.',
+    }));
+    
+    return NextResponse.json(mappedPatients);
+  } catch (error) {
+    return NextResponse.json({ error: 'Database error fetching patients' }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     
-    const newPatient = {
-      id: patients.length + 1,
-      name: body.name || 'Unknown',
-      age: body.age || 0,
-      contact: body.contact || 'N/A',
-      history: body.history || 'No prior history'
-    };
+    const count = await prisma.patient.count();
+    const patientCode = `PAT-${1001 + count}`;
     
-    patients.push(newPatient);
+    const newPatient = await prisma.patient.create({
+      data: {
+        patientCode,
+        name: body.name || 'Unknown Patient',
+        age: body.age || 30,
+        gender: body.gender || 'Other',
+        contactNumber: body.contact || '000-000-0000',
+        medicalHistory: body.history || 'New patient.',
+      }
+    });
     
     return NextResponse.json(
-      { message: 'Patient registered successfully', patient: newPatient }, 
+      { message: 'Patient created successfully', patient: newPatient }, 
       { status: 201 }
     );
   } catch (error) {
