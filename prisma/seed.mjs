@@ -17,6 +17,10 @@ async function main() {
     data: {
       name: 'City Care Hospital',
       domain: 'citycare.businessos.co.in',
+      address: '123 Health Avenue, Phase 1',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      phone: '+91-9876543210'
     },
   });
 

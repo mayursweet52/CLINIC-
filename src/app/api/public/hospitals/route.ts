@@ -29,6 +29,10 @@ export async function GET(request: Request) {
           id: true,
           name: true,
           domain: true,
+          address: true,
+          city: true,
+          state: true,
+          phone: true,
         }
       });
       return NextResponse.json({ hospitals });

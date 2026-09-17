@@ -11,6 +11,10 @@ model Organization {
   id          String   @id @default(uuid())
   name        String
   domain      String?  @unique
+  address     String?
+  city        String?
+  state       String?
+  phone       String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   
