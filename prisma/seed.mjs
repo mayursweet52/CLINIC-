@@ -49,6 +49,18 @@ async function main() {
     },
   });
 
+  const adminUser = await prisma.user.create({
+    data: {
+      organizationId: org.id,
+      name: 'Admin Boss',
+      email: 'admin@clinic.com',
+      passwordHash: 'hashed_password_123',
+      role: Role.ADMIN,
+      department: 'Management',
+      phone: '+1-555-0999',
+    },
+  });
+
   const receptionistAlice = await prisma.user.create({
     data: {
       organizationId: org.id,

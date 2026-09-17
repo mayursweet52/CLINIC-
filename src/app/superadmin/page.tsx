@@ -10,7 +10,17 @@ export default function SuperAdminDashboard() {
     fetch('/api/superadmin/orgs')
       .then(res => res.json())
       .then(data => {
-        setOrganizations(data);
+        if (Array.isArray(data)) {
+          setOrganizations(data);
+        } else {
+          console.error("API Error:", data);
+          setOrganizations([]);
+          alert("Database connection failed. Is your database running?");
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        setOrganizations([]);
         setLoading(false);
       });
   }, []);
