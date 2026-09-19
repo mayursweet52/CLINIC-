@@ -218,6 +218,7 @@ model Billing {
   discount          Float       @default(0)
   paymentStatus     PayStatus   @default(UNPAID)
   paymentMethod     String?
+  createdAt         DateTime    @default(now())
   
   organization      Organization @relation(fields: [organizationId], references: [id])
   appointment       HealthAppointment  @relation(fields: [appointmentId], references: [id])
