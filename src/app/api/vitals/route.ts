@@ -1,93 +1,99 @@
-﻿import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { ApptStatus } from '@prisma/client';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { ApptStatus } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
+    let orgId = req.headers.get("x-org-id");
+    if (!orgId) {
+      const defaultOrg = await prisma.organization.findFirst();
+      if (defaultOrg) orgId = defaultOrg.id;
+    }
+    
     const body = await req.json();
 
-    if (!body.appointmentId || !body.patientId) {
+    if (!body.appointmentId || !body.patientId || !orgId) {
       return NextResponse.json(
-        { error: 'appointmentId and patientId are required' },
+        { error: "appointmentId, patientId, and orgId are required" },
         { status: 400 }
       );
     }
 
-    // 1. Patient che Vitals database madhe save kara
-    const newVitals = await prisma.vitals.upsert({
+    const vitalsBP = (body.bpSystolic && body.bpDiastolic) ? `${body.bpSystolic}/${body.bpDiastolic}` : null;
+
+    const newVisit = await prisma.patientVisit.upsert({
       where: {
         appointmentId: body.appointmentId,
       },
       update: {
-        bpSystolic: body.bpSystolic ? parseInt(body.bpSystolic, 10) : null,
-        bpDiastolic: body.bpDiastolic ? parseInt(body.bpDiastolic, 10) : null,
-        pulseBpm: body.pulseBpm ? parseInt(body.pulseBpm, 10) : null,
-        weightKg: body.weightKg ? parseFloat(body.weightKg) : null,
-        temperature: body.temperature ? parseFloat(body.temperature) : null,
-        symptoms: body.symptoms || null,
-        doctorNotes: body.doctorNotes || null,
+        vitalsBP: vitalsBP,
+        vitalsPulse: body.pulseBpm ? parseInt(body.pulseBpm, 10) : null,
+        vitalsWeight: body.weightKg ? parseFloat(body.weightKg) : null,
+        vitalsTemp: body.temperature ? parseFloat(body.temperature) : null,
+        chiefComplaint: body.symptoms || null,
+        notes: body.doctorNotes || null,
       },
       create: {
+        organizationId: orgId,
         appointmentId: body.appointmentId,
         patientId: body.patientId,
-        bpSystolic: body.bpSystolic ? parseInt(body.bpSystolic, 10) : null,
-        bpDiastolic: body.bpDiastolic ? parseInt(body.bpDiastolic, 10) : null,
-        pulseBpm: body.pulseBpm ? parseInt(body.pulseBpm, 10) : null,
-        weightKg: body.weightKg ? parseFloat(body.weightKg) : null,
-        temperature: body.temperature ? parseFloat(body.temperature) : null,
-        symptoms: body.symptoms || null,
-        doctorNotes: body.doctorNotes || null,
+        vitalsBP: vitalsBP,
+        vitalsPulse: body.pulseBpm ? parseInt(body.pulseBpm, 10) : null,
+        vitalsWeight: body.weightKg ? parseFloat(body.weightKg) : null,
+        vitalsTemp: body.temperature ? parseFloat(body.temperature) : null,
+        chiefComplaint: body.symptoms || null,
+        notes: body.doctorNotes || null,
       },
     });
 
-    // 2. Patient cha status 'COMPLETED' kara (queue madhun kadhnyasaathi)
-    await prisma.appointment.update({
+    await prisma.healthAppointment.update({
       where: { id: body.appointmentId },
       data: { status: ApptStatus.COMPLETED },
     });
 
-    return NextResponse.json(newVitals, { status: 201 });
+    return NextResponse.json(newVisit, { status: 201 });
   } catch (error) {
     console.error("Error saving vitals:", error);
-    return NextResponse.json({ error: 'Failed to save consultation details' }, { status: 500 });
+    return NextResponse.json({ error: "Failed to save consultation details" }, { status: 500 });
   }
 }
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const appointmentId = searchParams.get('appointmentId');
-    const patientId = searchParams.get('patientId');
+    const appointmentId = searchParams.get("appointmentId");
+    const patientId = searchParams.get("patientId");
 
     if (appointmentId) {
-      const vitals = await prisma.vitals.findUnique({
+      const visit = await prisma.patientVisit.findUnique({
         where: { appointmentId },
         include: {
           patient: true,
           appointment: true,
         },
       });
-      return NextResponse.json(vitals);
+      return NextResponse.json(visit);
     }
 
     if (patientId) {
-      const vitalsList = await prisma.vitals.findMany({
+      const visitList = await prisma.patientVisit.findMany({
         where: { patientId },
         include: {
           appointment: true,
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { visitDate: "desc" },
       });
-      return NextResponse.json(vitalsList);
+      return NextResponse.json(visitList);
     }
 
-    const allVitals = await prisma.vitals.findMany({
+    const allVisits = await prisma.patientVisit.findMany({
       take: 50,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { visitDate: "desc" },
     });
-    return NextResponse.json(allVitals);
+    return NextResponse.json(allVisits);
   } catch (error) {
     console.error("Error fetching vitals:", error);
-    return NextResponse.json({ error: 'Failed to fetch vitals' }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch vitals" }, { status: 500 });
   }
 }
+

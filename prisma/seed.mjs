@@ -1,184 +1,154 @@
-import { PrismaClient, Role, ApptStatus, PayStatus } from '@prisma/client';
+import { PrismaClient, Role, ApptStatus, PayStatus } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Clearing existing data...');
+  console.log("Clearing existing data...");
   await prisma.billing.deleteMany();
-  await prisma.vitals.deleteMany();
-  await prisma.appointment.deleteMany();
+  await prisma.prescription.deleteMany();
+  await prisma.labReport.deleteMany();
+  await prisma.patientVisit.deleteMany();
+  await prisma.healthAppointment.deleteMany();
   await prisma.patient.deleteMany();
   await prisma.medicine.deleteMany();
   await prisma.user.deleteMany();
   await prisma.organization.deleteMany();
 
-  console.log('Seeding Organization...');
+  console.log("Seeding Organization...");
   const org = await prisma.organization.create({
     data: {
-      name: 'City Care Hospital',
-      domain: 'citycare.businessos.co.in',
-      address: '123 Health Avenue, Phase 1',
-      city: 'Mumbai',
-      state: 'Maharashtra',
-      phone: '+91-9876543210'
+      name: "City Care Hospital",
+      domain: "citycare.businessos.co.in",
+      address: "123 Health Avenue, Phase 1",
+      city: "Mumbai",
+      state: "Maharashtra",
+      phone: "+91-9876543210"
     },
   });
 
-  console.log('Seeding Users / Staff...');
+  console.log("Seeding Users / Staff (Including Doctors)...");
   const doctorSmith = await prisma.user.create({
     data: {
       organizationId: org.id,
-      name: 'Dr. Smith',
-      email: 'dr.smith@clinic.com',
-      passwordHash: 'hashed_password_123',
+      name: "Dr. Smith",
+      email: "dr.smith@clinic.com",
+      passwordHash: "hashed_password_123",
       role: Role.DOCTOR,
-      department: 'Cardiology',
-      phone: '+1-555-0101',
-    },
-  });
-
-  const doctorAdams = await prisma.user.create({
-    data: {
-      organizationId: org.id,
-      name: 'Dr. Adams',
-      email: 'dr.adams@clinic.com',
-      passwordHash: 'hashed_password_123',
-      role: Role.DOCTOR,
-      department: 'Pediatrics',
-      phone: '+1-555-0102',
+      department: "Cardiology",
+      phone: "+1-555-0101",
+      specialization: "Cardiologist",
+      registrationNo: "MED-12345",
+      consultationFee: 500,
+      availableDays: ["MONDAY", "WEDNESDAY", "FRIDAY"],
+      slotDuration: 15
     },
   });
 
   const adminUser = await prisma.user.create({
     data: {
       organizationId: org.id,
-      name: 'Admin Boss',
-      email: 'admin@clinic.com',
-      passwordHash: 'hashed_password_123',
+      name: "Admin Boss",
+      email: "admin@clinic.com",
+      passwordHash: "hashed_password_123",
       role: Role.ADMIN,
-      department: 'Management',
-      phone: '+1-555-0999',
+      department: "Management",
+      phone: "+1-555-0999",
     },
   });
 
   const receptionistAlice = await prisma.user.create({
     data: {
       organizationId: org.id,
-      name: 'Alice',
-      email: 'alice@clinic.com',
-      passwordHash: 'hashed_password_123',
+      name: "Alice",
+      email: "alice@clinic.com",
+      passwordHash: "hashed_password_123",
       role: Role.RECEPTIONIST,
-      department: 'Front Desk',
-      phone: '+1-555-0103',
+      department: "Front Desk",
+      phone: "+1-555-0103",
     },
   });
 
-  console.log('Seeding Patients...');
+  console.log("Seeding Patients...");
   const patientJohn = await prisma.patient.create({
     data: {
       organizationId: org.id,
-      patientCode: 'PAT-1001',
-      name: 'John Doe',
-      age: 34,
-      gender: 'Male',
-      bloodGroup: 'O+',
-      contactNumber: '123-456-7890',
-      email: 'john.doe@example.com',
-      address: '123 Main St',
-      medicalHistory: 'Mild Hypertension. No known drug allergies.',
+      patientCode: "PAT-1001",
+      name: "John Doe",
+      phone: "123-456-7890",
+      email: "john.doe@example.com",
+      address: "123 Main St",
+      dob: new Date("1990-01-01"),
+      gender: "Male",
+      bloodGroup: "O+",
+      allergies: ["Dust", "Peanuts"],
+      chronicConds: ["Diabetes"],
+      emergencyContact: "987-654-3210"
     },
   });
 
-  const patientJane = await prisma.patient.create({
+  console.log("Seeding Appointments & Visits...");
+  const appt1 = await prisma.healthAppointment.create({
     data: {
       organizationId: org.id,
-      patientCode: 'PAT-1002',
-      name: 'Jane Roe',
-      age: 28,
-      gender: 'Female',
-      bloodGroup: 'A+',
-      contactNumber: '098-765-4321',
-      email: 'jane.roe@example.com',
-      address: '456 Elm St',
-      medicalHistory: 'Asthma. Seasonal allergies to pollen.',
+      appointmentNo: "APT-001",
+      patientId: patientJohn.id,
+      doctorId: doctorSmith.id,
+      appointmentDate: new Date(),
+      timeSlot: "10:30 AM",
+      status: ApptStatus.COMPLETED,
+      fee: 500,
+      isPaid: true
     },
   });
 
-  console.log('Seeding Appointments & Vitals...');
-  const appt1 = await prisma.appointment.create({
+  const visit1 = await prisma.patientVisit.create({
     data: {
       organizationId: org.id,
       patientId: patientJohn.id,
       doctorId: doctorSmith.id,
-      appointmentDate: new Date(),
-      timeSlot: '10:00 AM',
-      status: ApptStatus.ARRIVED,
+      appointmentId: appt1.id,
+      visitDate: new Date(),
+      vitalsBP: "120/80",
+      vitalsPulse: 72,
+      vitalsTemp: 98.6,
+      vitalsWeight: 70.5,
+      chiefComplaint: "Fever and mild headache",
+      diagnosis: "Viral Fever",
+      notes: "Rest and take fluids",
+      followUpDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     },
   });
 
-  await prisma.vitals.create({
+  console.log("Seeding Prescriptions & Lab Reports...");
+  await prisma.prescription.create({
     data: {
-      appointmentId: appt1.id,
+      organizationId: org.id,
       patientId: patientJohn.id,
-      bpSystolic: 120,
-      bpDiastolic: 80,
-      pulseBpm: 72,
-      weightKg: 68.5,
-      temperature: 98.6,
-      symptoms: 'Routine checkup and occasional headache',
-      doctorNotes: 'BP stable. Prescribed mild analgesics.',
+      visitId: visit1.id,
+      doctorId: doctorSmith.id,
+      medicines: [
+        { name: "Paracetamol 500mg", dosage: "1-0-1", days: 3 },
+        { name: "Vitamin C", dosage: "1-0-0", days: 7 }
+      ],
+      diet: "Liquid diet, avoid cold food",
+      instructions: "Take medicine after meals",
+      validUntil: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
     },
   });
 
-  const appt2 = await prisma.appointment.create({
+  await prisma.labReport.create({
     data: {
       organizationId: org.id,
-      patientId: patientJane.id,
-      doctorId: doctorAdams.id,
-      appointmentDate: new Date(),
-      timeSlot: '11:30 AM',
-      status: ApptStatus.PENDING,
+      patientId: patientJohn.id,
+      testName: "CBC",
+      results: { hemoglobin: "13.5", wbc: "8000" },
+      normalRange: "Hb: 13-17, WBC: 4000-11000",
+      interpretation: "Normal Report",
+      fileUrl: "https://example.com/report1.pdf"
     },
   });
 
-  console.log('Seeding Medicines...');
-  await prisma.medicine.createMany({
-    data: [
-      { organizationId: org.id, name: 'Paracetamol 500mg', genericName: 'Acetaminophen', batchNo: 'B-101', stockQuantity: 150, unitPrice: 5.0, expiryDate: new Date('2027-12-31') },
-      { organizationId: org.id, name: 'Amoxicillin 250mg', genericName: 'Amoxicillin Trihydrate', batchNo: 'B-102', stockQuantity: 45, unitPrice: 12.0, expiryDate: new Date('2027-06-30') },
-      { organizationId: org.id, name: 'Cough Syrup 100ml', genericName: 'Dextromethorphan', batchNo: 'B-103', stockQuantity: 14, unitPrice: 8.5, expiryDate: new Date('2026-11-30') },
-      { organizationId: org.id, name: 'Ibuprofen 400mg', genericName: 'Ibuprofen', batchNo: 'B-104', stockQuantity: 90, unitPrice: 6.0, expiryDate: new Date('2028-01-15') },
-    ],
-  });
-
-  console.log('Seeding Billing & Invoices...');
-  await prisma.billing.create({
-    data: {
-      organizationId: org.id,
-      invoiceNo: 'INV-1001',
-      appointmentId: appt1.id,
-      consultationFee: 100,
-      medicineCharges: 45,
-      totalAmount: 145,
-      paymentStatus: PayStatus.PAID,
-      paymentMethod: 'Card',
-    },
-  });
-
-  await prisma.billing.create({
-    data: {
-      organizationId: org.id,
-      invoiceNo: 'INV-1002',
-      appointmentId: appt2.id,
-      consultationFee: 150,
-      medicineCharges: 0,
-      totalAmount: 150,
-      paymentStatus: PayStatus.UNPAID,
-      paymentMethod: 'Cash',
-    },
-  });
-
-  console.log('Seeding completed successfully!');
+  console.log("Seeding completed successfully!");
 }
 
 main()

@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { ApptStatus } from '@prisma/client';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { ApptStatus } from "@prisma/client";
 
 export async function POST(request: Request) {
   try {
@@ -8,12 +8,12 @@ export async function POST(request: Request) {
     const { orgId, doctorId, patientName, patientPhone, date, timeSlot } = body;
 
     if (!orgId || !doctorId || !patientName || !patientPhone) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     // 1. Find or create patient for this organization
     let patient = await prisma.patient.findFirst({
-      where: { name: patientName, contactNumber: patientPhone, organizationId: orgId }
+      where: { name: patientName, phone: patientPhone, organizationId: orgId }
     });
 
     if (!patient) {
@@ -23,23 +23,23 @@ export async function POST(request: Request) {
           organizationId: orgId,
           patientCode: `PAT-${1000 + count + 1}`,
           name: patientName,
-          contactNumber: patientPhone,
-          age: 30, // Default for now
-          gender: 'Not Specified'
+          phone: patientPhone,
+          dob: new Date("1990-01-01"), // Default for now
+          gender: "Not Specified"
         }
       });
     }
 
     // 2. Create the appointment
     const appointmentDate = date ? new Date(date) : new Date();
-    const appointment = await prisma.appointment.create({
+    const appointment = await prisma.healthAppointment.create({
       data: {
         organizationId: orgId,
         patientId: patient.id,
         doctorId: doctorId,
         appointmentDate,
-        timeSlot: timeSlot || '10:00 AM',
-        status: ApptStatus.PENDING
+        timeSlot: timeSlot || "10:00 AM",
+        status: ApptStatus.SCHEDULED
       },
       include: {
         organization: true,
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({
-      message: 'Appointment booked successfully',
+      message: "Appointment booked successfully",
       tokenNumber: appointment.tokenNumber,
       patientCode: patient.patientCode,
       hospitalName: appointment.organization.name,
@@ -56,7 +56,8 @@ export async function POST(request: Request) {
     }, { status: 201 });
 
   } catch (error) {
-    console.error('Booking error:', error);
-    return NextResponse.json({ error: 'Failed to book appointment' }, { status: 500 });
+    console.error("Booking error:", error);
+    return NextResponse.json({ error: "Failed to book appointment" }, { status: 500 });
   }
 }
+

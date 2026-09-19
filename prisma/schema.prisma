@@ -20,10 +20,14 @@ model Organization {
   
   users        User[]
   patients     Patient[]
-  appointments Appointment[]
+  appointments HealthAppointment[]
+  visits       PatientVisit[]
+  prescriptions Prescription[]
+  labReports   LabReport[]
+  
+  // Existing models for generic features
   medicines    Medicine[]
   billings     Billing[]
-  labReports   LabReport[]
 }
 
 model User {
@@ -38,8 +42,17 @@ model User {
   isActive       Boolean       @default(true)
   createdAt      DateTime      @default(now())
   
+  // --- DOCTOR SPECIFIC FIELDS (Requested by User) ---
+  specialization String?       
+  registrationNo String?
+  consultationFee Float?
+  availableDays   String[]     // e.g. ["MONDAY", "WEDNESDAY"]
+  slotDuration    Int?         // e.g. 15
+  
   organization   Organization  @relation(fields: [organizationId], references: [id])
-  appointments   Appointment[] @relation("DoctorAppointments")
+  appointments   HealthAppointment[] @relation("DoctorAppointments")
+  visits         PatientVisit[] @relation("DoctorVisits")
+  prescriptions  Prescription[] @relation("DoctorPrescriptions")
 }
 
 model Patient {
@@ -47,56 +60,137 @@ model Patient {
   organizationId String
   patientCode    String
   name           String
-  age            Int
-  gender         String
-  bloodGroup     String?
-  contactNumber  String
+  phone          String
   email          String?
   address        String?
-  medicalHistory String?
+  dob            DateTime?
+  gender         String
+  bloodGroup     String?
+  allergies      String[]
+  chronicConds   String[]
+  emergencyContact String?
   createdAt      DateTime      @default(now())
   
   organization   Organization  @relation(fields: [organizationId], references: [id])
-  appointments   Appointment[]
-  vitals         Vitals[]
+  appointments   HealthAppointment[]
+  visits         PatientVisit[]
   labReports     LabReport[]
+  prescriptions  Prescription[]
 
   @@unique([organizationId, patientCode])
 }
 
-model Appointment {
+model HealthAppointment {
   id              String    @id @default(uuid())
   organizationId  String
   patientId       String
   doctorId        String?
+  appointmentNo   String?   // e.g. APT-001
   appointmentDate DateTime
   timeSlot        String
   tokenNumber     Int       @default(autoincrement())
-  status          ApptStatus @default(PENDING)
+  status          ApptStatus @default(SCHEDULED)
+  fee             Float?
+  isPaid          Boolean    @default(false)
+  createdAt       DateTime   @default(now())
   
   organization    Organization @relation(fields: [organizationId], references: [id])
   patient         Patient   @relation(fields: [patientId], references: [id])
   doctor          User?     @relation("DoctorAppointments", fields: [doctorId], references: [id])
-  vitals          Vitals?
+  visit           PatientVisit?
   billing         Billing?
-  prescriptions   Prescription[]
 }
 
-model Vitals {
+model PatientVisit {
   id             String      @id @default(uuid())
-  appointmentId  String      @unique
+  organizationId String
   patientId      String
-  bpSystolic     Int?
-  bpDiastolic    Int?
-  pulseBpm       Int?
-  weightKg       Float?
-  temperature    Float?
-  symptoms       String?
-  doctorNotes    String?
+  doctorId       String?
+  appointmentId  String      @unique
+  visitDate      DateTime    @default(now())
+
+  // Vitals
+  vitalsBP       String?
+  vitalsPulse    Int?
+  vitalsTemp     Float?
+  vitalsWeight   Float?
+
+  chiefComplaint String?
+  diagnosis      String?
+  notes          String?
+  followUpDate   DateTime?
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  patient        Patient      @relation(fields: [patientId], references: [id])
+  doctor         User?        @relation("DoctorVisits", fields: [doctorId], references: [id])
+  appointment    HealthAppointment @relation(fields: [appointmentId], references: [id])
+  prescriptions  Prescription[]
+}
+
+model Prescription {
+  id             String      @id @default(uuid())
+  organizationId String
+  patientId      String
+  visitId        String?
+  doctorId       String?
+  
+  medicines      Json        // Detailed JSON struct containing medicines, dosages, etc.
+  diet           String?
+  instructions   String?
+  validUntil     DateTime?
   createdAt      DateTime    @default(now())
 
-  appointment    Appointment @relation(fields: [appointmentId], references: [id])
-  patient        Patient     @relation(fields: [patientId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  patient        Patient      @relation(fields: [patientId], references: [id])
+  visit          PatientVisit? @relation(fields: [visitId], references: [id])
+  doctor         User?        @relation("DoctorPrescriptions", fields: [doctorId], references: [id])
+}
+
+model LabReport {
+  id             String    @id @default(uuid())
+  organizationId String
+  patientId      String
+  testName       String
+  results        Json?
+  normalRange    String?
+  interpretation String?
+  fileUrl        String?
+  createdAt      DateTime  @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  patient        Patient      @relation(fields: [patientId], references: [id])
+}
+
+// ----------------------------------------------------
+// KEEPING SUPPORTING ENUMS AND OTHER EXISTING MODELS
+// ----------------------------------------------------
+
+enum Role {
+  OWNER
+  ADMIN
+  MANAGER
+  ACCOUNTANT
+  DOCTOR
+  RECEPTIONIST
+  PHARMACIST
+  STAFF
+  VIEWER
+}
+
+enum ApptStatus {
+  SCHEDULED
+  PENDING
+  CONFIRMED
+  ARRIVED
+  IN_CONSULTATION
+  COMPLETED
+  CANCELLED
+}
+
+enum PayStatus {
+  PAID
+  UNPAID
+  PARTIAL
 }
 
 model Medicine {
@@ -111,7 +205,6 @@ model Medicine {
   reorderThreshold Int      @default(50)
 
   organization     Organization @relation(fields: [organizationId], references: [id])
-  prescriptions    Prescription[]
 }
 
 model Billing {
@@ -127,49 +220,9 @@ model Billing {
   paymentMethod     String?
   
   organization      Organization @relation(fields: [organizationId], references: [id])
-  appointment       Appointment  @relation(fields: [appointmentId], references: [id])
+  appointment       HealthAppointment  @relation(fields: [appointmentId], references: [id])
 
   @@unique([organizationId, invoiceNo])
-}
-
-model LabReport {
-  id             String    @id @default(uuid())
-  organizationId String
-  patientId      String
-  testName       String
-  result         String?
-  normalRange    String?
-  pdfUrl         String?
-  createdAt      DateTime  @default(now())
-
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  patient        Patient      @relation(fields: [patientId], references: [id])
-}
-
-enum Role {
-  OWNER
-  ADMIN
-  MANAGER
-  ACCOUNTANT
-  DOCTOR
-  RECEPTIONIST
-  PHARMACIST
-  STAFF
-  VIEWER
-}
-
-enum ApptStatus {
-  PENDING
-  ARRIVED
-  IN_CONSULTATION
-  COMPLETED
-  CANCELLED
-}
-
-enum PayStatus {
-  PAID
-  UNPAID
-  PARTIAL
 }
 
 model Transaction {
@@ -178,8 +231,8 @@ model Transaction {
   description String
   type        TxType   @default(INCOME)
   amount      Float
-  category    String?  // Consultation, Pharmacy, Restock, Supplies, Salary, Utility
-  paymentMode String?  // Cash, Card, UPI, Bank Transfer
+  category    String?  
+  paymentMode String?  
   createdAt   DateTime @default(now())
 }
 
@@ -188,15 +241,3 @@ enum TxType {
   EXPENSE
 }
 
-model Prescription {
-  id            String      @id @default(uuid())
-  appointmentId String
-  medicineId    String
-  dosage        String      // e.g., "1-0-1" or "Morning/Night"
-  durationDays  Int         // e.g., 5
-  instructions  String?     // e.g., "After meals"
-  createdAt     DateTime    @default(now())
-
-  appointment   Appointment @relation(fields: [appointmentId], references: [id])
-  medicine      Medicine    @relation(fields: [medicineId], references: [id])
-}

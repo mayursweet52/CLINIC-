@@ -1,6 +1,6 @@
-'use client';
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+"use client";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function Home() {
   const [hospitals, setHospitals] = useState<any[]>([]);
@@ -9,14 +9,15 @@ export default function Home() {
   const [selectedDoctor, setSelectedDoctor] = useState<any | null>(null);
   
   // Form State
-  const [patientName, setPatientName] = useState('');
-  const [patientPhone, setPatientPhone] = useState('');
+  const [patientName, setPatientName] = useState("");
+  const [patientPhone, setPatientPhone] = useState("");
+  const [date, setDate] = useState("");
+  const [timeSlot, setTimeSlot] = useState("");
   const [isBooking, setIsBooking] = useState(false);
   const [successData, setSuccessData] = useState<any | null>(null);
 
   useEffect(() => {
-    // Fetch all hospitals on load
-    fetch('/api/public/hospitals')
+    fetch("/api/public/hospitals")
       .then(res => res.json())
       .then(data => {
         if (data.hospitals) setHospitals(data.hospitals);
@@ -28,7 +29,6 @@ export default function Home() {
     setSelectedDoctor(null);
     setSuccessData(null);
     
-    // Fetch doctors for this hospital
     fetch(`/api/public/hospitals?orgId=${hospital.id}`)
       .then(res => res.json())
       .then(data => {
@@ -41,16 +41,16 @@ export default function Home() {
     setIsBooking(true);
 
     try {
-      const res = await fetch('/api/public/book', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/public/book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orgId: selectedHospital.id,
           doctorId: selectedDoctor.id,
           patientName,
           patientPhone,
-          date: new Date().toISOString(),
-          timeSlot: '10:00 AM' // simplified for demo
+          date,
+          timeSlot
         })
       });
 
@@ -58,34 +58,37 @@ export default function Home() {
       if (res.ok) {
         setSuccessData(data);
       } else {
-        alert(data.error);
+        alert(data.error || "Failed to book");
       }
     } catch (err) {
-      alert("Something went wrong");
+      alert("An error occurred");
     } finally {
       setIsBooking(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans selection:bg-blue-100 selection:text-blue-900">
-      <header className="bg-white border-b border-slate-200 py-4 px-6 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-sm">B</div>
-            <h1 className="text-xl font-bold tracking-tight">BusinessOS <span className="text-blue-600">Health</span></h1>
-          </Link>
+    <div className="min-h-screen bg-[#fafafa] font-sans selection:bg-blue-100 selection:text-blue-900">
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+            </div>
+            <span className="text-xl font-black tracking-tight text-slate-900">Clinic<span className="text-blue-600">OS</span></span>
+          </div>
           <div className="flex gap-4">
-            <Link href="/" className="text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors">← Back to Hub</Link>
+            <Link href="/health" className="text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">Patient Portal</Link>
+            <Link href="/staff" className="text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">Staff Login</Link>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <main className="max-w-4xl mx-auto p-6 py-12">
+      <main className="max-w-6xl mx-auto px-6 py-12">
         {successData ? (
-          <div className="bg-white p-8 rounded-3xl shadow-xl border border-emerald-100 text-center animate-in zoom-in-95 duration-500">
-            <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+          <div className="max-w-2xl mx-auto text-center animate-in zoom-in-95 duration-500">
+            <div className="w-24 h-24 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
             </div>
             <h2 className="text-3xl font-extrabold text-slate-900 mb-2">Appointment Confirmed!</h2>
             <p className="text-slate-500 mb-8">Please visit {successData.hospitalName} at your scheduled time.</p>
@@ -125,11 +128,11 @@ export default function Home() {
                   <div className="flex flex-col gap-1 mt-3">
                     <p className="text-slate-500 text-sm font-medium flex items-center gap-1.5">
                       <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                      {hospital.city ? `${hospital.city}, ${hospital.state}` : 'Location not provided'}
+                      {hospital.city ? `${hospital.city}, ${hospital.state}` : "Location not provided"}
                     </p>
                     <p className="text-slate-500 text-sm font-medium flex items-center gap-1.5">
                       <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                      {hospital.phone || 'Phone not available'}
+                      {hospital.phone || "Phone not available"}
                     </p>
                   </div>
                 </button>
@@ -140,7 +143,7 @@ export default function Home() {
         ) : !selectedDoctor ? (
           <div className="space-y-6 animate-in slide-in-from-right-8 duration-500">
             <button onClick={() => setSelectedHospital(null)} className="text-slate-500 font-bold text-sm hover:text-slate-900 flex items-center gap-1">
-              ← Back to Hospitals
+              ? Back to Hospitals
             </button>
             <div className="mb-8">
               <h2 className="text-3xl font-extrabold text-slate-900 mb-2">{selectedHospital.name}</h2>
@@ -159,7 +162,8 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900 text-lg">{doctor.name}</h3>
-                    <p className="text-indigo-600 text-sm font-medium">{doctor.department}</p>
+                    <p className="text-indigo-600 text-sm font-medium">{doctor.specialization || doctor.department}</p>
+                    <p className="text-slate-400 text-xs mt-1">Fee: ?{doctor.consultationFee || 500}</p>
                   </div>
                 </button>
               ))}
@@ -169,7 +173,7 @@ export default function Home() {
         ) : (
           <div className="max-w-md mx-auto bg-white p-8 rounded-3xl border border-slate-200 shadow-xl animate-in slide-in-from-bottom-8 duration-500">
             <button onClick={() => setSelectedDoctor(null)} className="text-slate-500 font-bold text-sm hover:text-slate-900 flex items-center gap-1 mb-6">
-              ← Back to Doctors
+              ? Back to Doctors
             </button>
             
             <h2 className="text-2xl font-extrabold text-slate-900 mb-1">Book Appointment</h2>
@@ -198,13 +202,41 @@ export default function Home() {
                   className="w-full p-4 bg-[#fafafa] border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all font-medium text-slate-900" 
                 />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Date</label>
+                  <input 
+                    type="date" 
+                    required 
+                    value={date}
+                    onChange={e => setDate(e.target.value)}
+                    className="w-full p-4 bg-[#fafafa] border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all font-medium text-slate-900" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Time</label>
+                  <select 
+                    required 
+                    value={timeSlot}
+                    onChange={e => setTimeSlot(e.target.value)}
+                    className="w-full p-4 bg-[#fafafa] border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all font-medium text-slate-900"
+                  >
+                    <option value="" disabled>Select</option>
+                    <option value="10:00 AM">10:00 AM</option>
+                    <option value="11:30 AM">11:30 AM</option>
+                    <option value="02:00 PM">02:00 PM</option>
+                    <option value="04:30 PM">04:30 PM</option>
+                    <option value="06:00 PM">06:00 PM</option>
+                  </select>
+                </div>
+              </div>
               
               <button 
                 type="submit" 
                 disabled={isBooking}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md transition-all active:scale-95 mt-4"
               >
-                {isBooking ? 'Confirming...' : 'Confirm Booking'}
+                {isBooking ? "Confirming..." : "Confirm Booking"}
               </button>
             </form>
           </div>
@@ -213,3 +245,4 @@ export default function Home() {
     </div>
   );
 }
+

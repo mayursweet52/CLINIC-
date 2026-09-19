@@ -1,14 +1,23 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
     const orgs = await prisma.organization.findMany({
-      orderBy: { createdAt: 'desc' }
+      include: {
+        _count: {
+          select: {
+            users: true,
+            patients: true,
+            appointments: true
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" }
     });
     return NextResponse.json(orgs);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch organizations' }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch organizations" }, { status: 500 });
   }
 }
 
@@ -19,10 +28,15 @@ export async function POST(request: Request) {
       data: {
         name: body.name,
         domain: body.domain,
+        address: body.address,
+        city: body.city,
+        state: body.state,
+        phone: body.phone,
       }
     });
     return NextResponse.json(org, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create organization' }, { status: 400 });
+    return NextResponse.json({ error: "Failed to create organization" }, { status: 400 });
   }
 }
+
