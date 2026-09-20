@@ -33,12 +33,6 @@ const ROLE_PRESETS: Record<string, { email: string; destination: string; label: 
     destination: '/staff/billing',
     label: 'Billing & Cashier',
     icon: '🧾'
-  },
-  Finance: {
-    email: 'finance@clinic.com',
-    destination: '/staff/finance',
-    label: 'Finance & Ledger',
-    icon: '📊'
   }
 };
 
@@ -88,8 +82,6 @@ export default function StaffLogin() {
         router.push('/staff/pharmacy');
       } else if (normalizedRole === 'CASHIER' || normalizedRole === 'ACCOUNTANT') {
         router.push('/staff/billing');
-      } else if (normalizedRole === 'FINANCE') {
-        router.push('/staff/finance');
       } else {
         router.push('/staff');
       }
@@ -182,16 +174,6 @@ export default function StaffLogin() {
                 <p className="text-xs font-bold text-slate-800 group-hover:text-indigo-600">🧾 Cashier</p>
                 <p className="text-[10px] text-slate-400">Bills & Invoices</p>
               </button>
-
-              <button 
-                type="button"
-                onClick={() => quickLogin('Finance', 'finance@clinic.com')}
-                disabled={loading}
-                className="p-3 bg-white hover:bg-indigo-50/80 border border-slate-200 hover:border-indigo-300 rounded-xl text-left transition-all shadow-xs group"
-              >
-                <p className="text-xs font-bold text-slate-800 group-hover:text-indigo-600">📊 Finance</p>
-                <p className="text-[10px] text-slate-400">Clinic Ledger</p>
-              </button>
             </div>
           </div>
 
@@ -214,7 +196,6 @@ export default function StaffLogin() {
                 <option value="Admin">👑 Admin (Hospital Management & Settings)</option>
                 <option value="Pharmacist">💊 Pharmacist (Medicine Counter)</option>
                 <option value="Cashier">🧾 Cashier (Billing & Payments)</option>
-                <option value="Finance">📊 Finance Manager (Ledger & Reports)</option>
               </select>
             </div>
             
@@ -225,7 +206,7 @@ export default function StaffLogin() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-[#f8fafc] border border-slate-200 text-slate-900 rounded-xl p-3 text-sm font-medium outline-none focus:bg-white focus:border-indigo-500 transition-all font-mono"
-                placeholder="admin@clinic.com"
+                placeholder="dr.smith@clinic.com"
                 required
               />
             </div>

@@ -17,7 +17,6 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
               <li><Link href="/staff/receptionist" className="px-3 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-100/80 transition-all">Reception</Link></li>
               <li><Link href="/staff/pharmacy" className="px-3 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-100/80 transition-all">Pharmacy</Link></li>
               <li><Link href="/staff/billing" className="px-3 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-100/80 transition-all">Billing Desk</Link></li>
-              <li><Link href="/staff/finance" className="px-3 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-100/80 transition-all">Finance</Link></li>
               <li><Link href="/superadmin" className="px-3 py-2 rounded-lg text-indigo-600 bg-indigo-50/80 hover:bg-indigo-100 font-bold transition-all">👑 Admin Hub</Link></li>
               <li className="pl-3">
                 <Link href="/staff/login" className="px-3 py-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors font-semibold text-xs">
