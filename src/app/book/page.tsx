@@ -143,7 +143,7 @@ export default function Home() {
         ) : !selectedDoctor ? (
           <div className="space-y-6 animate-in slide-in-from-right-8 duration-500">
             <button onClick={() => setSelectedHospital(null)} className="text-slate-500 font-bold text-sm hover:text-slate-900 flex items-center gap-1">
-              ? Back to Hospitals
+              ← Back to Hospitals
             </button>
             <div className="mb-8">
               <h2 className="text-3xl font-extrabold text-slate-900 mb-2">{selectedHospital.name}</h2>
@@ -163,7 +163,7 @@ export default function Home() {
                   <div>
                     <h3 className="font-bold text-slate-900 text-lg">{doctor.name}</h3>
                     <p className="text-indigo-600 text-sm font-medium">{doctor.specialization || doctor.department}</p>
-                    <p className="text-slate-400 text-xs mt-1">Fee: ?{doctor.consultationFee || 500}</p>
+                    <p className="text-slate-400 text-xs mt-1">Fee: ₹{doctor.consultationFee || 500}</p>
                   </div>
                 </button>
               ))}
@@ -173,7 +173,7 @@ export default function Home() {
         ) : (
           <div className="max-w-md mx-auto bg-white p-8 rounded-3xl border border-slate-200 shadow-xl animate-in slide-in-from-bottom-8 duration-500">
             <button onClick={() => setSelectedDoctor(null)} className="text-slate-500 font-bold text-sm hover:text-slate-900 flex items-center gap-1 mb-6">
-              ? Back to Doctors
+              ← Back to Doctors
             </button>
             
             <h2 className="text-2xl font-extrabold text-slate-900 mb-1">Book Appointment</h2>
