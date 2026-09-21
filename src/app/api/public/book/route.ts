@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ApptStatus } from "@prisma/client";
 import { DEMO_HOSPITALS, DEMO_DOCTORS_BY_ORG } from "../hospitals/route";
-import { publishEvent } from "@/lib/events";
+import { saveBookingToStore } from "@/lib/patientStore";
+import { eventBus } from "@/lib/events";
+import { notificationService } from "@/lib/notifications";
+import { auditService } from "@/lib/audit";
 
 export async function POST(request: Request) {
   try {
@@ -59,27 +62,53 @@ export async function POST(request: Request) {
         doctorName: appointment.doctor?.name || "Dr. Rajesh Sharma"
       };
 
-      // Realtime event publishing
-      const timestamp = new Date().toISOString();
-      const eventPayload = {
-        id: appointment.id,
-        orgId,
+      // Also save to resilient store
+      saveBookingToStore({
+        patientCode: bookingResponse.patientCode,
+        tokenNumber: bookingResponse.tokenNumber,
         patientName,
-        time: appointment.timeSlot,
-        tokenNumber: appointment.tokenNumber,
-        doctorId
-      };
-
-      publishEvent(`org:${orgId}:doctor:${doctorId}`, {
-        type: "appointment.created",
-        payload: eventPayload,
-        timestamp
+        patientPhone,
+        hospitalName: bookingResponse.hospitalName,
+        doctorName: bookingResponse.doctorName,
+        date,
+        timeSlot
       });
 
-      publishEvent(`org:${orgId}:appointments`, {
-        type: "appointment.created",
-        payload: eventPayload,
-        timestamp
+      // Broadcast real-time appointment event
+      eventBus.broadcast('appointment.created', {
+        appointmentId: appointment.id,
+        tokenNumber: bookingResponse.tokenNumber,
+        patientCode: bookingResponse.patientCode,
+        patientName,
+        patientPhone,
+        doctorName: bookingResponse.doctorName,
+        doctorId,
+        timeSlot: timeSlot || "10:00 AM",
+        hospitalName: bookingResponse.hospitalName
+      }, orgId, doctorId);
+
+      // Trigger instant WhatsApp confirmation simulation
+      notificationService.send({
+        recipientPhone: patientPhone,
+        patientName,
+        template: 'APPOINTMENT_CONFIRM',
+        data: {
+          tokenNumber: bookingResponse.tokenNumber,
+          hospitalName: bookingResponse.hospitalName,
+          doctorName: bookingResponse.doctorName,
+          date,
+          timeSlot
+        }
+      });
+
+      // Log to audit trail
+      auditService.log({
+        actor: patientPhone,
+        role: 'PATIENT',
+        action: 'APPOINTMENT_BOOKED_ONLINE',
+        resource: 'HealthAppointment',
+        resourceId: appointment.id,
+        details: { tokenNumber: bookingResponse.tokenNumber, patientName, doctorName: bookingResponse.doctorName }
       });
 
       return NextResponse.json(bookingResponse, { status: 201 });
@@ -100,27 +129,53 @@ export async function POST(request: Request) {
         doctorName: doctorObj?.name || "Dr. Rajesh Sharma"
       };
 
-      // Realtime event publishing (fallback mode)
-      const timestamp = new Date().toISOString();
-      const eventPayload = {
-        id: `fb-${Date.now()}`,
-        orgId,
+      // Save to resilient store so /health immediately finds this patient!
+      saveBookingToStore({
+        patientCode: bookingResponse.patientCode,
+        tokenNumber: bookingResponse.tokenNumber,
         patientName,
-        time: timeSlot || "10:00 AM",
-        tokenNumber,
-        doctorId
-      };
-
-      publishEvent(`org:${orgId}:doctor:${doctorId}`, {
-        type: "appointment.created",
-        payload: eventPayload,
-        timestamp
+        patientPhone,
+        hospitalName: bookingResponse.hospitalName,
+        doctorName: bookingResponse.doctorName,
+        date,
+        timeSlot
       });
 
-      publishEvent(`org:${orgId}:appointments`, {
-        type: "appointment.created",
-        payload: eventPayload,
-        timestamp
+      // Broadcast real-time appointment event
+      eventBus.broadcast('appointment.created', {
+        appointmentId: `fall-${Date.now()}`,
+        tokenNumber: bookingResponse.tokenNumber,
+        patientCode: bookingResponse.patientCode,
+        patientName,
+        patientPhone,
+        doctorName: bookingResponse.doctorName,
+        doctorId,
+        timeSlot: timeSlot || "10:00 AM",
+        hospitalName: bookingResponse.hospitalName
+      }, orgId, doctorId);
+
+      // Trigger instant WhatsApp confirmation simulation
+      notificationService.send({
+        recipientPhone: patientPhone,
+        patientName,
+        template: 'APPOINTMENT_CONFIRM',
+        data: {
+          tokenNumber: bookingResponse.tokenNumber,
+          hospitalName: bookingResponse.hospitalName,
+          doctorName: bookingResponse.doctorName,
+          date,
+          timeSlot
+        }
+      });
+
+      // Log to audit trail
+      auditService.log({
+        actor: patientPhone,
+        role: 'PATIENT',
+        action: 'APPOINTMENT_BOOKED_ONLINE',
+        resource: 'HealthAppointment',
+        resourceId: `fall-${Date.now()}`,
+        details: { tokenNumber: bookingResponse.tokenNumber, patientName, doctorName: bookingResponse.doctorName }
       });
 
       return NextResponse.json(bookingResponse, { status: 201 });
@@ -131,3 +186,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to book appointment" }, { status: 500 });
   }
 }
+

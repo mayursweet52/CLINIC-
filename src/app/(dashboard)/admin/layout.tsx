@@ -13,7 +13,8 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
           </div>
           <nav>
             <ul className="flex items-center space-x-1 text-sm font-bold text-slate-500">
-              <li><Link href="/superadmin" className="px-4 py-2 rounded-lg text-indigo-700 bg-indigo-50 transition-all">Organizations</Link></li>
+              <li><Link href="/superadmin" className="px-4 py-2 rounded-lg text-slate-700 hover:bg-slate-100 transition-all">Organizations</Link></li>
+              <li><Link href="/superadmin/audit" className="px-4 py-2 rounded-lg text-indigo-700 bg-indigo-50 font-bold transition-all">🛡️ Audit Logs</Link></li>
               <li className="pl-4">
                 <Link href="/staff/login" className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                   Log Out

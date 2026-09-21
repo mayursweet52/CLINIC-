@@ -37,17 +37,17 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    let orgId = request.headers.get('x-org-id');
+    let orgId: string = request.headers.get('x-org-id') || '';
     if (!orgId) {
       const org = await prisma.organization.findFirst().catch(() => null);
-      orgId = org?.id || 'org-1';
+      orgId = org?.id || 'default-org-id';
     }
 
     const body = await request.json();
 
     const newMed = await prisma.medicine.create({
       data: {
-        organizationId: orgId || 'org-1',
+        organizationId: orgId,
         name: body.name || 'New Medicine',
         batchNo: `B-${Math.floor(1000 + Math.random() * 9000)}`,
         stockQuantity: Number(body.stock) || Number(body.stockQuantity) || 50,
@@ -74,3 +74,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 }
+
