@@ -1,4 +1,4 @@
-version: '3.8'
+﻿version: '3.8'
 
 services:
   # Next.js Full Stack Application (Frontend + API Routes)
@@ -16,12 +16,12 @@ services:
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://clinic_user:clinic_password@postgres-db:5432/clinic_db
-      - REDIS_URL=redis://redis-cache:6379
+      - REDIS_URL=redis://redis:6379
     networks:
       - clinic-network
     depends_on:
       - postgres-db
-      - redis-cache
+      - redis
     command: npm run dev
 
   # Database Layer: PostgreSQL
@@ -41,7 +41,7 @@ services:
       - clinic-network
 
   # Caching Layer: Redis
-  redis-cache:
+  redis:
     image: redis:7-alpine
     container_name: clinic-redis
     restart: always
