@@ -1,4 +1,4 @@
-﻿import logger from '@/lib/logger';
+import logger from '@/lib/logger';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
@@ -37,10 +37,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    let orgId = request.headers.get('x-org-id');
+    let orgId: string = request.headers.get('x-org-id') || '';
     if (!orgId) {
       const org = await prisma.organization.findFirst().catch(() => null);
-      orgId = org?.id ;
+      orgId = org?.id || 'default-org-id';
     }
 
     const body = await request.json();

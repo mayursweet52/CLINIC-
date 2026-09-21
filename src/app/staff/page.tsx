@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
-import { Search, Bell, Menu, User, Activity, Clock, FileText, Pill, Save, Download, Lock } from "lucide-react";
+import { Search, Bell, Menu, User, Activity, Clock, FileText, Pill, Save, Download, Lock, Radio, Volume2 } from "lucide-react";
+import { useRealtime, playHospitalChime } from "@/hooks/useRealtime";
 
 export default function DoctorDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -10,6 +11,36 @@ export default function DoctorDashboard() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Real-Time Event Listener
+  const { isConnected, emit } = useRealtime({
+    enableChime: true,
+    onEvent: (event) => {
+      if (event.type === 'appointment.created' || event.type === 'patient.checked_in') {
+        fetchAppointments();
+        const pName = event.payload?.patientName || 'New Patient';
+        const tNum = event.payload?.tokenNumber ? `#${event.payload.tokenNumber}` : '';
+        setToastMessage(`⚡ Real-Time Alert: ${pName} (${tNum}) added to queue!`);
+        setTimeout(() => setToastMessage(null), 6000);
+      }
+    }
+  });
+
+  const handleCallPatient = async (patient: any) => {
+    if (!patient) return;
+    playHospitalChime();
+    const token = patient.tokenNumber;
+    const name = patient.patient?.name || 'Patient';
+    await emit('queue.next', {
+      tokenNumber: token,
+      patientName: name,
+      doctorName: 'Dr. Smith',
+      room: 'Consulting Room 1'
+    });
+    setToastMessage(`📢 Calling Token #${token} (${name}) on Waiting Room TV!`);
+    setTimeout(() => setToastMessage(null), 5000);
+  };
 
   // Vitals form cha state
   const [vitalsData, setVitalsData] = useState({
@@ -208,7 +239,15 @@ export default function DoctorDashboard() {
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
         <header className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-10">
-          <h2 className="text-xl font-extrabold text-slate-800">Live Queue Monitor</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-extrabold text-slate-800">Live Queue Monitor</h2>
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border transition-all ${
+              isConnected ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              <span>{isConnected ? 'Real-Time Connected' : 'Syncing...'}</span>
+            </div>
+          </div>
           <div className="flex items-center gap-4">
             <button 
               onClick={exportToExcel}
@@ -224,6 +263,18 @@ export default function DoctorDashboard() {
             </div>
           </div>
         </header>
+
+        {toastMessage && (
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-2.5 text-sm font-bold flex items-center justify-between shadow-md animate-in slide-in-from-top duration-300">
+            <div className="flex items-center gap-2">
+              <Bell className="w-4 h-4 animate-bounce" />
+              <span>{toastMessage}</span>
+            </div>
+            <button onClick={() => setToastMessage(null)} className="text-white/80 hover:text-white text-xs underline">
+              Dismiss
+            </button>
+          </div>
+        )}
 
         <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           <div className="w-full lg:w-1/3 bg-white border-r border-slate-200 flex flex-col h-[40vh] lg:h-full">
@@ -279,13 +330,24 @@ export default function DoctorDashboard() {
               <div className="p-8">
                 <div className="flex justify-between items-start mb-8 pb-6 border-b border-slate-100">
                   <div className="w-full">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-3xl font-extrabold text-slate-900">
-                        {selectedPatient.patientName || selectedPatient.patient?.name || "Unknown Patient"}
-                      </h1>
-                      <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wide">
-                        In Session
-                      </span>
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <div className="flex items-center gap-3">
+                        <h1 className="text-3xl font-extrabold text-slate-900">
+                          {selectedPatient.patientName || selectedPatient.patient?.name || "Unknown Patient"}
+                        </h1>
+                        <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wide">
+                          In Session
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCallPatient(selectedPatient)}
+                        className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs px-4 py-2.5 rounded-xl shadow-md transition-all active:scale-95"
+                        title="Announce patient on Waiting Room TV screen"
+                      >
+                        <Volume2 className="w-4 h-4 animate-pulse" />
+                        <span>📢 Call Token #{selectedPatient.tokenNumber} on TV</span>
+                      </button>
                     </div>
                     
                     <div className="flex flex-wrap gap-4 mt-3 p-4 bg-slate-50 rounded-xl border border-slate-100">

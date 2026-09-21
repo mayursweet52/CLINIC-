@@ -1,4 +1,4 @@
-﻿import logger from '@/lib/logger';
+import logger from '@/lib/logger';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
           const standardConsultationFee = 500; // Default doctor fee
           bill = await tx.billing.create({
             data: {
-              organizationId: orgId,
+              organizationId: orgId || "default-org-id",
               invoiceNo: `INV-${Math.floor(100000 + Math.random() * 900000)}`,
               appointmentId,
               consultationFee: standardConsultationFee,

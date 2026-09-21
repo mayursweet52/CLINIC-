@@ -1,9 +1,12 @@
-﻿import logger from '@/lib/logger';
+import logger from '@/lib/logger';
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ApptStatus } from "@prisma/client";
 import { DEMO_HOSPITALS, DEMO_DOCTORS_BY_ORG } from "../hospitals/route";
 import { saveBookingToStore } from "@/lib/patientStore";
+import { eventBus } from "@/lib/events";
+import { notificationService } from "@/lib/notifications";
+import { auditService } from "@/lib/audit";
 
 export async function POST(request: Request) {
   try {
@@ -71,6 +74,43 @@ export async function POST(request: Request) {
         timeSlot
       });
 
+      // Broadcast real-time appointment event
+      eventBus.broadcast('appointment.created', {
+        appointmentId: appointment.id,
+        tokenNumber: bookingResponse.tokenNumber,
+        patientCode: bookingResponse.patientCode,
+        patientName,
+        patientPhone,
+        doctorName: bookingResponse.doctorName,
+        doctorId,
+        timeSlot: timeSlot || "10:00 AM",
+        hospitalName: bookingResponse.hospitalName
+      }, orgId, doctorId);
+
+      // Trigger instant WhatsApp confirmation simulation
+      notificationService.send({
+        recipientPhone: patientPhone,
+        patientName,
+        template: 'APPOINTMENT_CONFIRM',
+        data: {
+          tokenNumber: bookingResponse.tokenNumber,
+          hospitalName: bookingResponse.hospitalName,
+          doctorName: bookingResponse.doctorName,
+          date,
+          timeSlot
+        }
+      });
+
+      // Log to audit trail
+      auditService.log({
+        actor: patientPhone,
+        role: 'PATIENT',
+        action: 'APPOINTMENT_BOOKED_ONLINE',
+        resource: 'HealthAppointment',
+        resourceId: appointment.id,
+        details: { tokenNumber: bookingResponse.tokenNumber, patientName, doctorName: bookingResponse.doctorName }
+      });
+
       return NextResponse.json(bookingResponse, { status: 201 });
     } catch (dbErr) {
       logger.warn("DB offline or error during appointment booking, returning fallback booking confirmation:", dbErr);
@@ -99,6 +139,43 @@ export async function POST(request: Request) {
         doctorName: bookingResponse.doctorName,
         date,
         timeSlot
+      });
+
+      // Broadcast real-time appointment event
+      eventBus.broadcast('appointment.created', {
+        appointmentId: `fall-${Date.now()}`,
+        tokenNumber: bookingResponse.tokenNumber,
+        patientCode: bookingResponse.patientCode,
+        patientName,
+        patientPhone,
+        doctorName: bookingResponse.doctorName,
+        doctorId,
+        timeSlot: timeSlot || "10:00 AM",
+        hospitalName: bookingResponse.hospitalName
+      }, orgId, doctorId);
+
+      // Trigger instant WhatsApp confirmation simulation
+      notificationService.send({
+        recipientPhone: patientPhone,
+        patientName,
+        template: 'APPOINTMENT_CONFIRM',
+        data: {
+          tokenNumber: bookingResponse.tokenNumber,
+          hospitalName: bookingResponse.hospitalName,
+          doctorName: bookingResponse.doctorName,
+          date,
+          timeSlot
+        }
+      });
+
+      // Log to audit trail
+      auditService.log({
+        actor: patientPhone,
+        role: 'PATIENT',
+        action: 'APPOINTMENT_BOOKED_ONLINE',
+        resource: 'HealthAppointment',
+        resourceId: `fall-${Date.now()}`,
+        details: { tokenNumber: bookingResponse.tokenNumber, patientName, doctorName: bookingResponse.doctorName }
       });
 
       return NextResponse.json(bookingResponse, { status: 201 });
