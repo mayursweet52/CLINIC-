@@ -1,3 +1,4 @@
+﻿import logger from '@/lib/logger';
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ApptStatus } from "@prisma/client";
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(newVisit, { status: 201 });
   } catch (error) {
-    console.error("Error saving vitals:", error);
+    logger.error("Error saving vitals:", error);
     return NextResponse.json({ error: "Failed to save consultation details" }, { status: 500 });
   }
 }
@@ -92,8 +93,9 @@ export async function GET(req: Request) {
     });
     return NextResponse.json(allVisits);
   } catch (error) {
-    console.error("Error fetching vitals:", error);
+    logger.error("Error fetching vitals:", error);
     return NextResponse.json({ error: "Failed to fetch vitals" }, { status: 500 });
   }
 }
+
 

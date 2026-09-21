@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+﻿import logger from '@/lib/logger';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 const DEFAULT_MEDICINES = [
@@ -29,7 +30,7 @@ export async function GET() {
 
     return NextResponse.json(DEFAULT_MEDICINES);
   } catch (error) {
-    console.warn('Database offline or empty in pharmacy GET, returning fallback medicines');
+    logger.warn('Database offline or empty in pharmacy GET, returning fallback medicines');
     return NextResponse.json(DEFAULT_MEDICINES);
   }
 }
@@ -69,7 +70,8 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating medicine:', error);
+    logger.error('Error creating medicine:', error);
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 }
+

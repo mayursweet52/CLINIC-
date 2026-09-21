@@ -1,3 +1,4 @@
+﻿import logger from '@/lib/logger';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
@@ -194,7 +195,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ hospitals: DEMO_HOSPITALS });
     }
   } catch (error) {
-    console.error("Error in /api/public/hospitals:", error);
+    logger.error("Error in /api/public/hospitals:", error);
     return NextResponse.json({ hospitals: DEMO_HOSPITALS });
   }
 }
+

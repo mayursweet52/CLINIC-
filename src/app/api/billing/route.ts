@@ -1,4 +1,5 @@
-﻿import { NextResponse } from "next/server";
+﻿import logger from '@/lib/logger';
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request) {
@@ -17,7 +18,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(bills);
   } catch (error) {
-    console.error("Error in billing GET:", error);
+    logger.error("Error in billing GET:", error);
     return NextResponse.json({ error: "Failed to fetch bills" }, { status: 500 });
   }
 }
@@ -37,8 +38,9 @@ export async function PATCH(req: Request) {
     });
     return NextResponse.json({ success: true, bill: updatedBill });
   } catch (error) {
-    console.error("Error updating bill:", error);
+    logger.error("Error updating bill:", error);
     return NextResponse.json({ error: "Failed to update payment status" }, { status: 500 });
   }
 }
+
 

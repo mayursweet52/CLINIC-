@@ -1,3 +1,4 @@
+﻿import logger from '@/lib/logger';
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ApptStatus } from "@prisma/client";
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json(bookingResponse, { status: 201 });
     } catch (dbErr) {
-      console.warn("DB offline or error during appointment booking, returning fallback booking confirmation:", dbErr);
+      logger.warn("DB offline or error during appointment booking, returning fallback booking confirmation:", dbErr);
       
       const tokenNumber = Math.floor(100 + Math.random() * 899);
       const randomPatientCode = `PAT-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -104,7 +105,8 @@ export async function POST(request: Request) {
     }
 
   } catch (error) {
-    console.error("Booking error:", error);
+    logger.error("Booking error:", error);
     return NextResponse.json({ error: "Failed to book appointment" }, { status: 500 });
   }
 }
+

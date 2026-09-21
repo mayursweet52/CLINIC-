@@ -1,3 +1,4 @@
+﻿import logger from '@/lib/logger';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Role } from '@prisma/client';
@@ -29,7 +30,7 @@ export async function GET() {
 
     return NextResponse.json(mapped);
   } catch (error) {
-    console.error('Error fetching staff members:', error);
+    logger.error('Error fetching staff members:', error);
     return NextResponse.json(
       { error: 'Database error fetching staff' },
       { status: 500 }
@@ -76,7 +77,8 @@ export async function POST(request: Request) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error in staff route:', error);
+    logger.error('Error in staff route:', error);
     return NextResponse.json({ error: 'Failed to process staff request' }, { status: 400 });
   }
 }
+

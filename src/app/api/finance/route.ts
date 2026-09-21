@@ -1,3 +1,4 @@
+﻿import logger from '@/lib/logger';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { PayStatus } from '@prisma/client';
@@ -96,7 +97,7 @@ export async function GET() {
       return NextResponse.json(transactions);
     }
   } catch (error) {
-    console.warn('Database offline or timeout in finance GET, returning demo transactions fallback');
+    logger.warn('Database offline or timeout in finance GET, returning demo transactions fallback');
   }
 
   // Always return an array to prevent "transactions.filter is not a function" errors
@@ -119,7 +120,8 @@ export async function POST(request: Request) {
       transaction: newTx 
     }, { status: 201 });
   } catch (error) {
-    console.error('Error logging transaction:', error);
+    logger.error('Error logging transaction:', error);
     return NextResponse.json({ error: 'Failed to log transaction' }, { status: 500 });
   }
 }
+

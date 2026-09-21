@@ -1,3 +1,4 @@
+﻿import logger from '@/lib/logger';
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ApptStatus } from "@prisma/client";
@@ -66,7 +67,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(formatted);
   } catch (error) {
-    console.error("Error fetching appointments:", error);
+    logger.error("Error fetching appointments:", error);
     return NextResponse.json(
       { error: "Failed to fetch appointments from database" },
       { status: 500 }
@@ -158,7 +159,7 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error booking appointment:", error);
+    logger.error("Error booking appointment:", error);
     return NextResponse.json({ error: "Failed to create appointment" }, { status: 400 });
   }
 }
@@ -193,8 +194,9 @@ export async function PUT(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Error updating appointment:", error);
+    logger.error("Error updating appointment:", error);
     return NextResponse.json({ error: "Appointment not found or failed to update" }, { status: 404 });
   }
 }
+
 

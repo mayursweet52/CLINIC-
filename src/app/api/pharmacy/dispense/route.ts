@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+﻿import logger from '@/lib/logger';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(req: Request) {
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: dbErr.message }, { status: 400 });
       }
 
-      console.warn("Database offline or error during dispense transaction, returning success fallback", dbErr.message);
+      logger.warn("Database offline or error during dispense transaction, returning success fallback", dbErr.message);
       return NextResponse.json({
         success: true,
         message: "Medicines dispensed & Bill updated! (Session recorded)",
@@ -94,7 +95,8 @@ export async function POST(req: Request) {
     }
 
   } catch (error: any) {
-    console.error("Dispense Error:", error);
+    logger.error("Dispense Error:", error);
     return NextResponse.json({ error: error.message || 'Dispense failed due to server error' }, { status: 500 });
   }
 }
+

@@ -1,4 +1,5 @@
-﻿import { NextResponse } from "next/server";
+﻿import logger from '@/lib/logger';
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import * as jose from "jose";
@@ -61,8 +62,9 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
-    console.error("Login error:", error);
+    logger.error("Login error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
 

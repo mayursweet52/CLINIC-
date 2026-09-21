@@ -1,3 +1,4 @@
+﻿import logger from '@/lib/logger';
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(mappedPatients);
   } catch (error) {
-    console.error("Error fetching patients:", error);
+    logger.error("Error fetching patients:", error);
     return NextResponse.json(
       { error: "Database error fetching patients" },
       { status: 500 }
@@ -70,8 +71,9 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error creating patient:", error);
+    logger.error("Error creating patient:", error);
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 }
+
 

@@ -1,7 +1,20 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { findPatientFromStore } from "@/lib/patientStore";
+import logger from "@/lib/logger";
 
+// Health Check Endpoint
+export async function GET() {
+  try {
+    // Verify database connectivity
+    await prisma.$queryRaw`SELECT 1`;
+    return NextResponse.json({ status: "ok", message: "System is healthy", timestamp: new Date().toISOString() });
+  } catch (error) {
+    logger.error("Health check failed", error);
+    return NextResponse.json({ status: "error", message: "Database offline" }, { status: 503 });
+  }
+}
+
+// Patient Portal Endpoint
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -13,49 +26,35 @@ export async function POST(request: Request) {
 
     const query = String(patientCode).trim();
 
-    // 1. Try DB first if available with fast timeout
-    try {
-      const patient = await Promise.race([
-        prisma.patient.findFirst({
-          where: {
-            OR: [
-              { patientCode: { equals: query, mode: "insensitive" } },
-              { phone: { equals: query } }
-            ]
-          },
+    const patient = await prisma.patient.findFirst({
+      where: {
+        OR: [
+          { patientCode: { equals: query, mode: "insensitive" } },
+          { phone: { equals: query } }
+        ]
+      },
+      include: {
+        appointments: {
           include: {
-            appointments: {
-              include: {
-                doctor: true,
-                visit: true
-              },
-              orderBy: { appointmentDate: "desc" }
-            },
-            labReports: {
-              orderBy: { createdAt: "desc" }
-            }
-          }
-        }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 800))
-      ]) as any;
-
-      if (patient) {
-        return NextResponse.json(patient);
+            doctor: true,
+            visit: true
+          },
+          orderBy: { appointmentDate: "desc" }
+        },
+        labReports: {
+          orderBy: { createdAt: "desc" }
+        }
       }
-    } catch (dbErr) {
-      // Database is offline or timed out, seamlessly proceed to store lookup
-    }
+    });
 
-    // 2. Look up in resilient in-memory patient store
-    const stored = findPatientFromStore(query);
-    if (stored) {
-      return NextResponse.json(stored);
+    if (patient) {
+      return NextResponse.json(patient);
     }
 
     return NextResponse.json({ error: "Record not found. Please verify your Patient Code or Token Number." }, { status: 404 });
   } catch (error) {
-    console.error("Error fetching patient portal data, serving fallback:", error);
-    const fallback = findPatientFromStore("PAT-1001");
-    return NextResponse.json(fallback);
+    logger.error("Error fetching patient portal data", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
