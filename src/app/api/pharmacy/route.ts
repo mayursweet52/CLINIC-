@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     let orgId = request.headers.get('x-org-id');
     if (!orgId) {
       const org = await prisma.organization.findFirst().catch(() => null);
-      orgId = org?.id || 'demo-org-1';
+      orgId = org?.id ;
     }
 
     const body = await request.json();

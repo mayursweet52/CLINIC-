@@ -1,5 +1,5 @@
 ﻿import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
@@ -39,8 +39,8 @@ export async function POST(req: Request) {
         }
 
         // Fetch organization ID for billing
-        const appt = await tx.appointment.findUnique({ where: { id: appointmentId } });
-        const orgId = appt?.organizationId || (await tx.organization.findFirst())?.id || 'demo-org-1';
+        const appt = await tx.healthAppointment.findUnique({ where: { id: appointmentId } });
+        const orgId = appt?.organizationId || (await tx.organization.findFirst())?.id ;
 
         // 3. Billing Record Auto-Create/Update Karo
         const existingBill = await tx.billing.findUnique({ where: { appointmentId } });
