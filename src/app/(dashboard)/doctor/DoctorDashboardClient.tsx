@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
@@ -11,11 +11,15 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { StatCard } from "@/components/shared/StatCard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { useRealtime } from "@/hooks/useRealtime";
+import { LiveBadge } from "@/components/realtime/LiveBadge";
 
 export function DoctorDashboardClient({ doctorId, doctorName }: { doctorId: string; doctorName: string }) {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  
+  const { isConnected, lastEvent } = useRealtime();
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
@@ -37,9 +41,20 @@ export function DoctorDashboardClient({ doctorId, doctorName }: { doctorId: stri
     }
   }, [doctorId]);
 
+  // Initial fetch
   useEffect(() => {
     fetchAppointments();
   }, [fetchAppointments]);
+
+  // Listen to real-time events
+  useEffect(() => {
+    if (!lastEvent) return;
+
+    if (lastEvent.type === "appointment.created") {
+      toast.info("New appointment booked! Refreshing list...");
+      fetchAppointments();
+    }
+  }, [lastEvent, fetchAppointments]);
 
   const handleAction = (id: string, actionName: string) => {
     toast.success(`Action "${actionName}" triggered for appointment ${id}`);
@@ -59,7 +74,8 @@ export function DoctorDashboardClient({ doctorId, doctorName }: { doctorId: stri
     <div className="flex flex-col gap-6">
       <PageHeader 
         title={`Good morning, Dr. ${doctorName.replace(/^(Dr\.\s*|Dr\s*)/i, "").split(" ")[0] || doctorName}`} 
-        description={`Today is ${todayDate}. Here is your schedule for the day.`} 
+        description={`Today is ${todayDate}. Here is your schedule for the day.`}
+        action={<LiveBadge isConnected={isConnected} />}
       />
 
       {/* Top Stat Cards */}
