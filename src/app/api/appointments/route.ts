@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ApptStatus } from "@prisma/client";
+import { publishEvent } from "@/lib/events";
 
 function mapToApptStatus(status?: string): ApptStatus {
   if (!status) return ApptStatus.SCHEDULED;

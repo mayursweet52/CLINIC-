@@ -142,6 +142,7 @@ export default function Home() {
       const data = await res.json();
       if (res.ok) {
         setSuccessData(data);
+        toast.success("Appointment confirmed!");
       } else {
         alert(data.error || "Failed to book");
       }
