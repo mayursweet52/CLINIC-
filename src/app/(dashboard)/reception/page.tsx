@@ -1,110 +1,131 @@
-﻿"use client";
+"use client";
+
 import { useState, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Clock, CheckCircle2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Clock, CheckCircle2, AlertCircle, Calendar, Users2 } from "lucide-react";
+
+import { TableSkeleton } from "@/components/shared/TableSkeleton";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { StatCard } from "@/components/shared/StatCard";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 export default function ReceptionDashboard() {
-  const [appointments, setAppointments] = useState<any[]>([]);
+  const [allAppointments, setAllAppointments] = useState<any[]>([]);
+  const [pendingBills, setPendingBills] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch("/api/appointments")
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => {
+        if (!res.ok) throw new Error("Fetch failed");
+        return res.json();
+      })
+      .then((data) => {
         if (Array.isArray(data)) {
-          // Receptionist sees "Completed" by doctor to collect payment
-          setAppointments(data.filter(a => a.rawStatus === "COMPLETED"));
+          setAllAppointments(data);
+          // Receptionist sees "COMPLETED" appointments to collect payment
+          setPendingBills(data.filter((a) => a.rawStatus === "COMPLETED"));
         }
       })
-      .catch(err => console.error("Error fetching appointments:", err))
+      .catch((err) => {
+        console.error("Error fetching appointments:", err);
+        toast.error("Failed to load appointments.");
+        setError(true);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const collectPayment = async (id: string) => {
-    alert("Payment of ₹1500 Collected Successfully! Bill Generated.");
-    setAppointments(prev => prev.filter(a => a.id !== id));
+    toast.success("Payment of ₹1500 Collected Successfully! Bill Generated.");
+    setPendingBills((prev) => prev.filter((a) => a.id !== id));
   };
 
+  // Stats calculation
+  const total = loading ? "-" : allAppointments.length;
+  const queue = loading ? "-" : allAppointments.filter(a => ["ARRIVED", "IN_PROGRESS", "SCHEDULED"].includes(a.rawStatus || "")).length;
+  const completed = loading ? "-" : allAppointments.filter(a => ["COMPLETED", "PAID"].includes(a.rawStatus || "")).length;
+
   return (
-    <div className="min-h-screen bg-zinc-50 p-6 md:p-10 font-sans text-sm">
-      <div className="max-w-5xl mx-auto space-y-6">
-        
-        {/* Header */}
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-950 flex items-center gap-2">
-            <Users className="h-6 w-6 text-zinc-500" />
-            Front Desk & Billing
-          </h1>
-          <p className="text-zinc-500">Manage patient check-ins and collect payments for completed consultations.</p>
-        </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader 
+        title="Front Desk & Billing" 
+        description="Manage patient check-ins and collect payments for completed consultations." 
+      />
 
-        {/* Dashboard Cards (Static for now) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-white border border-zinc-200 rounded-xl shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-zinc-500 font-medium">Pending Bills</p>
-              <h2 className="text-3xl font-bold text-zinc-950">{loading ? "-" : appointments.length}</h2>
-            </div>
-            <div className="h-10 w-10 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-600">
-              <Clock className="h-5 w-5" />
-            </div>
-          </div>
-          {/* Add more stat cards as needed... */}
-        </div>
+      {/* Top Stat Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard title="Total Appointments" value={total} icon={Calendar} iconColor="text-blue-500" />
+        <StatCard title="In Queue" value={queue} icon={Users2} iconColor="text-yellow-500" />
+        <StatCard title="Completed" value={completed} icon={CheckCircle2} iconColor="text-green-500" />
+        <StatCard title="Avg Wait Time" value={loading ? "-" : "14 min"} icon={Clock} iconColor="text-orange-500" />
+      </div>
 
-        {/* Pending Bills List */}
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900 mb-4">Awaiting Payment</h2>
-          
-          <div className="space-y-3">
+      {/* Wrapped List inside Card */}
+      <Card className="overflow-hidden shadow-sm">
+        <CardHeader className="bg-muted/20 border-b pb-4">
+          <CardTitle className="text-lg font-semibold">Awaiting Payment</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="flex flex-col divide-y divide-border">
             {loading ? (
-              // Skeleton Loaders
-              [1, 2, 3].map(i => (
-                <div key={i} className="bg-white p-5 rounded-xl border border-zinc-200 flex items-center justify-between shadow-sm">
-                  <div className="space-y-2">
-                    <Skeleton className="h-5 w-40" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                  <Skeleton className="h-10 w-32 rounded-md" />
-                </div>
-              ))
-            ) : appointments.length > 0 ? (
-              appointments.map(appt => (
-                <div key={appt.id} className="bg-white p-5 rounded-xl border border-zinc-200 flex flex-col md:flex-row justify-between md:items-center shadow-sm gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-base font-bold text-zinc-950">{appt.patientName}</h3>
-                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200">Token #{appt.tokenNumber}</Badge>
-                      <Badge variant="default" className="bg-green-100 text-green-700 hover:bg-green-200 border-none">Completed</Badge>
+              <div className="p-0">
+                {/* Changed cols to 1 because list format is currently 1 row per appointment */}
+                <TableSkeleton rows={4} cols={1} />
+              </div>
+            ) : error ? (
+              <div className="p-8">
+                <EmptyState 
+                  icon={AlertCircle} 
+                  title="Failed to load" 
+                  description="Please refresh the page to try again." 
+                />
+              </div>
+            ) : pendingBills.length > 0 ? (
+              pendingBills.map((appt) => (
+                <div 
+                  key={appt.id} 
+                  className="flex flex-col md:flex-row justify-between md:items-center p-4 hover:bg-muted/5 transition-colors gap-4"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <h3 className="font-semibold">{appt.patientName}</h3>
+                      <span className="text-xs text-muted-foreground border border-border px-2 py-0.5 rounded-full">
+                        Token #{appt.tokenNumber}
+                      </span>
+                      {/* Using StatusBadge Component */}
+                      <StatusBadge status={appt.rawStatus || "COMPLETED"} />
                     </div>
-                    <p className="text-zinc-500 font-medium">Doctor: <span className="text-zinc-700">{appt.doctor}</span></p>
+                    <p className="text-sm text-muted-foreground">
+                      Doctor: <span className="font-medium text-foreground">{appt.doctor}</span>
+                    </p>
                   </div>
+                  {/* Using Outline Button */}
                   <Button 
+                    size="sm" 
+                    variant="outline" 
                     onClick={() => collectPayment(appt.id)}
-                    className="w-full md:w-auto shadow-sm"
                   >
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-600" />
                     Collect ₹1500
                   </Button>
                 </div>
               ))
             ) : (
-              // Empty State
-              <div className="bg-white border border-dashed border-zinc-300 rounded-xl p-12 flex flex-col items-center justify-center text-center">
-                <div className="h-12 w-12 bg-zinc-100 rounded-full flex items-center justify-center mb-4">
-                  <CheckCircle2 className="h-6 w-6 text-zinc-400" />
-                </div>
-                <h3 className="text-lg font-medium text-zinc-950">Queue is clear</h3>
-                <p className="text-zinc-500 mt-1 max-w-sm">There are no pending bills or patients awaiting payment right now.</p>
+              <div className="p-8">
+                <EmptyState 
+                  icon={Calendar} 
+                  title="Queue is clear" 
+                  description="Pending bills and completed consultations will appear here." 
+                />
               </div>
             )}
           </div>
-        </div>
-        
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
-
