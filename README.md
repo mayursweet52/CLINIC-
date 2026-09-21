@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ClinicOS 🏥
 
-## Getting Started
+A modern, multi-tenant Clinic and Hospital Management System built with Next.js, Prisma, and PostgreSQL.
 
-First, run the development server:
+## 🌟 Overview & Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+ClinicOS streamlines hospital operations with a fully integrated suite of tools:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Public Booking Portal:** Patients can seamlessly book appointments with specific doctors across different hospital branches.
+- **Doctor Dashboard:** Live patient queue, vitals entry, clinical notes, and automated consultation completions.
+- **Receptionist & Billing:** Dedicated portal for front-desk staff to generate bills and collect payments for completed consultations.
+- **Patient Portal:** Secure access for patients to view their medical history, prescriptions, and lab reports.
+- **Multi-Tenant Architecture:** Built securely to support multiple hospital organizations on a single platform using role-based access control (RBAC).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠 Prerequisites
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Before you begin, ensure you have the following installed:
+- [Node.js](https://nodejs.org/en/) (v20 or higher)
+- [PostgreSQL](https://www.postgresql.org/) (v15 or higher) or [Docker](https://www.docker.com/) for running a containerized database.
 
-## Learn More
+## 🚀 Environment Setup
 
-To learn more about Next.js, take a look at the following resources:
+1. Clone the repository and install dependencies:
+   ```bash
+   npm install
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. Configure your environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+   Open `.env` and update the `DATABASE_URL` with your local PostgreSQL credentials.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 💾 Database Migrations & Seeding
 
-## Deploy on Vercel
+This project uses Prisma ORM.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **Run Migrations:**
+   Apply the database schema to your local PostgreSQL instance:
+   ```bash
+   npx prisma migrate dev
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+2. **Seed Demo Data:**
+   Populate your database with mock organizations, users (doctors, admins, receptionists), and patients:
+   ```bash
+   npm run prisma:seed
+   ```
+
+## 🧪 Testing
+
+We use Vitest for unit testing and Playwright for End-to-End (E2E) testing.
+
+- **Run Unit Tests:**
+  ```bash
+  npm run test:unit
+  ```
+- **Run E2E Tests:**
+  ```bash
+  npx playwright test
+  ```
+
+## 🚢 Deployment
+
+### Vercel (Recommended)
+1. Push your code to GitHub.
+2. Import the project into [Vercel](https://vercel.com/).
+3. Add `DATABASE_URL` and `JWT_SECRET` to the Vercel Environment Variables.
+4. Deploy! Vercel automatically detects Next.js and runs the build command.
+
+### Docker / VPS
+1. Build the Next.js standalone application:
+   ```bash
+   npm run build
+   ```
+2. Run the Node server from `.next/standalone/server.js` or write a standard `Dockerfile` exposing port `3000`.
+
+## 🌐 Local Tunneling (Optional)
+Do not commit local tunneling binaries like `cloudflared.exe`. If you need to expose your local dev server to the internet:
+1. Download `cloudflared` from the [official Cloudflare repository](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/).
+2. Run: `cloudflared tunnel --url http://localhost:3000`
