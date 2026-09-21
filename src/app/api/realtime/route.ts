@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   let payload;
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || "default_secret");
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || "super-secret-key-for-businessos-health-12345");
     const verified = await jwtVerify(token, secret);
     payload = verified.payload;
   } catch (err) {

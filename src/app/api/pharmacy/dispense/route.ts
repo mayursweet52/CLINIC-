@@ -1,4 +1,4 @@
-﻿import logger from '@/lib/logger';
+import logger from '@/lib/logger';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 
         // Fetch organization ID for billing
         const appt = await tx.healthAppointment.findUnique({ where: { id: appointmentId } });
-        const orgId = appt?.organizationId || (await tx.organization.findFirst())?.id ;
+        const orgId = appt?.organizationId || (await tx.organization.findFirst())?.id || "org-1";
 
         // 3. Billing Record Auto-Create/Update Karo
         const existingBill = await tx.billing.findUnique({ where: { appointmentId } });
@@ -99,4 +99,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message || 'Dispense failed due to server error' }, { status: 500 });
   }
 }
-

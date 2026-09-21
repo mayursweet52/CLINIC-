@@ -1,9 +1,9 @@
-﻿import logger from '@/lib/logger';
+import logger from '@/lib/logger';
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ApptStatus } from "@prisma/client";
 import { DEMO_HOSPITALS, DEMO_DOCTORS_BY_ORG } from "../hospitals/route";
-import { saveBookingToStore } from "@/lib/patientStore";
+import { publishEvent } from "@/lib/events";
 
 export async function POST(request: Request) {
   try {
@@ -59,16 +59,27 @@ export async function POST(request: Request) {
         doctorName: appointment.doctor?.name || "Dr. Rajesh Sharma"
       };
 
-      // Also save to resilient store
-      saveBookingToStore({
-        patientCode: bookingResponse.patientCode,
-        tokenNumber: bookingResponse.tokenNumber,
+      // Realtime event publishing
+      const timestamp = new Date().toISOString();
+      const eventPayload = {
+        id: appointment.id,
+        orgId,
         patientName,
-        patientPhone,
-        hospitalName: bookingResponse.hospitalName,
-        doctorName: bookingResponse.doctorName,
-        date,
-        timeSlot
+        time: appointment.timeSlot,
+        tokenNumber: appointment.tokenNumber,
+        doctorId
+      };
+
+      publishEvent(`org:${orgId}:doctor:${doctorId}`, {
+        type: "appointment.created",
+        payload: eventPayload,
+        timestamp
+      });
+
+      publishEvent(`org:${orgId}:appointments`, {
+        type: "appointment.created",
+        payload: eventPayload,
+        timestamp
       });
 
       return NextResponse.json(bookingResponse, { status: 201 });
@@ -89,16 +100,27 @@ export async function POST(request: Request) {
         doctorName: doctorObj?.name || "Dr. Rajesh Sharma"
       };
 
-      // Save to resilient store so /health immediately finds this patient!
-      saveBookingToStore({
-        patientCode: bookingResponse.patientCode,
-        tokenNumber: bookingResponse.tokenNumber,
+      // Realtime event publishing (fallback mode)
+      const timestamp = new Date().toISOString();
+      const eventPayload = {
+        id: `fb-${Date.now()}`,
+        orgId,
         patientName,
-        patientPhone,
-        hospitalName: bookingResponse.hospitalName,
-        doctorName: bookingResponse.doctorName,
-        date,
-        timeSlot
+        time: timeSlot || "10:00 AM",
+        tokenNumber,
+        doctorId
+      };
+
+      publishEvent(`org:${orgId}:doctor:${doctorId}`, {
+        type: "appointment.created",
+        payload: eventPayload,
+        timestamp
+      });
+
+      publishEvent(`org:${orgId}:appointments`, {
+        type: "appointment.created",
+        payload: eventPayload,
+        timestamp
       });
 
       return NextResponse.json(bookingResponse, { status: 201 });
@@ -109,4 +131,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to book appointment" }, { status: 500 });
   }
 }
-

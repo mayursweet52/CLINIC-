@@ -21,7 +21,7 @@ test.describe('Patient Booking Flow', () => {
     
     await page.click('button[type="submit"]');
     
-    // Expect success screen
-    await expect(page.locator('text=Appointment Confirmed')).toBeVisible({ timeout: 15000 });
+    // Expect success screen heading
+    await expect(page.getByRole('heading', { name: /Appointment Confirmed/i })).toBeVisible({ timeout: 15000 });
   });
 });

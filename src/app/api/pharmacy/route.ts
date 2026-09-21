@@ -1,4 +1,4 @@
-﻿import logger from '@/lib/logger';
+import logger from '@/lib/logger';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
@@ -40,14 +40,14 @@ export async function POST(request: Request) {
     let orgId = request.headers.get('x-org-id');
     if (!orgId) {
       const org = await prisma.organization.findFirst().catch(() => null);
-      orgId = org?.id ;
+      orgId = org?.id || 'org-1';
     }
 
     const body = await request.json();
 
     const newMed = await prisma.medicine.create({
       data: {
-        organizationId: orgId,
+        organizationId: orgId || 'org-1',
         name: body.name || 'New Medicine',
         batchNo: `B-${Math.floor(1000 + Math.random() * 9000)}`,
         stockQuantity: Number(body.stock) || Number(body.stockQuantity) || 50,
@@ -74,4 +74,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 }
-

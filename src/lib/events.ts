@@ -9,7 +9,7 @@ const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
 const pubClient = new Redis(redisUrl);
 
 pubClient.on("error", (err) => {
-  logger.error("Redis PubClient Error", { error: err.message });
+  logger.error({ err }, "Redis PubClient Error");
 });
 
 /**
@@ -18,9 +18,9 @@ pubClient.on("error", (err) => {
 export async function publishEvent(channel: string, event: ClinicEvent) {
   try {
     await pubClient.publish(channel, JSON.stringify(event));
-    logger.info("Event published", { channel, type: event.type });
+    logger.info({ channel, type: event.type }, "Event published");
   } catch (error) {
-    logger.error("Failed to publish event", { error, channel, event });
+    logger.error({ error, channel, event }, "Failed to publish event");
   }
 }
 
@@ -32,25 +32,25 @@ export function subscribeToChannel(channel: string, onMessage: (event: ClinicEve
   const subClient = new Redis(redisUrl);
   
   subClient.on("error", (err) => {
-    logger.error("Redis SubClient Error", { error: err.message, channel });
+    logger.error({ err, channel }, "Redis SubClient Error");
   });
 
   // Use psubscribe if channel has wildcards, otherwise subscribe
   if (channel.includes("*")) {
     subClient.psubscribe(channel, (err) => {
-      if (err) logger.error("Failed to psubscribe", { error, channel });
+      if (err) logger.error({ err, channel }, "Failed to psubscribe");
     });
     
     subClient.on("pmessage", (pattern, ch, message) => {
       try {
         onMessage(JSON.parse(message));
       } catch(e) {
-        logger.error("Error parsing event pmessage", { e, message });
+        logger.error({ e, message }, "Error parsing event pmessage");
       }
     });
   } else {
     subClient.subscribe(channel, (err) => {
-      if (err) logger.error("Failed to subscribe", { error, channel });
+      if (err) logger.error({ err, channel }, "Failed to subscribe");
     });
 
     subClient.on("message", (ch, message) => {
@@ -58,7 +58,7 @@ export function subscribeToChannel(channel: string, onMessage: (event: ClinicEve
         try {
           onMessage(JSON.parse(message));
         } catch(e) {
-          logger.error("Error parsing event message", { e, message });
+          logger.error({ e, message }, "Error parsing event message");
         }
       }
     });

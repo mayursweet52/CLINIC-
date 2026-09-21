@@ -11,7 +11,7 @@ export default async function DoctorPage() {
 
   if (token) {
     try {
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET || "default_secret");
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET || "super-secret-key-for-businessos-health-12345");
       const verified = await jwtVerify(token, secret);
       userId = (verified.payload.userId as string) || "dr-unknown";
       name = (verified.payload.name as string) || "Doctor";

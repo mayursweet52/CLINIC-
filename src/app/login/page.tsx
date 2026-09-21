@@ -6,31 +6,31 @@ import Link from 'next/link';
 const ROLE_PRESETS: Record<string, { email: string; destination: string; label: string; icon: string }> = {
   Doctor: {
     email: 'dr.smith@clinic.com',
-    destination: '/staff',
+    destination: '/doctor',
     label: 'Doctor Console',
     icon: '🩺'
   },
   Receptionist: {
     email: 'reception@clinic.com',
-    destination: '/staff/receptionist',
+    destination: '/reception',
     label: 'Reception & Queue',
     icon: '📋'
   },
   Admin: {
     email: 'admin@clinic.com',
-    destination: '/superadmin',
+    destination: '/admin',
     label: 'Hospital & SuperAdmin',
     icon: '👑'
   },
   Pharmacist: {
     email: 'pharmacy@clinic.com',
-    destination: '/staff/pharmacy',
+    destination: '/pharmacy',
     label: 'Pharmacy Counter',
     icon: '💊'
   },
   Cashier: {
     email: 'billing@clinic.com',
-    destination: '/staff/billing',
+    destination: '/reception/billing',
     label: 'Billing & Cashier',
     icon: '🧾'
   }
@@ -75,15 +75,15 @@ export default function StaffLogin() {
       // Smart routing based on role
       const normalizedRole = (resData.role || targetRole).toUpperCase();
       if (normalizedRole === 'RECEPTIONIST') {
-        router.push('/staff/receptionist');
+        router.push('/reception');
       } else if (normalizedRole === 'ADMIN' || normalizedRole === 'SUPERADMIN' || normalizedRole === 'OWNER') {
-        router.push('/superadmin');
+        router.push('/admin');
       } else if (normalizedRole === 'PHARMACIST') {
-        router.push('/staff/pharmacy');
-      } else if (normalizedRole === 'CASHIER' || normalizedRole === 'ACCOUNTANT') {
-        router.push('/staff/billing');
+        router.push('/pharmacy');
+      } else if (normalizedRole === 'DOCTOR') {
+        router.push('/doctor');
       } else {
-        router.push('/staff');
+        router.push('/doctor');
       }
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');

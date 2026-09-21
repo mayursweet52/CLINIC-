@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import QRCode from "react-qr-code";
+import { toast } from "sonner";
 
 const FALLBACK_DOCTORS = [
   {
@@ -61,23 +63,44 @@ const FALLBACK_DOCTORS = [
   {
     id: "doc-6",
     name: "Dr. Amit Verma",
-    department: "ENT",
-    specialization: "Ear, Nose, Throat Surgeon",
-    consultationFee: 450,
-    experience: "9+ Years Exp",
+    department: "Dermatology",
+    specialization: "Skin, Hair & Laser Specialist",
+    consultationFee: 500,
+    experience: "8+ Years Exp",
     timing: "02:00 PM - 07:00 PM",
-    availableDays: ["MONDAY", "WEDNESDAY", "SATURDAY"],
+    availableDays: ["MONDAY", "TUESDAY", "WEDNESDAY", "FRIDAY", "SATURDAY"],
+    slotDuration: 15
+  },
+  {
+    id: "doc-7",
+    name: "Dr. Sunita Rao",
+    department: "ENT",
+    specialization: "Ear, Nose & Throat Specialist",
+    consultationFee: 450,
+    experience: "11+ Years Exp",
+    timing: "10:00 AM - 02:00 PM",
+    availableDays: ["TUESDAY", "THURSDAY", "SATURDAY"],
+    slotDuration: 15
+  },
+  {
+    id: "doc-8",
+    name: "Dr. Manoj Joshi",
+    department: "Ophthalmology",
+    specialization: "Eye Surgeon & Vision Care Specialist",
+    consultationFee: 500,
+    experience: "16+ Years Exp",
+    timing: "09:30 AM - 01:30 PM",
+    availableDays: ["MONDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
     slotDuration: 15
   }
 ];
 
-export default function Home() {
+export default function BookAppointmentPage() {
   const [hospitals, setHospitals] = useState<any[]>([]);
   const [selectedHospital, setSelectedHospital] = useState<any | null>(null);
   const [doctors, setDoctors] = useState<any[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<any | null>(null);
-  
-  // Form State
+
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
   const [date, setDate] = useState("");
@@ -144,10 +167,10 @@ export default function Home() {
         setSuccessData(data);
         toast.success("Appointment confirmed!");
       } else {
-        alert(data.error || "Failed to book");
+        toast.error(data.error || "Failed to book");
       }
     } catch (err) {
-      alert("An error occurred during booking. Please try again.");
+      toast.error("An error occurred during booking. Please try again.");
     } finally {
       setIsBooking(false);
     }
@@ -172,7 +195,7 @@ export default function Home() {
           </div>
           <div className="flex gap-4">
             <Link href="/health" className="text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">Patient Portal</Link>
-            <Link href="/staff" className="text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">Staff Login</Link>
+            <Link href="/login" className="text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">Staff Login</Link>
           </div>
         </div>
       </nav>
@@ -186,15 +209,20 @@ export default function Home() {
             <h2 className="text-3xl font-extrabold text-slate-900 mb-2">Appointment Confirmed!</h2>
             <p className="text-slate-500 mb-8">Please visit {successData.hospitalName} at your scheduled time.</p>
             
-            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-8 text-left">
+            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-6 text-left">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                 <p className="text-xs font-bold text-slate-400 uppercase">Token Number</p>
-                <p className="text-2xl font-black text-indigo-600">#{successData.tokenNumber}</p>
+                <p className="text-2xl font-black text-indigo-600">#{successData.tokenNumber || "101"}</p>
               </div>
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                 <p className="text-xs font-bold text-slate-400 uppercase">Patient Code</p>
-                <p className="text-2xl font-black text-slate-900">{successData.patientCode}</p>
+                <p className="text-2xl font-black text-slate-900">{successData.patientCode || "PAT-1001"}</p>
               </div>
+            </div>
+
+            <div className="max-w-md mx-auto mb-8 bg-white p-6 rounded-2xl border border-slate-200 flex flex-col items-center justify-center shadow-xs">
+              <p className="text-xs font-bold text-slate-400 uppercase mb-3">Scan at Check-in Counter</p>
+              <QRCode value={JSON.stringify({ token: successData.tokenNumber, code: successData.patientCode })} size={140} />
             </div>
             
             <p className="text-sm text-slate-500 mb-6 font-medium">Keep your Patient Code safe. You can use it to view your prescriptions online.</p>
