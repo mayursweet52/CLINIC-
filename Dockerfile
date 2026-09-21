@@ -5,10 +5,14 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copy package files
-COPY package.json ./
+COPY package.json package-lock.json* ./
 
 # Install dependencies
 RUN npm install
+
+# Copy Prisma schema and generate client
+COPY prisma ./prisma/
+RUN npx prisma generate || true
 
 # Copy project files
 COPY . .
