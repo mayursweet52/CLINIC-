@@ -1,85 +1,15 @@
-<<<<<<< HEAD
-"use client";
-
-import { useEffect, useState, useRef } from "react";
-import { ClinicEvent } from "@/lib/events.types";
-import { toast } from "sonner";
-
-export function useRealtime() {
-  const [isConnected, setIsConnected] = useState(false);
-  const [lastEvent, setLastEvent] = useState<ClinicEvent | null>(null);
-  const eventSourceRef = useRef<EventSource | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const retryCount = useRef(0);
-
-  useEffect(() => {
-    function connect() {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-
-      const es = new EventSource("/api/realtime");
-      eventSourceRef.current = es;
-
-      es.onopen = () => {
-        setIsConnected(true);
-        retryCount.current = 0; // reset backoff on success
-      };
-
-      es.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data) as ClinicEvent;
-          setLastEvent(data);
-        } catch (err) {
-          console.error("Failed to parse SSE message", err);
-        }
-      };
-
-      es.addEventListener("connected", (event) => {
-        console.log("Realtime connected:", event.data);
-      });
-
-      es.addEventListener("heartbeat", () => {
-        // Just keeping the connection alive
-      });
-
-      es.onerror = (error) => {
-        setIsConnected(false);
-        es.close();
-        
-        // Exponential backoff reconnect
-        const timeout = Math.min(10000, 1000 * Math.pow(2, retryCount.current));
-        retryCount.current += 1;
-        
-        reconnectTimeoutRef.current = setTimeout(connect, timeout);
-      };
-    }
-
-    connect();
-
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-    };
-  }, []);
-
-  return { isConnected, lastEvent };
-=======
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+import type { ClinicEvent } from '@/lib/events.types';
 
 export interface RealtimeEvent<T = any> {
-  id: string;
+  id?: string;
   type: string;
   orgId?: string;
   doctorId?: string;
   payload: T;
-  timestamp: string;
+  timestamp?: string;
 }
 
 interface UseRealtimeOptions {
@@ -132,6 +62,8 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
   const [lastEvent, setLastEvent] = useState<RealtimeEvent | null>(null);
   const [events, setEvents] = useState<RealtimeEvent[]>([]);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryCount = useRef(0);
   const listenersRef = useRef<Map<string, Set<(payload: any) => void>>>(new Map());
 
   const { orgId, doctorId, onEvent, enableChime = false } = options;
@@ -139,53 +71,76 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    let params = new URLSearchParams();
-    if (orgId) params.append('orgId', orgId);
-    if (doctorId) params.append('doctorId', doctorId);
-
-    const url = `/api/realtime?${params.toString()}`;
-    const es = new EventSource(url);
-    eventSourceRef.current = es;
-
-    es.addEventListener('connected', () => {
-      setIsConnected(true);
-    });
-
-    // Catch generic messages
-    es.onmessage = (e) => {
-      try {
-        const parsed: RealtimeEvent = JSON.parse(e.data);
-        handleIncomingEvent(parsed);
-      } catch (err) {
-        // ignore raw keepalives
+    function connect() {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
       }
-    };
 
-    // Specific event listeners
-    const registeredTypes = [
-      'appointment.created',
-      'patient.checked_in',
-      'queue.next',
-      'prescription.ready',
-      'prescription.dispensed',
-      'bill.paid',
-      'lab.report_ready'
-    ];
+      const params = new URLSearchParams();
+      if (orgId) params.append('orgId', orgId);
+      if (doctorId) params.append('doctorId', doctorId);
 
-    registeredTypes.forEach((eventType) => {
-      es.addEventListener(eventType, (e: MessageEvent) => {
+      const url = `/api/realtime?${params.toString()}`;
+      const es = new EventSource(url);
+      eventSourceRef.current = es;
+
+      es.addEventListener('connected', () => {
+        setIsConnected(true);
+        retryCount.current = 0;
+      });
+
+      es.onopen = () => {
+        setIsConnected(true);
+        retryCount.current = 0;
+      };
+
+      // Generic message handler
+      es.onmessage = (e) => {
         try {
           const parsed: RealtimeEvent = JSON.parse(e.data);
           handleIncomingEvent(parsed);
-        } catch (err) {
-          console.error('Failed to parse SSE event', err);
+        } catch {
+          // ignore raw keepalives
         }
-      });
-    });
+      };
 
-    es.onerror = () => {
-      setIsConnected(false);
-    };
+      // Typed event listeners
+      const registeredTypes = [
+        'appointment.created',
+        'appointment.updated',
+        'appointment.cancelled',
+        'patient.checked_in',
+        'queue.next',
+        'prescription.created',
+        'prescription.ready',
+        'prescription.dispensed',
+        'bill.paid',
+        'lab.report_ready',
+        'heartbeat',
+      ];
+
+      registeredTypes.forEach((eventType) => {
+        es.addEventListener(eventType, (e: MessageEvent) => {
+          if (eventType === 'heartbeat') return;
+          try {
+            const parsed: RealtimeEvent = JSON.parse(e.data);
+            handleIncomingEvent(parsed);
+          } catch (err) {
+            console.error('Failed to parse SSE event', err);
+          }
+        });
+      });
+
+      es.onerror = () => {
+        setIsConnected(false);
+        es.close();
+
+        // Exponential backoff reconnect (capped at 10s)
+        const timeout = Math.min(10000, 1000 * Math.pow(2, retryCount.current));
+        retryCount.current += 1;
+        reconnectTimeoutRef.current = setTimeout(connect, timeout);
+      };
+    }
 
     function handleIncomingEvent(event: RealtimeEvent) {
       setLastEvent(event);
@@ -210,9 +165,16 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
       }
     }
 
+    connect();
+
     return () => {
-      es.close();
-      eventSourceRef.current = null;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
       setIsConnected(false);
     };
   }, [orgId, doctorId, enableChime]);
@@ -222,7 +184,7 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
       await fetch('/api/realtime', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, payload, orgId, doctorId })
+        body: JSON.stringify({ type, payload, orgId, doctorId }),
       });
     } catch (err) {
       console.error('Failed to broadcast realtime event:', err);
@@ -245,7 +207,6 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
     events,
     emit,
     on,
-    playHospitalChime
+    playHospitalChime,
   };
->>>>>>> origin/main
 }
