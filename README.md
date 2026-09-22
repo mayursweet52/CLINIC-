@@ -1,81 +1,141 @@
-# ClinicOS 🏥
+# ClinicOS
 
-A modern, multi-tenant Clinic and Hospital Management System built with Next.js, Prisma, and PostgreSQL.
+> Enterprise-grade OPD Clinic Management System
 
-## 🌟 Overview & Features
+[![Build Status](https://github.com/clinic/clinicos/actions/workflows/ci.yml/badge.svg)](https://github.com/clinic/clinicos/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-ClinicOS streamlines hospital operations with a fully integrated suite of tools:
+![ClinicOS Dashboard](./ui-audit/demo/scene1-doctor.png)
 
-- **Public Booking Portal:** Patients can seamlessly book appointments with specific doctors across different hospital branches.
-- **Doctor Dashboard:** Live patient queue, vitals entry, clinical notes, and automated consultation completions.
-- **Receptionist & Billing:** Dedicated portal for front-desk staff to generate bills and collect payments for completed consultations.
-- **Patient Portal:** Secure access for patients to view their medical history, prescriptions, and lab reports.
-- **Multi-Tenant Architecture:** Built securely to support multiple hospital organizations on a single platform using role-based access control (RBAC).
+## Features
 
-## 🛠 Prerequisites
+- **OPD clinic management**: End-to-end patient lifecycle from booking to pharmacy
+- **Real-time updates**: Powered by Redis + SSE for instant dashboard updates
+- **Multi-role RBAC**: Doctor, Reception, Pharmacy, Admin portals
+- **Payments**: Integrated Razorpay for seamless billing
+- **Notifications**: Automated Email/SMS/WhatsApp via BullMQ background workers
+- **Patient portal**: Secure login via OTP for patients to view records
+- **Analytics**: Beautiful charts using Recharts for clinic performance
+- **Doctor schedule**: Calendar and timeline views
+- **Audit logs**: Comprehensive tracking of all actions
 
-Before you begin, ensure you have the following installed:
-- [Node.js](https://nodejs.org/en/) (v20 or higher)
-- [PostgreSQL](https://www.postgresql.org/) (v15 or higher) or [Docker](https://www.docker.com/) for running a containerized database.
+## Tech Stack
 
-## 🚀 Environment Setup
+- **Frontend:** Next.js 15, React 19, TypeScript, Tailwind v4, shadcn/ui
+- **State Management:** TanStack Query + Zustand
+- **Backend:** Next.js App Router API, Prisma, PostgreSQL
+- **Real-time & Queues:** Redis + BullMQ
+- **Animations & Visuals:** framer-motion, Recharts
+- **Testing:** Playwright (E2E), Vitest (Unit)
 
-1. Clone the repository and install dependencies:
+## Quick Start
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/clinic/clinicos.git
+   cd clinicos
+   ```
+
+2. **Install dependencies:**
    ```bash
    npm install
    ```
 
-2. Configure your environment variables:
+3. **Set up environment variables:**
    ```bash
    cp .env.example .env
+   # Update .env with your credentials
    ```
-   Open `.env` and update the `DATABASE_URL` with your local PostgreSQL credentials.
 
-## 💾 Database Migrations & Seeding
-
-This project uses Prisma ORM.
-
-1. **Run Migrations:**
-   Apply the database schema to your local PostgreSQL instance:
+4. **Database setup:**
    ```bash
    npx prisma migrate dev
+   node prisma/seed.mjs
    ```
 
-2. **Seed Demo Data:**
-   Populate your database with mock organizations, users (doctors, admins, receptionists), and patients:
+5. **Run the development server:**
    ```bash
-   npm run prisma:seed
+   npm run dev
    ```
 
-## 🧪 Testing
+## Scripts
 
-We use Vitest for unit testing and Playwright for End-to-End (E2E) testing.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run start` | Start production server |
+| `npm run test:unit` | Run Vitest unit tests |
+| `npm run test:e2e` | Run Playwright end-to-end tests |
+| `npm run worker:notifications` | Start BullMQ worker for notifications |
+| `npm run demo:record` | Run Playwright script to record demo screenshots |
 
-- **Run Unit Tests:**
-  ```bash
-  npm run test:unit
-  ```
-- **Run E2E Tests:**
-  ```bash
-  npx playwright test
-  ```
+## Environment Variables
 
-## 🚢 Deployment
+**Required:**
+- `DATABASE_URL`: PostgreSQL connection string (e.g. Neon)
+- `REDIS_URL`: Redis connection string (e.g. Upstash)
+- `JWT_SECRET`: Secret key for authentication
 
-### Vercel (Recommended)
-1. Push your code to GitHub.
-2. Import the project into [Vercel](https://vercel.com/).
-3. Add `DATABASE_URL` and `JWT_SECRET` to the Vercel Environment Variables.
-4. Deploy! Vercel automatically detects Next.js and runs the build command.
+**Optional:**
+- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`: For payments
+- `RESEND_API_KEY`: For emails
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`: For SMS
+- `SENTRY_DSN`: For error tracking
 
-### Docker / VPS
-1. Build the Next.js standalone application:
-   ```bash
-   npm run build
-   ```
-2. Run the Node server from `.next/standalone/server.js` or write a standard `Dockerfile` exposing port `3000`.
+## Deployment
 
-## 🌐 Local Tunneling (Optional)
-Do not commit local tunneling binaries like `cloudflared.exe`. If you need to expose your local dev server to the internet:
-1. Download `cloudflared` from the [official Cloudflare repository](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/).
-2. Run: `cloudflared tunnel --url http://localhost:3000`
+### Vercel Deployment
+
+1. Fork or clone the repository to your GitHub account.
+2. Create a new project in Vercel and import the repository.
+3. Configure the following environment variables in Vercel Settings:
+   - `DATABASE_URL`
+   - `REDIS_URL`
+   - `JWT_SECRET`
+4. Set the Build Command to `npx prisma generate && next build`.
+5. Deploy!
+
+*Note: For the database, we recommend [Neon (Serverless Postgres)](https://neon.tech), and for Redis we recommend [Upstash](https://upstash.com).*
+
+## Architecture
+
+```
++----------------+      +-------------------+
+|  Client (Web)  | ---> |   Next.js API     |
++----------------+      +-------------------+
+        |                         |
+        | (SSE)                   v
+        |               +-------------------+
++----------------+      |     Services      |
+|  Patient App   |      +-------------------+
++----------------+          |           |
+                            v           v
+                    +------------+  +-------+
+                    | PostgreSQL |  | Redis |
+                    +------------+  +-------+
+                                        |
+                                        | (BullMQ Event Bus)
+                                        v
+                                +----------------+
+                                | Worker Process |
+                                +----------------+
+                                        |
+                            +-----------+-----------+
+                            |           |           |
+                            v           v           v
+                        +-------+   +-------+   +-------+
+                        | Email |   |  SMS  |   | Pay   |
+                        +-------+   +-------+   +-------+
+```
+
+## Screenshots
+
+### Dashboard
+![Dashboard](./ui-audit/demo/scene1-doctor.png)
+
+### Booking Flow
+![Booking](./ui-audit/demo/scene2-booking-step1.png)
+
+### Analytics
+![Analytics](./ui-audit/demo/scene8-analytics.png)

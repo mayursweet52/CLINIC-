@@ -1,243 +1,144 @@
-import { chromium } from '@playwright/test';
+import { chromium } from 'playwright';
 import * as fs from 'fs';
 
 async function main() {
-  console.log('=== Starting ClinicOS Demo Recording Script ===');
-
-  const screenshotsDir = 'demo-screenshots';
+  const screenshotsDir = 'ui-audit/demo';
   if (!fs.existsSync(screenshotsDir)) {
-    fs.mkdirSync(screenshotsDir);
+    fs.mkdirSync(screenshotsDir, { recursive: true });
   }
 
-  // Launch browser for OBS capturing
-  const browser = await chromium.launch({
-    headless: false, // Visible for OBS
-    slowMo: 300,     // Smooth for recording
-    args: ['--window-size=1920,1080']
-  });
-
-  const context = await browser.newContext({
-    viewport: { width: 1920, height: 1080 },
-    recordVideo: { dir: 'demo-videos', size: { width: 1920, height: 1080 } }
-  });
-
-  const page = await context.newPage();
-
+  const browser = await chromium.launch({ headless: true });
+  
   try {
-    // ==========================================
-    // STEP 1 — Login as doctor
-    // ==========================================
-    console.log('=== STEP 1: Login ===');
-    await page.goto('http://localhost:3000/login');
-    await page.waitForTimeout(1000);
-    // Fill credentials (adapt selectors if needed)
-    await page.fill('input[type="email"]', 'dr.smith@clinic.com').catch(() => {});
-    await page.fill('input[type="password"]', 'password123').catch(() => {});
-    await page.click('button[type="submit"], text="Login", text="Sign In"').catch(() => {});
-    await page.waitForTimeout(2000);
+    // SCENE 1: Login as doctor → dashboard
+    console.log('=== SCENE 1: Doctor Dashboard ===');
+    const doctorContext = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const doctorPage = await doctorContext.newPage();
+    
+    await doctorPage.goto('http://localhost:3000/login');
+    await doctorPage.fill('input[type="email"]', 'ananya.sharma@aarogyaclinic.in');
+    await doctorPage.fill('input[type="password"]', 'Aarogya@2024');
+    await doctorPage.click('button[type="submit"]');
+    await doctorPage.waitForTimeout(2000);
+    await doctorPage.screenshot({ path: `${screenshotsDir}/scene1-doctor.png` });
 
-    // ==========================================
-    // STEP 2 — Show doctor dashboard
-    // ==========================================
-    console.log('=== STEP 2: Doctor Dashboard ===');
-    await page.goto('http://localhost:3000/doctor');
-    await page.waitForTimeout(3000);
-    await page.screenshot({ path: `${screenshotsDir}/01-doctor-dashboard.png` });
-
-    // ==========================================
-    // STEP 3 — Patient booking (new context/page)
-    // ==========================================
-    console.log('=== STEP 3: Patient Booking ===');
-    const patientContext = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-    const pubPage = await patientContext.newPage();
+    // SCENE 2: Patient books from /book
+    console.log('=== SCENE 2: Patient Booking ===');
+    const pubContext = await browser.newContext({ viewport: { width: 414, height: 896 } });
+    const pubPage = await pubContext.newPage();
     
     await pubPage.goto('http://localhost:3000/book');
-    await pubPage.waitForTimeout(1500);
-    
-    // Select Hospital/Doctor
-    const hospitalBtn = await pubPage.$('text=City Care Hospital').catch(() => null) || await pubPage.$('button h3');
-    if (hospitalBtn) await hospitalBtn.click();
     await pubPage.waitForTimeout(1000);
+    await pubPage.screenshot({ path: `${screenshotsDir}/scene2-booking-step1.png` });
     
-    const doctorBtn = await pubPage.$('text=Dr. Smith').catch(() => null) || await pubPage.$('text=Dr. Rajesh Sharma').catch(() => null) || await pubPage.$('button h3');
-    if (doctorBtn) await doctorBtn.click();
+    const deptBtn = await pubPage.$('button:has-text("Cardiology"), button:has-text("General")').catch(() => null);
+    if (deptBtn) { await deptBtn.click(); await pubPage.click('button:has-text("Next")').catch(() => {}); }
+    
     await pubPage.waitForTimeout(1000);
+    const docBtn = await pubPage.$('button:has-text("Dr.")').catch(() => null);
+    if (docBtn) { await docBtn.click(); await pubPage.click('button:has-text("Next")').catch(() => {}); }
+    
+    await pubPage.waitForTimeout(1000);
+    const dateBtn = await pubPage.$('button[name="day"]:not(.opacity-50)').catch(() => null);
+    if (dateBtn) await dateBtn.click();
+    
+    const slotBtn = await pubPage.$('button:has-text("AM"), button:has-text("PM"):not([disabled])').catch(() => null);
+    if (slotBtn) { await slotBtn.click(); await pubPage.click('button:has-text("Next")').catch(() => {}); }
 
-    const bookingDate = new Date();
-    bookingDate.setDate(bookingDate.getDate() + 1); // tomorrow
-    const dateStr = bookingDate.toISOString().split('T')[0];
+    await pubPage.fill('input[name="patientName"]', 'Rahul Kumar').catch(() => {});
+    await pubPage.fill('input[name="patientPhone"]', '+919876543210').catch(() => {});
     
-    await pubPage.fill('input[type="text"]', 'Rajesh Kumar').catch(() => {});
-    await pubPage.fill('input[type="tel"]', '9876543210').catch(() => {});
-    await pubPage.fill('input[type="date"]', dateStr).catch(() => {});
-    
-    await pubPage.waitForTimeout(2000); // wait for slots to load
-    await pubPage.screenshot({ path: `${screenshotsDir}/02-slots-loaded.png` });
-
-    // Select first open slot
-    const slots = await pubPage.$$eval('select option', opts => (opts as HTMLOptionElement[]).filter(o => !o.disabled && o.value !== "").map(o => o.value));
-    if (slots.length > 0) {
-      await pubPage.selectOption('select', slots[0]);
-    }
-    
-    await pubPage.click('button[type="submit"], text="Confirm Booking", text="Book"').catch(() => {});
+    await pubPage.waitForTimeout(500);
+    await pubPage.screenshot({ path: `${screenshotsDir}/scene2-booking-step4.png` });
+    await pubPage.click('button:has-text("Confirm Booking")').catch(() => {});
     await pubPage.waitForTimeout(2000);
-    await pubPage.screenshot({ path: `${screenshotsDir}/03-booking-success.png` });
+    await pubPage.screenshot({ path: `${screenshotsDir}/scene2-booking-success.png` });
 
-    // ==========================================
-    // STEP 4 — Show real-time update on doctor tab
-    // ==========================================
-    console.log('=== STEP 4: Doctor Live Update ===');
-    await page.bringToFront();
-    await page.waitForTimeout(3000); // let live update happen
-    await page.screenshot({ path: `${screenshotsDir}/04-doctor-live-update.png` });
-    await page.waitForTimeout(2000);
+    // SCENE 3: Real-time update (wait on doctor tab)
+    console.log('=== SCENE 3: Real-time Update ===');
+    await doctorPage.bringToFront();
+    await doctorPage.waitForTimeout(3000); // 3000ms to allow SSE update
+    await doctorPage.screenshot({ path: `${screenshotsDir}/scene3-realtime.png` });
 
-    // ==========================================
-    // STEP 5 — Reception
-    // ==========================================
-    console.log('=== STEP 5: Reception Check-in ===');
-    // Using a new context for Reception to simulate clean login
+    // SCENE 4: Reception check-in
+    console.log('=== SCENE 4: Reception Check-in ===');
     const recContext = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
     const recPage = await recContext.newPage();
     
     await recPage.goto('http://localhost:3000/login');
-    await recPage.fill('input[type="email"]', 'reception@clinic.com').catch(() => {});
-    await recPage.fill('input[type="password"]', 'password123').catch(() => {});
-    await recPage.click('button[type="submit"], text="Login"').catch(() => {});
-    await recPage.waitForTimeout(1500);
-    
-    await recPage.goto('http://localhost:3000/reception');
+    await recPage.fill('input[type="email"]', 'kavita.nair@aarogyaclinic.in');
+    await recPage.fill('input[type="password"]', 'Front@2024');
+    await recPage.click('button[type="submit"]');
     await recPage.waitForTimeout(2000);
     
-    // Attempt to click Mark Arrived
-    const arrivedBtn = await recPage.$('text="Mark Arrived"').catch(() => null) || await recPage.$('button:has-text("Arrived")');
+    const arrivedBtn = await recPage.$('button:has-text("Mark Arrived"), button:has-text("Check-in")').catch(() => null);
     if (arrivedBtn) await arrivedBtn.click();
-    await recPage.waitForTimeout(1500);
-    await recPage.screenshot({ path: `${screenshotsDir}/05-reception-checkin.png` });
+    await recPage.waitForTimeout(1000);
+    await recPage.screenshot({ path: `${screenshotsDir}/scene4-reception.png` });
 
-    // ==========================================
-    // STEP 6 — Doctor consultation
-    // ==========================================
-    console.log('=== STEP 6: Doctor Consultation ===');
-    await page.bringToFront();
-    await page.waitForTimeout(1000);
+    // SCENE 5: Doctor consultation
+    console.log('=== SCENE 5: Consultation ===');
+    await doctorPage.bringToFront();
+    await doctorPage.waitForTimeout(1000);
     
-    // Click on the patient (assuming row is clickable or has a 'Consult' button)
-    const consultBtn = await page.$('text="Start Consult"').catch(() => null) || await page.$('button:has-text("Consult")');
+    const consultBtn = await doctorPage.$('button:has-text("Start Consult"), button:has-text("Consult")').catch(() => null);
     if (consultBtn) await consultBtn.click();
-    await page.waitForTimeout(2000);
+    await doctorPage.waitForTimeout(2000);
     
-    // Fill diagnosis & medicine (adjust selectors as needed)
-    const diagnosisInput = await page.$('textarea, input[placeholder*="Diagnosis"]').catch(() => null);
-    if (diagnosisInput) await diagnosisInput.fill('Viral Fever');
+    await doctorPage.fill('textarea, input[placeholder*="Diagnosis"]', 'Viral Fever').catch(() => {});
+    await doctorPage.fill('input[placeholder*="Medicine"]', 'Paracetamol 500mg, 1-0-1').catch(() => {});
+    const addMedBtn = await doctorPage.$('button:has-text("Add")').catch(() => null);
+    if (addMedBtn) await addMedBtn.click();
     
-    const medInput = await page.$('input[placeholder*="Medicine"]').catch(() => null);
-    if (medInput) {
-       await medInput.fill('Paracetamol 500mg, 1-0-1, 5 days');
-       const addMed = await page.$('text="Add"').catch(() => null);
-       if (addMed) await addMed.click();
-       await page.waitForTimeout(500);
-       await medInput.fill('Cetirizine 10mg, 0-0-1, 3 days');
-       if (addMed) await addMed.click();
-    }
-    
-    const saveBtn = await page.$('text="Save"').catch(() => null);
-    if (saveBtn) await saveBtn.click();
-    
-    await page.waitForTimeout(1500);
-    await page.screenshot({ path: `${screenshotsDir}/06-consultation.png` });
+    await doctorPage.waitForTimeout(500);
+    await doctorPage.screenshot({ path: `${screenshotsDir}/scene5-consultation.png` });
 
-    // ==========================================
-    // STEP 7 — Pharmacy
-    // ==========================================
-    console.log('=== STEP 7: Pharmacy Dispense ===');
+    // SCENE 6: Pharmacy
+    console.log('=== SCENE 6: Pharmacy ===');
     const pharmContext = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
     const pharmPage = await pharmContext.newPage();
     
     await pharmPage.goto('http://localhost:3000/login');
-    await pharmPage.fill('input[type="email"]', 'pharmacy@clinic.com').catch(() => {});
-    await pharmPage.fill('input[type="password"]', 'password123').catch(() => {});
-    await pharmPage.click('button[type="submit"]').catch(() => {});
-    await pharmPage.waitForTimeout(1000);
-    
-    await pharmPage.goto('http://localhost:3000/pharmacy');
+    await pharmPage.fill('input[type="email"]', 'suresh.patel@aarogyaclinic.in');
+    await pharmPage.fill('input[type="password"]', 'Pharma@2024');
+    await pharmPage.click('button[type="submit"]');
     await pharmPage.waitForTimeout(2000);
-    await pharmPage.screenshot({ path: `${screenshotsDir}/07-pharmacy-queue.png` });
     
-    const dispenseBtn = await pharmPage.$('text="Dispense"').catch(() => null);
+    const dispenseBtn = await pharmPage.$('button:has-text("Dispense")').catch(() => null);
     if (dispenseBtn) await dispenseBtn.click();
-    await pharmPage.waitForTimeout(1500);
-    await pharmPage.screenshot({ path: `${screenshotsDir}/08-dispensed.png` });
+    await pharmPage.waitForTimeout(1000);
+    await pharmPage.screenshot({ path: `${screenshotsDir}/scene6-pharmacy.png` });
 
-    // ==========================================
-    // STEP 8 — Billing
-    // ==========================================
-    console.log('=== STEP 8: Billing ===');
+    // SCENE 7: Billing
+    console.log('=== SCENE 7: Billing ===');
     await recPage.bringToFront();
     await recPage.goto('http://localhost:3000/reception/billing').catch(() => recPage.goto('http://localhost:3000/billing'));
-    await recPage.waitForTimeout(1500);
+    await recPage.waitForTimeout(2000);
     
-    const payBtn = await recPage.$('text="Mark as Paid"').catch(() => null) || await recPage.$('text="Pay"');
+    const payBtn = await recPage.$('button:has-text("Mark as Paid"), button:has-text("Pay")').catch(() => null);
     if (payBtn) await payBtn.click();
-    await recPage.waitForTimeout(1500);
-    await recPage.screenshot({ path: `${screenshotsDir}/09-billing.png` });
+    await recPage.waitForTimeout(1000);
+    await recPage.screenshot({ path: `${screenshotsDir}/scene7-billing.png` });
 
-    // ==========================================
-    // STEP 9 — Patient portal
-    // ==========================================
-    console.log('=== STEP 9: Patient Portal ===');
-    const mobileContext = await browser.newContext({ 
-      viewport: { width: 375, height: 812 },
-      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)'
-    });
-    const mobilePage = await mobileContext.newPage();
-    
-    await mobilePage.goto('http://localhost:3000/portal/login');
-    await mobilePage.fill('input[type="tel"]', '9876543210').catch(() => {});
-    await mobilePage.click('button:has-text("Send OTP")').catch(() => {});
-    await mobilePage.waitForTimeout(1000);
-    
-    await mobilePage.fill('input[type="text"], input[placeholder*="OTP"]', '123456').catch(() => {});
-    await mobilePage.click('button:has-text("Verify")').catch(() => {});
-    await mobilePage.waitForTimeout(2000);
-    await mobilePage.screenshot({ path: `${screenshotsDir}/10-portal-dashboard.png` });
-
-    // ==========================================
-    // STEP 10 — Analytics
-    // ==========================================
-    console.log('=== STEP 10: Analytics ===');
+    // SCENE 8: Analytics
+    console.log('=== SCENE 8: Analytics ===');
     const adminContext = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
     const adminPage = await adminContext.newPage();
     
     await adminPage.goto('http://localhost:3000/login');
-    await adminPage.fill('input[type="email"]', 'admin@clinic.com').catch(() => {});
-    await adminPage.fill('input[type="password"]', 'password123').catch(() => {});
-    await adminPage.click('button[type="submit"]').catch(() => {});
-    await adminPage.waitForTimeout(1000);
+    await adminPage.fill('input[type="email"]', 'vikram.singh@aarogyaclinic.in');
+    await adminPage.fill('input[type="password"]', 'Admin@2024');
+    await adminPage.click('button[type="submit"]');
+    await adminPage.waitForTimeout(2000);
     
     await adminPage.goto('http://localhost:3000/admin/reports');
     await adminPage.waitForTimeout(3000);
-    await adminPage.screenshot({ path: `${screenshotsDir}/11-analytics.png` });
-    
-    const rangeBtn = await adminPage.$('text="90d"').catch(() => null) || await adminPage.$('text="90 Days"');
-    if (rangeBtn) await rangeBtn.click();
-    await adminPage.waitForTimeout(2000);
+    await adminPage.screenshot({ path: `${screenshotsDir}/scene8-analytics.png` });
 
-    // ==========================================
-    // STEP 11 — Schedule
-    // ==========================================
-    console.log('=== STEP 11: Schedule ===');
-    await page.bringToFront(); // Doctor page
-    await page.goto('http://localhost:3000/doctor/schedule');
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: `${screenshotsDir}/12-schedule.png` });
-
-    console.log('=== Demo Recording Completed Successfully ===');
+    console.log('=== Demo Recording Complete ===');
   } catch (error) {
-    console.error('Error during demo script execution:', error);
+    console.error('Error during demo script:', error);
   } finally {
-    // Wait for the video to save before closing
     await browser.close();
   }
 }
