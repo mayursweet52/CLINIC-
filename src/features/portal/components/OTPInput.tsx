@@ -60,7 +60,7 @@ export function OTPInput({ length = 6, onComplete }: OTPInputProps) {
           value={digit}
           onChange={(e) => handleChange(index, e.target.value)}
           onKeyDown={(e) => handleKeyDown(index, e)}
-          className="w-12 h-14 text-center text-2xl font-bold bg-white"
+          className="w-12 h-14 text-center text-2xl font-bold bg-white dark:bg-slate-950"
         />
       ))}
     </div>

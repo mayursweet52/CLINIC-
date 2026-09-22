@@ -9,14 +9,14 @@ interface SlotGridProps {
 
 export function SlotGrid({ slots, selectedTime, onSelect }: SlotGridProps) {
   if (!slots.length) {
-    return <div className="text-center text-slate-500 py-8">No slots available for this date.</div>
+    return <div className="text-center text-slate-500 dark:text-slate-400 py-8">No slots available for this date.</div>
   }
 
   return (
     <div>
       <div className="flex gap-4 mb-4 text-xs font-medium justify-end px-2">
-        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-white border border-slate-200" /> Available</div>
-        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-slate-100 border border-slate-200" /> Booked</div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800" /> Available</div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800" /> Booked</div>
       </div>
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
         {slots.map((slot) => {
@@ -28,9 +28,9 @@ export function SlotGrid({ slots, selectedTime, onSelect }: SlotGridProps) {
               onClick={() => slot.available && onSelect(slot.time)}
               className={cn(
                 "py-2 rounded-md border text-sm font-medium transition-all text-center",
-                !slot.available ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed" :
+                !slot.available ? "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-400 cursor-not-allowed" :
                 isSelected ? "bg-primary border-primary text-white shadow-sm" :
-                "bg-white border-slate-200 hover:border-primary text-slate-700 hover:text-primary"
+                "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-primary text-slate-700 dark:text-slate-300 hover:text-primary"
               )}
             >
               {slot.time}

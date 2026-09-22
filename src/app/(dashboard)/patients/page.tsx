@@ -16,11 +16,11 @@ export default function PatientsPage() {
         }
       />
       
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="flex gap-4 mb-4 border-b pb-4">
           <button className="text-sm font-medium text-blue-600 border-b-2 border-blue-600 pb-1">All Patients</button>
-          <button className="text-sm font-medium text-slate-500 hover:text-slate-800 pb-1">New (This Month)</button>
-          <button className="text-sm font-medium text-slate-500 hover:text-slate-800 pb-1">Returning</button>
+          <button className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 pb-1">New (This Month)</button>
+          <button className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200 pb-1">Returning</button>
         </div>
         <PatientTable />
       </div>

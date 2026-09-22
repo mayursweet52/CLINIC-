@@ -37,7 +37,7 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="w-full shadow-lg border-slate-200/60 bg-white">
+    <Card className="w-full shadow-lg border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-950">
       <CardHeader>
         <CardTitle>Welcome back</CardTitle>
         <CardDescription>Enter your credentials to access your dashboard</CardDescription>

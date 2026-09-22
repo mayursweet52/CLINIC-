@@ -6,9 +6,11 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { Button } from "@/components/ui/button";
 import { Download, IndianRupee, Users, Activity, AlertTriangle } from "lucide-react";
+import dynamic from "next/dynamic";
 import { RangePicker } from "@/features/reports/components/RangePicker";
 import { useAnalytics } from "@/features/reports/hooks";
-import { RevenueChart, AppointmentsChart } from "@/features/reports/components/Charts";
+const RevenueChart = dynamic(() => import("@/features/reports/components/Charts").then(m => m.RevenueChart), { ssr: false, loading: () => <div className="h-[300px] bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" /> });
+const AppointmentsChart = dynamic(() => import("@/features/reports/components/Charts").then(m => m.AppointmentsChart), { ssr: false, loading: () => <div className="h-[300px] bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" /> });
 import { DoctorPerformance } from "@/features/reports/components/DoctorPerformance";
 import { TopDiagnoses } from "@/features/reports/components/TopDiagnoses";
 
@@ -30,10 +32,10 @@ function ReportsContent() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Revenue" value={`₹${(data?.stats?.revenue || 0).toLocaleString()}`} icon={<IndianRupee className="h-4 w-4 text-emerald-500" />} />
-        <StatCard title="Appointments" value={(data?.stats?.appointments || 0).toString()} icon={<Activity className="h-4 w-4 text-blue-500" />} />
-        <StatCard title="New Patients" value={(data?.stats?.newPatients || 0).toString()} icon={<Users className="h-4 w-4 text-purple-500" />} />
-        <StatCard title="No-show Rate" value={data?.stats?.noShowRate || "0%"} icon={<AlertTriangle className="h-4 w-4 text-amber-500" />} />
+        <StatCard label="Revenue" value={`₹${(data?.stats?.revenue || 0).toLocaleString()}`} icon={IndianRupee} />
+        <StatCard label="Appointments" value={(data?.stats?.appointments || 0).toString()} icon={Activity} />
+        <StatCard label="New Patients" value={(data?.stats?.newPatients || 0).toString()} icon={Users} />
+        <StatCard label="No-show Rate" value={data?.stats?.noShowRate || "0%"} icon={AlertTriangle} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -55,7 +57,7 @@ function ReportsContent() {
 
 export default function ReportsPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading reports...</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-slate-500 dark:text-slate-400">Loading reports...</div>}>
       <ReportsContent />
     </Suspense>
   );

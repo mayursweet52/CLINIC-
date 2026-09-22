@@ -36,7 +36,7 @@ export function QueueTable() {
     {
       header: 'Patient',
       accessorFn: (row: any) => row.patient?.name,
-      cell: (info: any) => <span className="font-medium text-slate-800">{info.getValue()}</span>
+      cell: (info: any) => <span className="font-medium text-slate-800 dark:text-slate-200">{info.getValue()}</span>
     },
     {
       header: 'Doctor',
@@ -65,7 +65,7 @@ export function QueueTable() {
                 Cancel
               </button>
             )}
-            <button onClick={(e) => { e.stopPropagation(); router.push(`/appointments/${row.id}`); }} className="text-sm text-slate-600 hover:text-slate-900 underline">
+            <button onClick={(e) => { e.stopPropagation(); router.push(`/appointments/${row.id}`); }} className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100 underline">
               Details
             </button>
           </div>

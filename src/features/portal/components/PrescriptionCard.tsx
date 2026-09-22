@@ -14,8 +14,8 @@ export function PrescriptionCard({ prescription }: PrescriptionCardProps) {
           <Pill className="w-5 h-5" />
         </div>
         <div>
-          <h4 className="font-semibold text-slate-900">{prescription.doctorName}</h4>
-          <div className="text-sm text-slate-500 flex gap-2">
+          <h4 className="font-semibold text-slate-900 dark:text-slate-100">{prescription.doctorName}</h4>
+          <div className="text-sm text-slate-500 dark:text-slate-400 flex gap-2">
             <span>{prescription.date}</span>
             <span>•</span>
             <span>{prescription.medicines} medicines</span>

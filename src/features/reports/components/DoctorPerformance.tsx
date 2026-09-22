@@ -44,7 +44,7 @@ export const DoctorPerformance = ({ data, isLoading }: { data: any[], isLoading:
         <CardTitle className="text-lg font-semibold">Doctor Performance</CardTitle>
       </CardHeader>
       <CardContent>
-        <DataTable columns={columns} data={data || []} isLoading={isLoading} />
+        <DataTable columns={columns} data={data || []} loading={isLoading} />
       </CardContent>
     </Card>
   );

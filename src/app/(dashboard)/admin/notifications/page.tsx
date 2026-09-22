@@ -44,7 +44,7 @@ export default function NotificationsPage() {
       header: "Status",
       cell: ({ row }: any) => {
         const status = row.original.status;
-        return <StatusBadge status={status} color={status === "Sent" ? "emerald" : "red"} />;
+        return <StatusBadge status={status} />;
       }
     },
     {
@@ -92,7 +92,7 @@ export default function NotificationsPage() {
         </Select>
       </div>
 
-      <div className="bg-white border rounded-xl p-4">
+      <div className="bg-white dark:bg-slate-950 border rounded-xl p-4">
         <DataTable columns={columns} data={filteredData} />
       </div>
     </div>

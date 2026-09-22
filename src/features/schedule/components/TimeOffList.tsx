@@ -23,7 +23,7 @@ export const TimeOffList = ({ data, isLoading }: { data: any[], isLoading: boole
       cell: ({ row }: any) => {
         const status = row.original.status;
         const color = status === "Approved" ? "emerald" : "amber";
-        return <StatusBadge status={status} color={color} />;
+        return <StatusBadge status={status} />;
       }
     },
     {
@@ -36,5 +36,5 @@ export const TimeOffList = ({ data, isLoading }: { data: any[], isLoading: boole
     }
   ];
 
-  return <DataTable columns={columns} data={data || []} isLoading={isLoading} />;
+  return <DataTable columns={columns} data={data || []} loading={isLoading} />;
 };

@@ -26,7 +26,7 @@ export const InventoryTable = ({ data, isLoading }: { data: any[], isLoading: bo
     {
       accessorKey: "batch",
       header: "Batch",
-      cell: ({ row }: any) => <span className="font-mono text-sm text-slate-500">{row.original.batch}</span>
+      cell: ({ row }: any) => <span className="font-mono text-sm text-slate-500 dark:text-slate-400">{row.original.batch}</span>
     },
     {
       accessorKey: "qty",
@@ -89,7 +89,7 @@ export const InventoryTable = ({ data, isLoading }: { data: any[], isLoading: bo
       <DataTable
         columns={columns}
         data={filteredData}
-        isLoading={isLoading}
+        loading={isLoading}
       />
     </div>
   );

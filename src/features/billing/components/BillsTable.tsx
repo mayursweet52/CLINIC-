@@ -40,7 +40,7 @@ export const BillsTable = ({ data, isLoading }: { data: any[], isLoading: boolea
       cell: ({ row }: any) => {
         const status = row.original.status;
         const color = status === "Paid" ? "emerald" : status === "Partial" ? "amber" : "slate";
-        return <StatusBadge status={status} color={color} />;
+        return <StatusBadge status={status} />;
       }
     },
     {
@@ -81,7 +81,7 @@ export const BillsTable = ({ data, isLoading }: { data: any[], isLoading: boolea
     <DataTable
       columns={columns}
       data={data || []}
-      isLoading={isLoading}
+      loading={isLoading}
       onRowClick={(row) => router.push(`/billing/${row.id}`)}
     />
   );

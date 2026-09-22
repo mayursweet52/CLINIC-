@@ -9,7 +9,7 @@ const quickLinks = [
   { title: "Billing", href: "/billing", icon: IndianRupee, color: "text-amber-500" },
   { title: "Reports", href: "/admin/reports", icon: BarChart2, color: "text-purple-500" },
   { title: "Notifications", href: "/admin/notifications", icon: Bell, color: "text-pink-500" },
-  { title: "Audit Log", href: "/admin/audit", icon: Shield, color: "text-slate-500" },
+  { title: "Audit Log", href: "/admin/audit", icon: Shield, color: "text-slate-500 dark:text-slate-400" },
   { title: "Settings", href: "/admin/settings", icon: Settings, color: "text-gray-500" },
 ];
 
@@ -20,11 +20,11 @@ export const QuickLinksGrid = () => {
         <Link key={link.href} href={link.href}>
           <Card className="p-5 rounded-xl border hover:shadow-md cursor-pointer transition-shadow h-full">
             <CardContent className="p-0 flex items-center space-x-4">
-              <div className={`p-3 rounded-lg bg-slate-50 ${link.color}`}>
+              <div className={`p-3 rounded-lg bg-slate-50 dark:bg-slate-900 ${link.color}`}>
                 <link.icon className="h-6 w-6" />
               </div>
               <div>
-                <p className="font-medium text-slate-800">{link.title}</p>
+                <p className="font-medium text-slate-800 dark:text-slate-200">{link.title}</p>
               </div>
             </CardContent>
           </Card>

@@ -13,10 +13,10 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center space-x-2 text-sm text-slate-500">
-        <Link href="/billing" className="hover:text-slate-900 transition-colors">Billing</Link>
+      <div className="flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400">
+        <Link href="/billing" className="hover:text-slate-900 dark:text-slate-100 transition-colors">Billing</Link>
         <ChevronRight className="h-4 w-4" />
-        <span className="font-medium text-slate-900">{resolvedParams.id}</span>
+        <span className="font-medium text-slate-900 dark:text-slate-100">{resolvedParams.id}</span>
       </div>
 
       {isLoading ? (

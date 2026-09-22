@@ -28,14 +28,14 @@ export function DepartmentPicker({ departments, selectedId, onSelect }: Departme
           <Card 
             key={dept.id}
             className={`p-4 cursor-pointer transition-all hover:border-primary/50 hover:shadow-md flex flex-col items-center justify-center text-center h-32 gap-3 ${
-              isSelected ? 'border-primary ring-1 ring-primary bg-primary/5' : 'border-slate-200'
+              isSelected ? 'border-primary ring-1 ring-primary bg-primary/5' : 'border-slate-200 dark:border-slate-800'
             }`}
             onClick={() => onSelect(dept.id)}
           >
-            <div className={`p-3 rounded-full ${isSelected ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'}`}>
+            <div className={`p-3 rounded-full ${isSelected ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
               <Icon className="w-6 h-6" />
             </div>
-            <span className="font-medium text-sm text-slate-900">{dept.name}</span>
+            <span className="font-medium text-sm text-slate-900 dark:text-slate-100">{dept.name}</span>
           </Card>
         )
       })}

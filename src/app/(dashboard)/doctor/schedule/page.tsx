@@ -46,14 +46,14 @@ export default function DoctorSchedulePage() {
             </Button>
           </div>
           {availLoading ? (
-            <div className="h-64 flex items-center justify-center text-slate-500">Loading schedule...</div>
+            <div className="h-64 flex items-center justify-center text-slate-500 dark:text-slate-400">Loading schedule...</div>
           ) : (
             <WeeklyGrid data={availability || []} onAddSlot={handleAddSlot} />
           )}
         </TabsContent>
 
         <TabsContent value="timeoff" className="m-0 space-y-4">
-          <div className="bg-white rounded-xl border p-4 shadow-sm">
+          <div className="bg-white dark:bg-slate-950 rounded-xl border p-4 shadow-sm">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold text-lg">Upcoming Time Off</h3>
               <Button onClick={() => setLeaveDialogOpen(true)} variant="secondary">

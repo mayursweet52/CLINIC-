@@ -31,26 +31,26 @@ export const DispenseDialog = ({
           <DialogTitle>Dispense Prescription: {prescription.id}</DialogTitle>
         </DialogHeader>
         <div className="py-4 space-y-6">
-          <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 p-4 rounded-lg">
+          <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
             <div>
-              <span className="text-slate-500 block mb-1">Patient</span>
-              <span className="font-medium text-slate-900">{prescription.patientName}</span>
+              <span className="text-slate-500 dark:text-slate-400 block mb-1">Patient</span>
+              <span className="font-medium text-slate-900 dark:text-slate-100">{prescription.patientName}</span>
             </div>
             <div>
-              <span className="text-slate-500 block mb-1">Doctor</span>
-              <span className="font-medium text-slate-900">{prescription.doctorName}</span>
+              <span className="text-slate-500 dark:text-slate-400 block mb-1">Doctor</span>
+              <span className="font-medium text-slate-900 dark:text-slate-100">{prescription.doctorName}</span>
             </div>
           </div>
           
           <div className="border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b">
+              <thead className="bg-slate-50 dark:bg-slate-900 border-b">
                 <tr>
-                  <th className="text-left p-3 font-medium text-slate-500">Medicine</th>
-                  <th className="text-left p-3 font-medium text-slate-500">Dose</th>
-                  <th className="text-left p-3 font-medium text-slate-500">Freq</th>
-                  <th className="text-left p-3 font-medium text-slate-500">Duration</th>
-                  <th className="text-right p-3 font-medium text-slate-500">Stock</th>
+                  <th className="text-left p-3 font-medium text-slate-500 dark:text-slate-400">Medicine</th>
+                  <th className="text-left p-3 font-medium text-slate-500 dark:text-slate-400">Dose</th>
+                  <th className="text-left p-3 font-medium text-slate-500 dark:text-slate-400">Freq</th>
+                  <th className="text-left p-3 font-medium text-slate-500 dark:text-slate-400">Duration</th>
+                  <th className="text-right p-3 font-medium text-slate-500 dark:text-slate-400">Stock</th>
                 </tr>
               </thead>
               <tbody className="divide-y">

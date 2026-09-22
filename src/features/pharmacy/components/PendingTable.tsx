@@ -30,7 +30,7 @@ export const PendingTable = ({ data, isLoading }: { data: any[], isLoading: bool
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }: any) => <StatusBadge status={row.original.status} color="amber" />
+      cell: ({ row }: any) => <StatusBadge status={row.original.status} />
     },
     {
       id: "actions",
@@ -53,7 +53,7 @@ export const PendingTable = ({ data, isLoading }: { data: any[], isLoading: bool
       <DataTable
         columns={columns}
         data={data || []}
-        isLoading={isLoading}
+        loading={isLoading}
         onRowClick={(row) => setSelectedRx(row)}
       />
       <DispenseDialog 

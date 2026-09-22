@@ -22,15 +22,15 @@ export default function SettingsPage() {
         <Button onClick={handleSave}>Save Changes</Button>
       </div>
 
-      <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-950 border rounded-xl shadow-sm overflow-hidden">
         <Tabs defaultValue="profile" className="flex flex-col md:flex-row h-full">
-          <div className="w-full md:w-64 border-r bg-slate-50 p-4">
+          <div className="w-full md:w-64 border-r bg-slate-50 dark:bg-slate-900 p-4">
             <TabsList className="flex md:flex-col h-auto bg-transparent space-y-1 w-full justify-start overflow-x-auto">
-              <TabsTrigger value="profile" className="justify-start w-full data-[state=active]:bg-white data-[state=active]:shadow-sm">Profile</TabsTrigger>
-              <TabsTrigger value="clinic" className="justify-start w-full data-[state=active]:bg-white data-[state=active]:shadow-sm">Clinic Details</TabsTrigger>
-              <TabsTrigger value="notifications" className="justify-start w-full data-[state=active]:bg-white data-[state=active]:shadow-sm">Notifications</TabsTrigger>
-              <TabsTrigger value="billing" className="justify-start w-full data-[state=active]:bg-white data-[state=active]:shadow-sm">Billing</TabsTrigger>
-              <TabsTrigger value="users" className="justify-start w-full data-[state=active]:bg-white data-[state=active]:shadow-sm">Users</TabsTrigger>
+              <TabsTrigger value="profile" className="justify-start w-full data-[state=active]:bg-white dark:bg-slate-950 data-[state=active]:shadow-sm">Profile</TabsTrigger>
+              <TabsTrigger value="clinic" className="justify-start w-full data-[state=active]:bg-white dark:bg-slate-950 data-[state=active]:shadow-sm">Clinic Details</TabsTrigger>
+              <TabsTrigger value="notifications" className="justify-start w-full data-[state=active]:bg-white dark:bg-slate-950 data-[state=active]:shadow-sm">Notifications</TabsTrigger>
+              <TabsTrigger value="billing" className="justify-start w-full data-[state=active]:bg-white dark:bg-slate-950 data-[state=active]:shadow-sm">Billing</TabsTrigger>
+              <TabsTrigger value="users" className="justify-start w-full data-[state=active]:bg-white dark:bg-slate-950 data-[state=active]:shadow-sm">Users</TabsTrigger>
             </TabsList>
           </div>
 
@@ -38,7 +38,7 @@ export default function SettingsPage() {
             <TabsContent value="profile" className="m-0 space-y-6 max-w-2xl">
               <h3 className="text-lg font-medium">Personal Profile</h3>
               <div className="flex items-center space-x-6">
-                <div className="h-24 w-24 rounded-full bg-slate-200 border-4 border-white shadow-md flex items-center justify-center text-slate-500 font-medium text-2xl">
+                <div className="h-24 w-24 rounded-full bg-slate-200 border-4 border-white shadow-md flex items-center justify-center text-slate-500 dark:text-slate-400 font-medium text-2xl">
                   AD
                 </div>
                 <Button variant="outline" size="sm">Change Avatar</Button>
@@ -89,21 +89,21 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Email Notifications</Label>
-                    <p className="text-sm text-slate-500">Receive daily summaries and critical alerts</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Receive daily summaries and critical alerts</p>
                   </div>
                   <Switch defaultChecked />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>SMS Alerts</Label>
-                    <p className="text-sm text-slate-500">Urgent appointment cancellations or changes</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Urgent appointment cancellations or changes</p>
                   </div>
                   <Switch defaultChecked />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>WhatsApp Integration</Label>
-                    <p className="text-sm text-slate-500">Send reminders to patients via WhatsApp</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Send reminders to patients via WhatsApp</p>
                   </div>
                   <Switch />
                 </div>
@@ -133,7 +133,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Auto-generate Invoices</Label>
-                    <p className="text-sm text-slate-500">Automatically create invoice after consultation</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Automatically create invoice after consultation</p>
                   </div>
                   <Switch defaultChecked />
                 </div>
@@ -147,7 +147,7 @@ export default function SettingsPage() {
                   Go to Staff Directory
                 </Button>
               </div>
-              <p className="text-sm text-slate-500">Manage detailed roles and permissions in the Staff section.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Manage detailed roles and permissions in the Staff section.</p>
             </TabsContent>
           </div>
         </Tabs>

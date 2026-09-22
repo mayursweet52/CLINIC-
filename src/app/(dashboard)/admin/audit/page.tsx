@@ -26,7 +26,7 @@ export default function AuditLogPage() {
 
   const columns = [
     { accessorKey: "time", header: "Time" },
-    { accessorKey: "user", header: "User", cell: ({ row }: any) => <span className="font-medium text-slate-900">{row.original.user}</span> },
+    { accessorKey: "user", header: "User", cell: ({ row }: any) => <span className="font-medium text-slate-900 dark:text-slate-100">{row.original.user}</span> },
     { 
       accessorKey: "action", 
       header: "Action",
@@ -41,7 +41,7 @@ export default function AuditLogPage() {
       )
     },
     { accessorKey: "resource", header: "Resource", cell: ({ row }: any) => <span className="font-mono text-xs">{row.original.resource}</span> },
-    { accessorKey: "ip", header: "IP Address", cell: ({ row }: any) => <span className="text-slate-500 text-xs">{row.original.ip}</span> },
+    { accessorKey: "ip", header: "IP Address", cell: ({ row }: any) => <span className="text-slate-500 dark:text-slate-400 text-xs">{row.original.ip}</span> },
   ];
 
   return (
@@ -66,10 +66,10 @@ export default function AuditLogPage() {
             <SelectItem value="DELETE">Delete</SelectItem>
           </SelectContent>
         </Select>
-        <div className="text-sm text-slate-500 border rounded-md px-3 py-2">Date Range Filter</div>
+        <div className="text-sm text-slate-500 dark:text-slate-400 border rounded-md px-3 py-2">Date Range Filter</div>
       </div>
 
-      <div className="bg-white border rounded-xl p-4">
+      <div className="bg-white dark:bg-slate-950 border rounded-xl p-4">
         <DataTable 
           columns={columns} 
           data={filteredData} 
@@ -85,25 +85,25 @@ export default function AuditLogPage() {
           
           {selectedLog && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 p-4 rounded-lg">
+              <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
                 <div>
-                  <span className="text-slate-500 block mb-1">Time</span>
+                  <span className="text-slate-500 dark:text-slate-400 block mb-1">Time</span>
                   <span className="font-medium">{selectedLog.time}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block mb-1">User</span>
+                  <span className="text-slate-500 dark:text-slate-400 block mb-1">User</span>
                   <span className="font-medium">{selectedLog.user}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block mb-1">Action</span>
+                  <span className="text-slate-500 dark:text-slate-400 block mb-1">Action</span>
                   <span className="font-mono">{selectedLog.action}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block mb-1">Resource</span>
+                  <span className="text-slate-500 dark:text-slate-400 block mb-1">Resource</span>
                   <span className="font-mono">{selectedLog.resource}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block mb-1">IP Address</span>
+                  <span className="text-slate-500 dark:text-slate-400 block mb-1">IP Address</span>
                   <span>{selectedLog.ip}</span>
                 </div>
               </div>

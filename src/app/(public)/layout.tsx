@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle"
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-900">
+    <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-900 dark:bg-slate-900">
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white/75 px-4 backdrop-blur-md dark:bg-slate-950/75 md:px-8">
         <Link href="/" className="flex items-center space-x-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">

@@ -17,9 +17,9 @@ export function AppointmentRow({ appointment }: { appointment: DoctorAppointment
   };
 
   return (
-    <div className={`p-4 rounded-lg border border-l-4 ${getStatusColor(appointment.status)} hover:shadow-sm flex items-center justify-between mb-3 bg-white`}>
+    <div className={`p-4 rounded-lg border border-l-4 ${getStatusColor(appointment.status)} hover:shadow-sm flex items-center justify-between mb-3 bg-white dark:bg-slate-950`}>
       <div className="w-1/4">
-        <div className="text-sm text-slate-500 font-medium">{appointment.timeSlot}</div>
+        <div className="text-sm text-slate-500 dark:text-slate-400 font-medium">{appointment.timeSlot}</div>
         <div className="flex items-center mt-1">
           <span className={`w-2 h-2 rounded-full mr-2 ${getStatusColor(appointment.status).replace('border-', 'bg-')}`}></span>
           <span className="text-xs text-slate-400 font-mono">Token: {appointment.tokenNumber}</span>
@@ -27,8 +27,8 @@ export function AppointmentRow({ appointment }: { appointment: DoctorAppointment
       </div>
       
       <div className="w-2/4 px-4">
-        <div className="font-semibold text-slate-800">{appointment.patient.name}</div>
-        <div className="text-sm text-slate-500 mt-0.5">
+        <div className="font-semibold text-slate-800 dark:text-slate-200">{appointment.patient.name}</div>
+        <div className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
           {(appointment.patient as any).age || 30} yrs, {appointment.patient.gender} • Reason: {(appointment.patient as any).chiefComplaint || 'Consultation'}
         </div>
       </div>
@@ -56,7 +56,7 @@ export function AppointmentRow({ appointment }: { appointment: DoctorAppointment
           </button>
         )}
         {appointment.status === 'COMPLETED' && (
-          <button className="px-3 py-1 text-sm text-slate-600 bg-slate-100 rounded hover:bg-slate-200 transition">
+          <button className="px-3 py-1 text-sm text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded hover:bg-slate-200 transition">
             View Details
           </button>
         )}

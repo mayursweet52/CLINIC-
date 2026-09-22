@@ -15,20 +15,20 @@ export function SuccessScreen({ data }: SuccessScreenProps) {
         <CheckCircle2 className="w-10 h-10" />
       </div>
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-slate-900">Booking Confirmed!</h2>
-        <p className="text-slate-500">Your appointment has been successfully scheduled.</p>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Booking Confirmed!</h2>
+        <p className="text-slate-500 dark:text-slate-400">Your appointment has been successfully scheduled.</p>
       </div>
 
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 w-full max-w-sm space-y-4">
+      <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-sm space-y-4">
         <div className="flex flex-col items-center gap-2">
-          <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Token Number</span>
+          <span className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Token Number</span>
           <span className="text-4xl font-bold text-primary">{data.tokenNumber}</span>
         </div>
         
-        <div className="border-t border-dashed border-slate-300 pt-4 flex justify-center">
+        <div className="border-t border-dashed border-slate-300 dark:border-slate-700 pt-4 flex justify-center">
           {/* Mock QR Code */}
-          <div className="bg-white p-2 rounded-lg shadow-sm border border-slate-100 flex items-center justify-center">
-            <QrCode className="w-32 h-32 text-slate-800" />
+          <div className="bg-white dark:bg-slate-950 p-2 rounded-lg shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-center">
+            <QrCode className="w-32 h-32 text-slate-800 dark:text-slate-200" />
           </div>
         </div>
         <p className="text-xs text-slate-400">Show this QR code at the reception</p>

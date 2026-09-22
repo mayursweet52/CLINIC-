@@ -12,8 +12,8 @@ export const WeeklyGrid = ({ data, onAddSlot }: { data: any[], onAddSlot: (day: 
       {DAYS.map(day => {
         const daySlots = data?.filter(s => s.dayOfWeek === day) || [];
         return (
-          <div key={day} className="border rounded-xl p-3 bg-white min-h-[300px]">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 border-b pb-2">
+          <div key={day} className="border rounded-xl p-3 bg-white dark:bg-slate-950 min-h-[300px]">
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4 border-b pb-2">
               {day}
             </div>
             <div className="space-y-3">
@@ -26,7 +26,7 @@ export const WeeklyGrid = ({ data, onAddSlot }: { data: any[], onAddSlot: (day: 
               
               <Button 
                 variant="outline" 
-                className="w-full border-dashed text-slate-500 hover:text-primary-600 hover:bg-primary-50 mt-2"
+                className="w-full border-dashed text-slate-500 dark:text-slate-400 hover:text-primary-600 hover:bg-primary-50 mt-2"
                 onClick={() => onAddSlot(day)}
               >
                 <Plus className="h-4 w-4 mr-2" /> Add

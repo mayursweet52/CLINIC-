@@ -37,31 +37,28 @@ export const BillDetail = ({ bill }: { bill: any }) => {
           <CardHeader className="border-b pb-6 flex flex-row items-center justify-between space-y-0">
             <div>
               <CardTitle className="text-2xl font-bold tracking-tight">Invoice</CardTitle>
-              <p className="text-sm text-slate-500 mt-1"># {bill.id}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1"># {bill.id}</p>
             </div>
             <div className="text-right space-y-1">
-              <StatusBadge
-                status={bill.status}
-                color={bill.status === "Paid" ? "emerald" : bill.status === "Partial" ? "amber" : "slate"}
-              />
-              <p className="text-sm text-slate-500">Date: {bill.date}</p>
-              <p className="text-sm text-slate-500">Due: {bill.dueDate}</p>
+              <StatusBadge status={bill.status} />
+              <p className="text-sm text-slate-500 dark:text-slate-400">Date: {bill.date}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Due: {bill.dueDate}</p>
             </div>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="flex justify-between mb-8">
               <div>
-                <h3 className="font-semibold text-slate-800 mb-2">Clinic Info</h3>
-                <div className="text-sm text-slate-600 space-y-1">
+                <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Clinic Info</h3>
+                <div className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
                   <p className="font-medium">Peaceful Fermi Clinic</p>
                   <p>123 Health Street</p>
                   <p>Medical District, MD 12345</p>
                 </div>
               </div>
               <div className="text-right">
-                <h3 className="font-semibold text-slate-800 mb-2">Billed To</h3>
-                <div className="text-sm text-slate-600 space-y-1">
-                  <p className="font-medium text-slate-900">{bill.patientName}</p>
+                <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Billed To</h3>
+                <div className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                  <p className="font-medium text-slate-900 dark:text-slate-100">{bill.patientName}</p>
                   <p>{bill.patientEmail}</p>
                   <p>{bill.patientPhone}</p>
                 </div>
@@ -70,18 +67,18 @@ export const BillDetail = ({ bill }: { bill: any }) => {
 
             <div className="rounded-lg border">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b">
+                <thead className="bg-slate-50 dark:bg-slate-900 border-b">
                   <tr>
-                    <th className="text-left font-medium p-3 text-slate-500">Description</th>
-                    <th className="text-right font-medium p-3 text-slate-500">Qty</th>
-                    <th className="text-right font-medium p-3 text-slate-500">Rate</th>
-                    <th className="text-right font-medium p-3 text-slate-500">Amount</th>
+                    <th className="text-left font-medium p-3 text-slate-500 dark:text-slate-400">Description</th>
+                    <th className="text-right font-medium p-3 text-slate-500 dark:text-slate-400">Qty</th>
+                    <th className="text-right font-medium p-3 text-slate-500 dark:text-slate-400">Rate</th>
+                    <th className="text-right font-medium p-3 text-slate-500 dark:text-slate-400">Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {bill.items.map((item: any) => (
                     <tr key={item.id}>
-                      <td className="p-3 font-medium text-slate-900">{item.description}</td>
+                      <td className="p-3 font-medium text-slate-900 dark:text-slate-100">{item.description}</td>
                       <td className="p-3 text-right">{item.qty}</td>
                       <td className="p-3 text-right font-mono tabular-nums">₹{item.rate.toLocaleString()}</td>
                       <td className="p-3 text-right font-mono tabular-nums">₹{item.amount.toLocaleString()}</td>
@@ -94,11 +91,11 @@ export const BillDetail = ({ bill }: { bill: any }) => {
             <div className="mt-6 flex justify-end">
               <div className="w-64 space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Subtotal</span>
+                  <span className="text-slate-500 dark:text-slate-400">Subtotal</span>
                   <span className="font-mono tabular-nums">₹{bill.subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Tax</span>
+                  <span className="text-slate-500 dark:text-slate-400">Tax</span>
                   <span className="font-mono tabular-nums">₹{bill.tax.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold border-t pt-3">

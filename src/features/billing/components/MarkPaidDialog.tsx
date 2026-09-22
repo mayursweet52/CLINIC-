@@ -34,8 +34,8 @@ export const MarkPaidDialog = ({
           <DialogTitle>Mark as Paid</DialogTitle>
         </DialogHeader>
         <div className="py-4 space-y-6">
-          <div className="bg-slate-50 p-4 rounded-lg flex justify-between items-center border">
-            <span className="text-slate-600 font-medium">Amount Due:</span>
+          <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg flex justify-between items-center border">
+            <span className="text-slate-600 dark:text-slate-400 font-medium">Amount Due:</span>
             <span className="text-2xl font-mono tracking-tight font-semibold">₹{amount.toLocaleString()}</span>
           </div>
           

@@ -15,12 +15,12 @@ export function PatientTable() {
       accessorFn: (row: any) => row.name,
       cell: (info: any) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-sm font-medium text-slate-600">
+          <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-sm font-medium text-slate-600 dark:text-slate-400">
             {info.getValue().charAt(0)}
           </div>
           <div>
-            <div className="font-medium text-slate-900">{info.getValue()}</div>
-            <div className="text-xs text-slate-500 font-mono">{info.row.original.patientCode}</div>
+            <div className="font-medium text-slate-900 dark:text-slate-100">{info.getValue()}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">{info.row.original.patientCode}</div>
           </div>
         </div>
       )
@@ -28,17 +28,17 @@ export function PatientTable() {
     {
       header: 'Age/Gender',
       accessorFn: (row: any) => `${row.age || 30} / ${row.gender}`,
-      cell: (info: any) => <span className="text-sm text-slate-600">{info.getValue()}</span>
+      cell: (info: any) => <span className="text-sm text-slate-600 dark:text-slate-400">{info.getValue()}</span>
     },
     {
       header: 'Phone',
       accessorKey: 'phone',
-      cell: (info: any) => <span className="text-sm text-slate-600">{info.getValue()}</span>
+      cell: (info: any) => <span className="text-sm text-slate-600 dark:text-slate-400">{info.getValue()}</span>
     },
     {
       header: 'Last Visit',
       accessorFn: (row: any) => row.lastVisit ? new Date(row.lastVisit).toLocaleDateString() : 'N/A',
-      cell: (info: any) => <span className="text-sm text-slate-600">{info.getValue()}</span>
+      cell: (info: any) => <span className="text-sm text-slate-600 dark:text-slate-400">{info.getValue()}</span>
     },
     {
       header: 'Actions',

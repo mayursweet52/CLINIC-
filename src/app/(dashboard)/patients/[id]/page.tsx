@@ -37,8 +37,8 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <PatientHeader patient={currentPatient} />
       
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-6">
-        <div className="flex overflow-x-auto border-b border-slate-200">
+      <div className="bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mt-6">
+        <div className="flex overflow-x-auto border-b border-slate-200 dark:border-slate-800">
           {tabs.map(tab => (
             <button
               key={tab.id}
@@ -46,7 +46,7 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
               className={`px-6 py-4 text-sm font-medium whitespace-nowrap transition-colors ${
                 activeTab === tab.id 
                   ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:bg-slate-900'
               }`}
             >
               {tab.label}
@@ -59,21 +59,21 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
                 <section>
-                  <h3 className="text-base font-semibold text-slate-800 mb-4">Recent Visits</h3>
+                  <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-4">Recent Visits</h3>
                   <VisitTimeline visits={[]} />
                 </section>
               </div>
               <div className="space-y-6">
-                <section className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                  <h3 className="text-sm font-semibold text-slate-800 mb-2">Allergies</h3>
+                <section className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2">Allergies</h3>
                   <div className="flex flex-wrap gap-2">
                     {currentPatient.allergies?.map((a: string) => (
                       <span key={a} className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded font-medium">{a}</span>
                     ))}
                   </div>
                 </section>
-                <section className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                  <h3 className="text-sm font-semibold text-slate-800 mb-2">Upcoming Appointments</h3>
+                <section className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2">Upcoming Appointments</h3>
                   <EmptyState icon={CalendarIcon} title="No upcoming appointments" />
                 </section>
               </div>
@@ -82,7 +82,7 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
           
           {activeTab === 'vitals' && (
             <div>
-              <h3 className="text-base font-semibold text-slate-800 mb-4">Vitals History</h3>
+              <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-4">Vitals History</h3>
               <VitalsChart vitals={[]} />
             </div>
           )}

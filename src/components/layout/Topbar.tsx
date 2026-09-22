@@ -30,9 +30,9 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   }, [])
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-white/75 px-4 backdrop-blur-md dark:bg-slate-950/75">
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-white dark:bg-slate-950/75 px-4 backdrop-blur-md">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
+        <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick} aria-label="Menu">
           <Menu className="h-5 w-5" />
         </Button>
       </div>
@@ -40,7 +40,7 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
       <div className="flex flex-1 items-center justify-center px-4 md:px-8">
         <Button
           variant="outline"
-          className="relative h-9 w-full max-w-md justify-start rounded-[0.5rem] bg-slate-50 text-sm text-muted-foreground shadow-none sm:pr-12 md:w-80 lg:w-96"
+          className="relative h-9 w-full max-w-md justify-start rounded-[0.5rem] bg-slate-50 dark:bg-slate-900 dark:bg-slate-900 text-sm text-muted-foreground shadow-none sm:pr-12 md:w-80 lg:w-96"
           onClick={() => setCmdOpen(true)}
         >
           <Search className="mr-2 h-4 w-4 shrink-0" />
@@ -57,7 +57,7 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
               <Bell className="h-5 w-5" />
               <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-danger"></span>
             </Button>

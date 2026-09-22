@@ -13,7 +13,7 @@ export function DoctorCard({ doctor, selected, onSelect }: DoctorCardProps) {
   return (
     <Card 
       className={`p-4 cursor-pointer transition-all hover:border-primary/50 relative overflow-hidden flex items-center gap-4 ${
-        selected ? 'border-primary ring-1 ring-primary bg-primary/5' : 'border-slate-200'
+        selected ? 'border-primary ring-1 ring-primary bg-primary/5' : 'border-slate-200 dark:border-slate-800'
       }`}
       onClick={() => onSelect(doctor.id)}
     >
@@ -22,16 +22,16 @@ export function DoctorCard({ doctor, selected, onSelect }: DoctorCardProps) {
           <CheckCircle2 className="w-5 h-5" />
         </div>
       )}
-      <Avatar className="w-16 h-16 border border-slate-100">
+      <Avatar className="w-16 h-16 border border-slate-100 dark:border-slate-800">
         <AvatarImage src={doctor.avatar} />
         <AvatarFallback className="bg-primary/10 text-primary font-semibold text-lg">
           {doctor.name.replace('Dr. ', '').substring(0, 2).toUpperCase()}
         </AvatarFallback>
       </Avatar>
       <div className="flex flex-col">
-        <h4 className="font-semibold text-slate-900">{doctor.name}</h4>
-        <span className="text-sm text-slate-500">{doctor.specialty}</span>
-        <span className="text-sm font-medium text-slate-900 mt-1">₹{doctor.consultationFee}</span>
+        <h4 className="font-semibold text-slate-900 dark:text-slate-100">{doctor.name}</h4>
+        <span className="text-sm text-slate-500 dark:text-slate-400">{doctor.specialty}</span>
+        <span className="text-sm font-medium text-slate-900 dark:text-slate-100 mt-1">₹{doctor.consultationFee}</span>
       </div>
     </Card>
   )

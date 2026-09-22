@@ -25,7 +25,7 @@ export const RevenueChart = ({ data }: { data: any[] }) => {
                   dx={-10}
                 />
                 <Tooltip 
-                  formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Revenue']}
+                  formatter={(value: any) => [`₹${value.toLocaleString()}`, 'Revenue']}
                   contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
                 />
                 <Line type="monotone" dataKey="value" stroke="#0d9488" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />

@@ -15,13 +15,13 @@ export function BillCard({ bill }: BillCardProps) {
           <Receipt className="w-5 h-5" />
         </div>
         <div>
-          <h4 className="font-semibold text-slate-900">₹{bill.amount}</h4>
-          <span className="text-sm text-slate-500">Due {bill.date}</span>
+          <h4 className="font-semibold text-slate-900 dark:text-slate-100">₹{bill.amount}</h4>
+          <span className="text-sm text-slate-500 dark:text-slate-400">Due {bill.date}</span>
         </div>
       </div>
       <div className="flex gap-2">
         <Button size="sm" variant="outline" className="h-8 w-8 p-0">
-          <Download className="w-4 h-4 text-slate-600" />
+          <Download className="w-4 h-4 text-slate-600 dark:text-slate-400" />
         </Button>
         <Button size="sm" className="h-8 text-xs px-3">
           Pay Now

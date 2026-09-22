@@ -22,13 +22,13 @@ export default function PharmacyPage() {
         </TabsList>
 
         <TabsContent value="pending" className="m-0 space-y-4">
-          <div className="bg-white rounded-xl border p-4 shadow-sm">
+          <div className="bg-white dark:bg-slate-950 rounded-xl border p-4 shadow-sm">
             <PendingTable data={pending || []} isLoading={pendingLoading} />
           </div>
         </TabsContent>
 
         <TabsContent value="inventory" className="m-0 space-y-4">
-          <div className="bg-white rounded-xl border p-4 shadow-sm">
+          <div className="bg-white dark:bg-slate-950 rounded-xl border p-4 shadow-sm">
             <InventoryTable data={inventory || []} isLoading={inventoryLoading} />
           </div>
         </TabsContent>

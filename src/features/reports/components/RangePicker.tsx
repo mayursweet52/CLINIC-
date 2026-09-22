@@ -22,7 +22,7 @@ export const RangePicker = () => {
   };
 
   return (
-    <div className="flex bg-slate-100 p-1 rounded-lg w-fit">
+    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg w-fit">
       {ranges.map((range) => (
         <button
           key={range.value}
@@ -30,7 +30,7 @@ export const RangePicker = () => {
           className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
             currentRange === range.value
               ? "bg-primary-600 text-white shadow-sm"
-              : "text-slate-600 hover:text-slate-900"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100"
           }`}
         >
           {range.label}

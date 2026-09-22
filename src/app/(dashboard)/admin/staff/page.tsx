@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, MoreHorizontal, Edit, UserX, KeyReset } from "lucide-react";
+import { Plus, MoreHorizontal, Edit, UserX, Key } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -48,7 +48,7 @@ export default function StaffPage() {
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }: any) => <StatusBadge status={row.original.status} color={row.original.status === 'Active' ? 'emerald' : 'slate'} />
+      cell: ({ row }: any) => <StatusBadge status={row.original.status} />
     },
     {
       id: "actions",
@@ -65,7 +65,7 @@ export default function StaffPage() {
               <Edit className="mr-2 h-4 w-4" /> Edit
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => toast.success("Password reset email sent")}>
-              <KeyReset className="mr-2 h-4 w-4" /> Reset Password
+              <Key className="mr-2 h-4 w-4" /> Reset Password
             </DropdownMenuItem>
             <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50">
               <UserX className="mr-2 h-4 w-4" /> Deactivate
@@ -85,7 +85,7 @@ export default function StaffPage() {
         </Button>
       </div>
 
-      <div className="bg-white border rounded-xl p-4 space-y-4">
+      <div className="bg-white dark:bg-slate-950 border rounded-xl p-4 space-y-4">
         <div className="flex">
           <Input 
             placeholder="Search staff..." 

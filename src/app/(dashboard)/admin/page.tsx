@@ -26,24 +26,24 @@ export default function AdminDashboardPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title="Total Staff"
+            label="Total Staff"
             value={data?.stats.totalStaff.toString() || "0"}
-            icon={<Users className="h-4 w-4 text-slate-500" />}
+            icon={Users}
           />
           <StatCard
-            title="Total Patients"
+            label="Total Patients"
             value={data?.stats.totalPatients.toString() || "0"}
-            icon={<UserPlus className="h-4 w-4 text-slate-500" />}
+            icon={UserPlus}
           />
           <StatCard
-            title="Revenue (Month)"
+            label="Revenue (Month)"
             value={`₹${data?.stats.revenueMonth.toLocaleString()}`}
-            icon={<IndianRupee className="h-4 w-4 text-slate-500" />}
+            icon={IndianRupee}
           />
           <StatCard
-            title="Active Doctors"
+            label="Active Doctors"
             value={data?.stats.activeDoctors.toString() || "0"}
-            icon={<Stethoscope className="h-4 w-4 text-slate-500" />}
+            icon={Stethoscope}
           />
         </div>
       )}

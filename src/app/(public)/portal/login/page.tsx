@@ -31,8 +31,8 @@ export default function PortalLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <Card className="w-full max-w-md shadow-lg border-slate-200">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
+      <Card className="w-full max-w-md shadow-lg border-slate-200 dark:border-slate-800">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Patient Portal</CardTitle>
           <CardDescription>
@@ -64,7 +64,7 @@ export default function PortalLogin() {
               <div className="text-center space-y-2 text-sm">
                 <Button 
                   variant="link" 
-                  className="text-slate-500"
+                  className="text-slate-500 dark:text-slate-400"
                   onClick={() => setStep(1)}
                 >
                   Change phone number

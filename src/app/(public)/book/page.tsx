@@ -61,19 +61,19 @@ export default function BookPage() {
     <div className="max-w-3xl mx-auto px-4 py-8 min-h-screen">
       {step < 5 && (
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Book Appointment</h1>
-          <p className="text-slate-500">Schedule your visit in just a few clicks</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">Book Appointment</h1>
+          <p className="text-slate-500 dark:text-slate-400">Schedule your visit in just a few clicks</p>
         </div>
       )}
 
       {step < 5 && <StepProgress currentStep={step} steps={STEPS} />}
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mt-12 sm:mt-8 relative z-10">
+      <div className="bg-white dark:bg-slate-950 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 sm:p-8 mt-12 sm:mt-8 relative z-10">
         {step === 1 && (
           <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
             <div>
               <h2 className="text-xl font-semibold mb-1">Select Department</h2>
-              <p className="text-sm text-slate-500">Choose the specialty you need</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Choose the specialty you need</p>
             </div>
             {isLoadingDepts ? (
               <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
@@ -95,7 +95,7 @@ export default function BookPage() {
               </Button>
               <div>
                 <h2 className="text-xl font-semibold mb-1">Select Doctor</h2>
-                <p className="text-sm text-slate-500">Choose from available specialists</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Choose from available specialists</p>
               </div>
             </div>
             {isLoadingDoctors ? (
@@ -112,7 +112,7 @@ export default function BookPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg">
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 rounded-lg">
                 No doctors available for this department.
               </div>
             )}
@@ -127,7 +127,7 @@ export default function BookPage() {
               </Button>
               <div>
                 <h2 className="text-xl font-semibold mb-1">Select Time</h2>
-                <p className="text-sm text-slate-500">Choose a convenient date and time</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Choose a convenient date and time</p>
               </div>
             </div>
             
@@ -139,7 +139,7 @@ export default function BookPage() {
                     key={d.toISOString()}
                     onClick={() => { setDate(format(d, 'yyyy-MM-dd')); setTimeSlot("") }}
                     className={`flex flex-col items-center p-3 rounded-xl min-w-[80px] snap-start transition-all border ${
-                      isSelected ? 'bg-primary border-primary text-white shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:border-primary/50'
+                      isSelected ? 'bg-primary border-primary text-white shadow-md' : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-primary/50'
                     }`}
                   >
                     <span className="text-xs font-medium uppercase mb-1 opacity-80">{format(d, 'EEE')}</span>
@@ -168,7 +168,7 @@ export default function BookPage() {
           <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
             <div>
               <h2 className="text-xl font-semibold mb-1">Patient Details</h2>
-              <p className="text-sm text-slate-500">Please provide your contact information</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Please provide your contact information</p>
             </div>
             <PatientForm 
               initialData={{ departmentId, doctorId, date, timeSlot }}

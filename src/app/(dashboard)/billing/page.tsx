@@ -23,13 +23,13 @@ export default function BillingPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Today's Revenue" value="₹12,450" icon={<IndianRupee className="h-4 w-4 text-emerald-500" />} />
-        <StatCard title="Pending" value="₹45,000" icon={<Clock className="h-4 w-4 text-amber-500" />} />
-        <StatCard title="Paid Today" value="18" icon={<CheckCircle className="h-4 w-4 text-blue-500" />} />
-        <StatCard title="Refunds" value="2" icon={<RotateCcw className="h-4 w-4 text-red-500" />} />
+        <StatCard label="Today's Revenue" value="₹12,450" icon={IndianRupee} />
+        <StatCard label="Pending" value="₹45,000" icon={Clock} />
+        <StatCard label="Paid Today" value="18" icon={CheckCircle} />
+        <StatCard label="Refunds" value="2" icon={RotateCcw} />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-xl border">
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white dark:bg-slate-950 p-4 rounded-xl border">
         <div className="flex flex-1 gap-4 w-full sm:w-auto">
           <Input placeholder="Search patient or invoice..." className="max-w-xs" />
           <Select defaultValue="all">
@@ -45,7 +45,7 @@ export default function BillingPage() {
           </Select>
         </div>
         {/* Placeholder for date picker */}
-        <div className="text-sm text-slate-500 border rounded-md px-3 py-2">
+        <div className="text-sm text-slate-500 dark:text-slate-400 border rounded-md px-3 py-2">
           Date Range Filter (Mock)
         </div>
       </div>
