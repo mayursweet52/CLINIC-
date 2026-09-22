@@ -10,7 +10,8 @@ import {
   Pill, 
   FileText, 
   Settings, 
-  Activity 
+  Activity,
+  BarChart3
 } from "lucide-react";
 import { usePermissions } from "@/components/providers/PermissionsProvider";
 
@@ -31,6 +32,7 @@ const NAV_CONFIG = {
   admin: [
     { name: "Overview", href: "/admin", icon: Home, perm: "dashboard:read" },
     { name: "Staff", href: "/admin/staff", icon: Users, perm: "user:manage" },
+    { name: "Reports", href: "/admin/reports", icon: BarChart3, perm: "analytics:read" },
     { name: "Settings", href: "/admin/settings", icon: Settings, perm: "settings:manage" },
     { name: "Notifications", href: "/admin/notifications", icon: Activity, perm: "dashboard:read" },
   ],
