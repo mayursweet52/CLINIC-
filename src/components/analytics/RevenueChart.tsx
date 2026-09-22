@@ -50,7 +50,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
               dy={10}
             />
             <YAxis 
-              tickFormatter={(value) => `Rs.${value > 1000 ? (value / 1000) + 'k' : value}`}
+              tickFormatter={(value: number) => `Rs.${value > 1000 ? (value / 1000) + 'k' : value}`}
               tickLine={false}
               axisLine={false}
               tick={{ fontSize: 12 }}
@@ -58,7 +58,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
             />
             <Tooltip 
               formatter={(value: any) => [formatCurrency(Number(value)), "Revenue"]}
-              labelFormatter={(label) => formatDate(label as string)}
+              labelFormatter={(label: unknown) => formatDate(String(label))}
               contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)' }}
             />
             <Line 

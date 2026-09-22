@@ -57,7 +57,7 @@ export function AppointmentsChart({ data }: AppointmentsChartProps) {
             />
             <Tooltip 
               formatter={(value: any) => [Number(value), "Appointments"]}
-              labelFormatter={(label) => formatDate(label as string)}
+              labelFormatter={(label: unknown) => formatDate(String(label))}
               contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)' }}
               cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
             />
