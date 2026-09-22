@@ -8,146 +8,146 @@ datasource db {
 }
 
 model Organization {
-  id          String   @id @default(uuid())
-  name        String
-  domain      String?  @unique
-  address     String?
-  city        String?
-  state       String?
-  phone       String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  
-  users        User[]
-  patients     Patient[]
-  appointments HealthAppointment[]
-  visits       PatientVisit[]
+  id        String   @id @default(uuid())
+  name      String
+  domain    String?  @unique
+  address   String?
+  city      String?
+  state     String?
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  users         User[]
+  patients      Patient[]
+  appointments  HealthAppointment[]
+  visits        PatientVisit[]
   prescriptions Prescription[]
-  labReports   LabReport[]
-  
+  labReports    LabReport[]
+
   // Existing models for generic features
-  medicines    Medicine[]
-  billings     Billing[]
+  medicines Medicine[]
+  billings  Billing[]
 }
 
 model User {
-  id             String        @id @default(uuid())
+  id             String   @id @default(uuid())
   organizationId String
   name           String
-  email          String        @unique
+  email          String   @unique
   passwordHash   String
-  role           Role          @default(STAFF)
+  role           Role     @default(STAFF)
   department     String?
   phone          String?
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
   // --- DOCTOR SPECIFIC FIELDS (Requested by User) ---
-  specialization String?       
-  registrationNo String?
+  specialization  String?
+  registrationNo  String?
   consultationFee Float?
-  availableDays   String[]     // e.g. ["MONDAY", "WEDNESDAY"]
-  slotDuration    Int?         // e.g. 15
-  
-  organization   Organization  @relation(fields: [organizationId], references: [id])
-  appointments   HealthAppointment[] @relation("DoctorAppointments")
-  visits         PatientVisit[] @relation("DoctorVisits")
-  prescriptions  Prescription[] @relation("DoctorPrescriptions")
+  availableDays   String[] // e.g. ["MONDAY", "WEDNESDAY"]
+  slotDuration    Int? // e.g. 15
+
+  organization  Organization        @relation(fields: [organizationId], references: [id])
+  appointments  HealthAppointment[] @relation("DoctorAppointments")
+  visits        PatientVisit[]      @relation("DoctorVisits")
+  prescriptions Prescription[]      @relation("DoctorPrescriptions")
 }
 
 model Patient {
-  id             String        @id @default(uuid())
-  organizationId String
-  patientCode    String
-  name           String
-  phone          String
-  email          String?
-  address        String?
-  dob            DateTime?
-  gender         String
-  bloodGroup     String?
-  allergies      String[]
-  chronicConds   String[]
+  id               String    @id @default(uuid())
+  organizationId   String
+  patientCode      String
+  name             String
+  phone            String
+  email            String?
+  address          String?
+  dob              DateTime?
+  gender           String
+  bloodGroup       String?
+  allergies        String[]
+  chronicConds     String[]
   emergencyContact String?
-  createdAt      DateTime      @default(now())
-  
-  organization   Organization  @relation(fields: [organizationId], references: [id])
-  appointments   HealthAppointment[]
-  visits         PatientVisit[]
-  labReports     LabReport[]
-  prescriptions  Prescription[]
+  createdAt        DateTime  @default(now())
+
+  organization  Organization        @relation(fields: [organizationId], references: [id])
+  appointments  HealthAppointment[]
+  visits        PatientVisit[]
+  labReports    LabReport[]
+  prescriptions Prescription[]
 
   @@unique([organizationId, patientCode])
 }
 
 model HealthAppointment {
-  id              String    @id @default(uuid())
+  id              String     @id @default(uuid())
   organizationId  String
   patientId       String
   doctorId        String?
-  appointmentNo   String?   // e.g. APT-001
+  appointmentNo   String? // e.g. APT-001
   appointmentDate DateTime
   timeSlot        String
-  tokenNumber     Int       @default(autoincrement())
+  tokenNumber     Int        @default(autoincrement())
   status          ApptStatus @default(SCHEDULED)
   fee             Float?
   isPaid          Boolean    @default(false)
   createdAt       DateTime   @default(now())
-  
-  organization    Organization @relation(fields: [organizationId], references: [id])
-  patient         Patient   @relation(fields: [patientId], references: [id])
-  doctor          User?     @relation("DoctorAppointments", fields: [doctorId], references: [id])
-  visit           PatientVisit?
-  billing         Billing?
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  patient      Patient       @relation(fields: [patientId], references: [id])
+  doctor       User?         @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  visit        PatientVisit?
+  billing      Billing?
 }
 
 model PatientVisit {
-  id             String      @id @default(uuid())
+  id             String   @id @default(uuid())
   organizationId String
   patientId      String
   doctorId       String?
-  appointmentId  String      @unique
-  visitDate      DateTime    @default(now())
+  appointmentId  String   @unique
+  visitDate      DateTime @default(now())
 
   // Vitals
-  vitalsBP       String?
-  vitalsPulse    Int?
-  vitalsTemp     Float?
-  vitalsWeight   Float?
+  vitalsBP     String?
+  vitalsPulse  Int?
+  vitalsTemp   Float?
+  vitalsWeight Float?
 
   chiefComplaint String?
   diagnosis      String?
   notes          String?
   followUpDate   DateTime?
 
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  patient        Patient      @relation(fields: [patientId], references: [id])
-  doctor         User?        @relation("DoctorVisits", fields: [doctorId], references: [id])
-  appointment    HealthAppointment @relation(fields: [appointmentId], references: [id])
-  prescriptions  Prescription[]
+  organization  Organization      @relation(fields: [organizationId], references: [id])
+  patient       Patient           @relation(fields: [patientId], references: [id])
+  doctor        User?             @relation("DoctorVisits", fields: [doctorId], references: [id])
+  appointment   HealthAppointment @relation(fields: [appointmentId], references: [id])
+  prescriptions Prescription[]
 }
 
 model Prescription {
-  id             String      @id @default(uuid())
+  id             String  @id @default(uuid())
   organizationId String
   patientId      String
   visitId        String?
   doctorId       String?
-  
-  medicines      Json        // Detailed JSON struct containing medicines, dosages, etc.
-  diet           String?
-  instructions   String?
-  validUntil     DateTime?
-  createdAt      DateTime    @default(now())
 
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  patient        Patient      @relation(fields: [patientId], references: [id])
-  visit          PatientVisit? @relation(fields: [visitId], references: [id])
-  doctor         User?        @relation("DoctorPrescriptions", fields: [doctorId], references: [id])
+  medicines    Json // Detailed JSON struct containing medicines, dosages, etc.
+  diet         String?
+  instructions String?
+  validUntil   DateTime?
+  createdAt    DateTime  @default(now())
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  patient      Patient       @relation(fields: [patientId], references: [id])
+  visit        PatientVisit? @relation(fields: [visitId], references: [id])
+  doctor       User?         @relation("DoctorPrescriptions", fields: [doctorId], references: [id])
 }
 
 model LabReport {
-  id             String    @id @default(uuid())
+  id             String   @id @default(uuid())
   organizationId String
   patientId      String
   testName       String
@@ -155,10 +155,10 @@ model LabReport {
   normalRange    String?
   interpretation String?
   fileUrl        String?
-  createdAt      DateTime  @default(now())
+  createdAt      DateTime @default(now())
 
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  patient        Patient      @relation(fields: [patientId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+  patient      Patient      @relation(fields: [patientId], references: [id])
 }
 
 // ----------------------------------------------------
@@ -204,24 +204,24 @@ model Medicine {
   expiryDate       DateTime
   reorderThreshold Int      @default(50)
 
-  organization     Organization @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 }
 
 model Billing {
-  id                String      @id @default(uuid())
-  organizationId    String
-  invoiceNo         String
-  appointmentId     String      @unique
-  consultationFee   Float       @default(0)
-  medicineCharges   Float       @default(0)
-  totalAmount       Float
-  discount          Float       @default(0)
-  paymentStatus     PayStatus   @default(UNPAID)
-  paymentMethod     String?
-  createdAt         DateTime    @default(now())
-  
-  organization      Organization @relation(fields: [organizationId], references: [id])
-  appointment       HealthAppointment  @relation(fields: [appointmentId], references: [id])
+  id              String    @id @default(uuid())
+  organizationId  String
+  invoiceNo       String
+  appointmentId   String    @unique
+  consultationFee Float     @default(0)
+  medicineCharges Float     @default(0)
+  totalAmount     Float
+  discount        Float     @default(0)
+  paymentStatus   PayStatus @default(UNPAID)
+  paymentMethod   String?
+  createdAt       DateTime  @default(now())
+
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  appointment  HealthAppointment @relation(fields: [appointmentId], references: [id])
 
   @@unique([organizationId, invoiceNo])
 }
@@ -232,8 +232,8 @@ model Transaction {
   description String
   type        TxType   @default(INCOME)
   amount      Float
-  category    String?  
-  paymentMode String?  
+  category    String?
+  paymentMode String?
   createdAt   DateTime @default(now())
 }
 
@@ -242,48 +242,18 @@ enum TxType {
   EXPENSE
 }
 
-// ─────────────────────────────────────────
-// RBAC
-// ─────────────────────────────────────────
-
 model Permission {
-  id          String           @id @default(uuid())
+  id          String           @id @default(cuid())
   key         String           @unique
   description String?
   category    String?
-  createdAt   DateTime         @default(now())
-
-  rolePermissions RolePermission[]
+  roles       RolePermission[]
 }
 
 model RolePermission {
-  role         String
+  roleId       String
   permissionId String
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
-  @@id([role, permissionId])
-  @@index([role])
+  @@id([roleId, permissionId])
 }
-
-// ─────────────────────────────────────────
-// AUDIT LOGS
-// ─────────────────────────────────────────
-
-model AuditLog {
-  id         String   @id @default(cuid())
-  userId     String?
-  orgId      String?
-  action     String
-  resource   String
-  resourceId String?
-  before     Json?
-  after      Json?
-  ip         String?
-  userAgent  String?
-  createdAt  DateTime @default(now())
-
-  @@index([orgId])
-  @@index([userId])
-  @@index([createdAt])
-}
-
