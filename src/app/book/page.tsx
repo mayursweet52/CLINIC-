@@ -108,6 +108,7 @@ export default function BookAppointmentPage() {
   const [patientPhone, setPatientPhone] = useState("");
   const [date, setDate] = useState("");
   const [timeSlot, setTimeSlot] = useState("");
+  const [availableSlots, setAvailableSlots] = useState<{time: string, available: boolean}[]>([]);
   const [isBooking, setIsBooking] = useState(false);
   const [successData, setSuccessData] = useState<any | null>(null);
 
@@ -121,6 +122,45 @@ export default function BookAppointmentPage() {
       })
       .catch(err => console.error("Error fetching hospitals:", err));
   }, []);
+
+  useEffect(() => {
+    if (selectedDoctor && date) {
+      setAvailableSlots([]);
+      setTimeSlot("");
+      fetch(`/api/availability/slots?doctorId=${selectedDoctor.id}&date=${date}`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setAvailableSlots(data);
+          }
+        })
+        .catch(err => console.error("Error fetching slots:", err));
+    }
+  }, [selectedDoctor, date]);
+
+  const handleTimeSlotChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedTime = e.target.value;
+    setTimeSlot(selectedTime);
+
+    if (!selectedTime) return;
+
+    const datetime = `${date}T${selectedTime}:00`;
+    try {
+      const lockRes = await fetch("/api/slots/lock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doctorId: selectedDoctor?.id, datetime }),
+      });
+
+      const lockData = await lockRes.json();
+      if (!lockData.locked) {
+        toast.error(lockData.reason || "Slot not available, someone else might be booking it");
+        setTimeSlot("");
+      }
+    } catch (err) {
+      console.error("Lock error", err);
+    }
+  };
 
   const handleHospitalSelect = (hospital: any) => {
     setSelectedHospital(hospital);
@@ -147,6 +187,10 @@ export default function BookAppointmentPage() {
 
   const handleBook = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!timeSlot) {
+      toast.error("Please select a time slot");
+      return;
+    }
     setIsBooking(true);
 
     try {
@@ -159,7 +203,8 @@ export default function BookAppointmentPage() {
           patientName,
           patientPhone,
           date,
-          timeSlot
+          timeSlot,
+          datetime: `${date}T${timeSlot}:00`
         })
       });
 
@@ -347,15 +392,18 @@ export default function BookAppointmentPage() {
                   <select 
                     required 
                     value={timeSlot}
-                    onChange={e => setTimeSlot(e.target.value)}
+                    onChange={handleTimeSlotChange}
                     className="w-full p-4 bg-[#fafafa] border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all font-medium text-slate-900 cursor-pointer"
+                    disabled={!date || availableSlots.length === 0}
                   >
-                    <option value="" disabled>{t.selectSlot}</option>
-                    <option value="10:00 AM">10:00 AM</option>
-                    <option value="11:30 AM">11:30 AM</option>
-                    <option value="02:00 PM">02:00 PM</option>
-                    <option value="04:30 PM">04:30 PM</option>
-                    <option value="06:00 PM">06:00 PM</option>
+                    <option value="" disabled>
+                      {!date ? "Select a date first" : availableSlots.length === 0 ? "No slots available" : t.selectSlot}
+                    </option>
+                    {availableSlots.map(slot => (
+                      <option key={slot.time} value={slot.time} disabled={!slot.available}>
+                        {slot.time} {!slot.available ? "(Unavailable)" : ""}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
