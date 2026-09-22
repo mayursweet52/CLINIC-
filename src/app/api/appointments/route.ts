@@ -145,6 +145,45 @@ export const POST = withPermission('appointment:create', async (request: Request
     }
 
     const apptDate = body.date ? new Date(body.date) : new Date();
+    const timeSlot = body.time || body.timeSlot || "10:00 AM";
+
+    // --- SLOT VALIDATION & LOCKING ---
+    let lockKey = null;
+    if (doctorId && body.date) {
+      const existingBooking = await prisma.healthAppointment.findFirst({
+        where: {
+          doctorId,
+          appointmentDate: apptDate,
+          timeSlot: timeSlot,
+          status: { notIn: [ApptStatus.CANCELLED] },
+        },
+      });
+
+      if (existingBooking) {
+        return NextResponse.json(
+          { error: "Slot already booked. Please pick another." },
+          { status: 409 }
+        );
+      }
+
+      // Check doctor not on leave
+      const onLeave = await prisma.doctorTimeOff.findFirst({
+        where: {
+          doctorId,
+          date: apptDate,
+        },
+      });
+
+      if (onLeave) {
+        return NextResponse.json(
+          { error: "Doctor is unavailable on this date" },
+          { status: 409 }
+        );
+      }
+
+      const datetime = body.datetime || `${body.date}T${timeSlot}:00`;
+      lockKey = `slot-lock:${doctorId}:${datetime}`;
+    }
 
     const newAppointment = await prisma.healthAppointment.create({
       data: {
@@ -152,7 +191,7 @@ export const POST = withPermission('appointment:create', async (request: Request
         patientId,
         doctorId: doctorId || null,
         appointmentDate: apptDate,
-        timeSlot: body.time || body.timeSlot || "10:00 AM",
+        timeSlot: timeSlot,
         status: mapToApptStatus(body.status),
       },
       include: {
@@ -160,6 +199,15 @@ export const POST = withPermission('appointment:create', async (request: Request
         doctor: true,
       },
     });
+
+    if (lockKey) {
+      try {
+        const { redis } = await import("@/lib/redis");
+        await redis.del(lockKey);
+      } catch (e) {
+        logger.error("Failed to release slot lock", e);
+      }
+    }
 
     const user = await getUser();
     logAction({

@@ -94,6 +94,17 @@ export const POST = withPermission(
         },
       });
 
+      try {
+        const { publishEvent } = await import("@/lib/events");
+        await publishEvent(`org:${resolvedOrgId}:appointments`, {
+          type: "appointment.updated" as any,
+          payload: { id: timeOff.id, orgId: resolvedOrgId, doctorId: resolvedDoctorId, startAt: parsedDate, endAt: parsedDate, event: "doctor.leave.marked" },
+          timestamp: new Date().toISOString(),
+        });
+      } catch (evtError) {
+        logger.error({ err: evtError }, "Failed to publish doctor.leave.marked event");
+      }
+
       return NextResponse.json(timeOff, { status: 201 });
     } catch (error) {
       logger.error({ err: error }, "Error adding time-off");
