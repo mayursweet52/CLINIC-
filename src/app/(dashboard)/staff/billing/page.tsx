@@ -8,6 +8,7 @@ import { StatCard } from "@/components/shared/StatCard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { TableSkeleton } from "@/components/shared/TableSkeleton";
+import { PermissionGate } from "@/components/shared/PermissionGate";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -125,16 +126,18 @@ export default function BillingDashboard() {
                       <StatusBadge status={bill.paymentStatus === 'PAID' ? 'PAID' : 'PENDING'} />
                     </td>
                     <td className="px-4 py-3 text-right space-x-2">
-                      {bill.paymentStatus !== 'PAID' && (
-                        <Button 
-                          variant="default" 
-                          size="sm" 
-                          onClick={() => handleMarkAsPaid(bill.id)}
-                          disabled={actionLoadingId === bill.id}
-                        >
-                          {actionLoadingId === bill.id ? 'Processing...' : 'Collect Payment'}
-                        </Button>
-                      )}
+                      <PermissionGate permission="bill:update">
+                        {bill.paymentStatus !== 'PAID' && (
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            onClick={() => handleMarkAsPaid(bill.id)}
+                            disabled={actionLoadingId === bill.id}
+                          >
+                            {actionLoadingId === bill.id ? 'Processing...' : 'Collect Payment'}
+                          </Button>
+                        )}
+                      </PermissionGate>
                       <Button variant="outline" size="sm" onClick={() => window.print()}>
                         Download PDF
                       </Button>

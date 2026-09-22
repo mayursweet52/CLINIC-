@@ -1,8 +1,9 @@
 import logger from '@/lib/logger';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withPermission } from '@/lib/withPermission';
 
-export async function POST(req: Request) {
+export const POST = withPermission('pharmacy:dispense', async (req: Request) => {
   try {
     const body = await req.json();
     const { appointmentId, items } = body;
@@ -98,4 +99,4 @@ export async function POST(req: Request) {
     logger.error("Dispense Error:", error);
     return NextResponse.json({ error: error.message || 'Dispense failed due to server error' }, { status: 500 });
   }
-}
+});

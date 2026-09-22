@@ -1,29 +1,21 @@
 'use client';
 
-import { can, canAny, type Permission } from '@/lib/rbac';
+import { usePermissions } from "@/components/providers/PermissionsProvider";
 
-interface PermissionGateProps {
-  /** The role of the current user */
-  role: string;
-  /** Single permission or array (any match grants access) */
-  permission: Permission | Permission[];
+export function PermissionGate({ 
+  permission, 
+  children,
+  fallback = null
+}: { 
+  permission: string; 
   children: React.ReactNode;
-  /** Shown instead of children when permission is denied */
   fallback?: React.ReactNode;
-}
+}) {
+  const { can } = usePermissions();
 
-/**
- * Client component that conditionally renders children based on RBAC.
- *
- * @example
- * <PermissionGate role={userRole} permission="appointment:create">
- *   <Button>Book Appointment</Button>
- * </PermissionGate>
- */
-export function PermissionGate({ role, permission, children, fallback = null }: PermissionGateProps) {
-  const allowed = Array.isArray(permission)
-    ? canAny(role, permission)
-    : can(role, permission);
+  if (can(permission)) {
+    return <>{children}</>;
+  }
 
-  return allowed ? <>{children}</> : <>{fallback}</>;
+  return <>{fallback}</>;
 }

@@ -65,7 +65,10 @@ export async function POST(request: Request) {
       // Broadcast real-time appointment event (Redis channel)
       await publishEvent(`org:${orgId}:doctor:${doctorId}`, {
         type: "appointment.created",
+        timestamp: new Date().toISOString(),
         payload: {
+          id: appointment.id,
+          orgId,
           appointmentId: appointment.id,
           tokenNumber: bookingResponse.tokenNumber,
           patientName,
@@ -74,7 +77,10 @@ export async function POST(request: Request) {
       });
       await publishEvent(`org:${orgId}:appointments`, {
         type: "appointment.created",
+        timestamp: new Date().toISOString(),
         payload: {
+          id: appointment.id,
+          orgId,
           appointmentId: appointment.id,
           tokenNumber: bookingResponse.tokenNumber,
           patientName,

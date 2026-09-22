@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { logAction } from "@/lib/audit";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
+import { withPermission } from '@/lib/withPermission';
 
 async function getUser() {
   try {
@@ -18,7 +19,7 @@ async function getUser() {
   }
 }
 
-export async function GET(request: Request) {
+export const GET = withPermission('patient:read', async (request: Request) => {
   try {
     const orgId = request.headers.get("x-org-id");
     if (!orgId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -45,9 +46,9 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withPermission('patient:create', async (request: Request) => {
   try {
     const orgId = request.headers.get("x-org-id");
     if (!orgId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -101,4 +102,5 @@ export async function POST(request: Request) {
     logger.error("Error creating patient:", error);
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
-}
+});
+

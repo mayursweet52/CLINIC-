@@ -68,7 +68,7 @@ export default function AuditLogsPage() {
         </div>
 
         {loading ? (
-          <div className="p-4"><TableSkeleton rows={10} columns={5} /></div>
+          <div className="p-4"><TableSkeleton rows={10} /></div>
         ) : logs.length === 0 ? (
           <div className="p-8">
             <EmptyState title="No audit logs found" description="Try adjusting your filters" icon={ShieldAlert} />

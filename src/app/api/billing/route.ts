@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { logAction } from "@/lib/audit";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
+import { withPermission } from "@/lib/withPermission";
 
 async function getUser() {
   try {
@@ -18,7 +19,7 @@ async function getUser() {
   }
 }
 
-export async function GET(req: Request) {
+export const GET = withPermission('bill:read', async (req: Request) => {
   try {
     const bills = await prisma.billing.findMany({
       include: {
@@ -36,9 +37,9 @@ export async function GET(req: Request) {
     logger.error("Error in billing GET:", error);
     return NextResponse.json({ error: "Failed to fetch bills" }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(req: Request) {
+export const PATCH = withPermission('bill:update', async (req: Request) => {
   try {
     const body = await req.json();
     const { billId, paymentStatus } = body;
@@ -72,4 +73,5 @@ export async function PATCH(req: Request) {
     logger.error("Error updating bill:", error);
     return NextResponse.json({ error: "Failed to update payment status" }, { status: 500 });
   }
-}
+});
+

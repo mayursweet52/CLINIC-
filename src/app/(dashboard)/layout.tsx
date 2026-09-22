@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { jwtVerify } from "jose";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
+import { PermissionsProvider } from "@/components/providers/PermissionsProvider";
+import { getUserPermissions } from "@/lib/rbac";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
@@ -21,20 +23,27 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/login");
   }
 
+  const userId = payload.userId as string;
+  const role = (payload.role as string)?.toUpperCase() || "RECEPTIONIST";
+  
+  const permissions = await getUserPermissions(userId);
+
   const user = {
     name: (payload.name as string) || "Staff Member",
-    role: (payload.role as string)?.toLowerCase() || "receptionist",
+    role: role.toLowerCase(),
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar role={user.role} />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar user={user} />
-        <main className="flex-1 overflow-y-auto bg-muted/30 p-6">
-          {children}
-        </main>
+    <PermissionsProvider role={role} permissions={permissions}>
+      <div className="flex h-screen overflow-hidden bg-background">
+        <Sidebar role={user.role} />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <Topbar user={user} />
+          <main className="flex-1 overflow-y-auto bg-muted/30 p-6">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </PermissionsProvider>
   );
 }

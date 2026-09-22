@@ -5,6 +5,7 @@ import { Role } from '@prisma/client';
 import { logAction } from '@/lib/audit';
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
+import { withPermission } from '@/lib/withPermission';
 
 async function getUser() {
   try {
@@ -19,7 +20,7 @@ async function getUser() {
   }
 }
 
-export async function GET() {
+export const GET = withPermission('user:manage', async () => {
   try {
     const org = await prisma.organization.findFirst();
     const staffMembers = await prisma.user.findMany({
@@ -52,9 +53,9 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withPermission('user:manage', async (request: Request) => {
   try {
     const body = await request.json();
     const org = await prisma.organization.findFirst();
@@ -111,4 +112,5 @@ export async function POST(request: Request) {
     logger.error('Error in staff route:', error);
     return NextResponse.json({ error: 'Failed to process staff request' }, { status: 400 });
   }
-}
+});
+

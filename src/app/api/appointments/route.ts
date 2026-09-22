@@ -6,6 +6,7 @@ import { publishEvent } from "@/lib/events";
 import { logAction } from "@/lib/audit";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
+import { withPermission } from '@/lib/withPermission';
 
 async function getUser() {
   try {
@@ -42,7 +43,7 @@ function formatStatus(status: ApptStatus): string {
   }
 }
 
-export async function GET(request: Request) {
+export const GET = withPermission('appointment:read', async (request: Request) => {
   try {
     let orgId = request.headers.get("x-org-id");
     
@@ -90,9 +91,9 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withPermission('appointment:create', async (request: Request) => {
   try {
     let orgId = request.headers.get("x-org-id");
     
@@ -190,9 +191,9 @@ export async function POST(request: Request) {
     logger.error("Error booking appointment:", error);
     return NextResponse.json({ error: "Failed to create appointment" }, { status: 400 });
   }
-}
+});
 
-export async function PUT(request: Request) {
+export const PUT = withPermission('appointment:update', async (request: Request) => {
   try {
     const body = await request.json();
     const { id, status } = body;
@@ -239,4 +240,4 @@ export async function PUT(request: Request) {
     logger.error("Error updating appointment:", error);
     return NextResponse.json({ error: "Appointment not found or failed to update" }, { status: 404 });
   }
-}
+});

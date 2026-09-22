@@ -18,9 +18,9 @@ export async function GET() {
     const phone = payload.phone as string;
     const patientId = payload.userId as string;
 
-    let patient = null;
-    let appointments = [];
-    let bills = [];
+    let patient: any = null;
+    let appointments: any[] = [];
+    let bills: any[] = [];
     
     try {
       patient = await prisma.patient.findFirst({ where: { phone } });
@@ -32,7 +32,7 @@ export async function GET() {
         });
         
         bills = await prisma.billing.findMany({
-          where: { patientId: patient.id },
+          where: { appointment: { patientId: patient.id } },
           orderBy: { createdAt: 'desc' }
         });
       }
