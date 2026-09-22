@@ -9,7 +9,8 @@
     "test:e2e": "playwright test",
     "prisma:seed": "node prisma/seed.mjs",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "worker:notifications": "node --import tsx src/workers/notification.worker.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",
@@ -55,6 +56,7 @@
     "playwright": "^1.63.0",
     "prisma": "^6.4.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"
