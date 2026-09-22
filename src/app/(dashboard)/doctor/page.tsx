@@ -1,24 +1,14 @@
-import { cookies } from "next/headers";
-import { jwtVerify } from "jose";
-import { DoctorDashboardClient } from "./DoctorDashboardClient";
+import React from 'react';
+import { DoctorDashboard } from './DoctorDashboard';
+import { cookies } from 'next/headers';
 
 export default async function DoctorPage() {
+  // In a real app, read from session
   const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
+  const userId = cookieStore.get('userId')?.value || 'dev-doctor-id';
+  const userName = cookieStore.get('userName')?.value || 'Smith';
   
-  let userId = "dr-unknown";
-  let name = "Doctor";
+  const user = { id: userId, name: userName, role: 'DOCTOR' };
 
-  if (token) {
-    try {
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET || "super-secret-key-for-businessos-health-12345");
-      const verified = await jwtVerify(token, secret);
-      userId = (verified.payload.userId as string) || "dr-unknown";
-      name = (verified.payload.name as string) || "Doctor";
-    } catch (e) {
-      console.error("Invalid token in DoctorPage", e);
-    }
-  }
-
-  return <DoctorDashboardClient doctorId={userId} doctorName={name} />;
+  return <DoctorDashboard user={user} />;
 }

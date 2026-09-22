@@ -1,32 +1,32 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import { Toaster } from "@/components/ui/sonner";
-import { LanguageProvider } from "@/context/LanguageContext";
-import "./globals.css";
+import type { Metadata } from "next"
+import { Inter } from "next/font/google"
+import "./globals.css"
+import { Providers } from "./providers"
+import { Toaster } from "sonner"
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 export const metadata: Metadata = {
-  title: "ClinicOS",
-  description: "Clinic Management System",
-};
+  title: {
+    template: "%s | Clinic Enterprise",
+    default: "Clinic Enterprise",
+  },
+  description: "Enterprise Clinic Management System",
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <LanguageProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} min-h-screen bg-slate-50 font-sans text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-50`}>
+        <Providers>
           {children}
-          <Toaster />
-        </LanguageProvider>
+          <Toaster position="top-right" richColors />
+        </Providers>
       </body>
     </html>
-  );
+  )
 }
