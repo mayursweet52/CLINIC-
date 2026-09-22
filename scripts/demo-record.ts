@@ -75,7 +75,7 @@ async function main() {
     await pubPage.screenshot({ path: `${screenshotsDir}/02-slots-loaded.png` });
 
     // Select first open slot
-    const slots = await pubPage.$$eval('select option', opts => opts.filter(o => !o.disabled && o.value !== "").map(o => o.value));
+    const slots = await pubPage.$$eval('select option', opts => (opts as HTMLOptionElement[]).filter(o => !o.disabled && o.value !== "").map(o => o.value));
     if (slots.length > 0) {
       await pubPage.selectOption('select', slots[0]);
     }

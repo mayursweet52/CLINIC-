@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 type Status = 
@@ -14,30 +13,33 @@ type Status =
   | "DISPENSED";
 
 const statusConfig: Record<Status, { label: string; className: string }> = {
-  SCHEDULED: { label: "Scheduled", className: "bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300" },
-  CONFIRMED: { label: "Confirmed", className: "bg-indigo-100 text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300" },
-  ARRIVED: { label: "Arrived", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300" },
-  IN_PROGRESS: { label: "In Progress", className: "bg-orange-100 text-orange-800 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-300" },
-  COMPLETED: { label: "Completed", className: "bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300" },
-  CANCELLED: { label: "Cancelled", className: "bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300" },
-  NO_SHOW: { label: "No Show", className: "bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300" },
-  PENDING: { label: "Pending", className: "bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-300" },
-  PAID: { label: "Paid", className: "bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300" },
-  DISPENSED: { label: "Dispensed", className: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300" },
+  SCHEDULED: { label: "Scheduled", className: "bg-blue-50 text-blue-700 border-blue-200" },
+  CONFIRMED: { label: "Confirmed", className: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+  ARRIVED: { label: "Arrived", className: "bg-amber-50 text-amber-700 border-amber-200" },
+  IN_PROGRESS: { label: "In Progress", className: "bg-orange-50 text-orange-700 border-orange-200" },
+  COMPLETED: { label: "Completed", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  CANCELLED: { label: "Cancelled", className: "bg-red-50 text-red-700 border-red-200" },
+  NO_SHOW: { label: "No Show", className: "bg-slate-50 text-slate-700 border-slate-200" },
+  PENDING: { label: "Pending", className: "bg-amber-50 text-amber-700 border-amber-200" },
+  PAID: { label: "Paid", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  DISPENSED: { label: "Dispensed", className: "bg-primary-50 text-primary-700 border-primary-200" },
 };
 
 export function StatusBadge({ status, className }: { status: string; className?: string }) {
   const config = statusConfig[status as Status] || { 
     label: status, 
-    className: "bg-muted text-muted-foreground" 
+    className: "bg-slate-50 text-slate-700 border-slate-200" 
   };
   
   return (
-    <Badge 
-      variant="outline" 
-      className={cn("border-transparent font-medium", config.className, className)}
+    <span 
+      className={cn(
+        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
+        config.className, 
+        className
+      )}
     >
       {config.label}
-    </Badge>
+    </span>
   );
 }

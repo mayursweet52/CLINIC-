@@ -1,0 +1,29 @@
+{
+  "h1": {
+    "fontFamily": "Arial, Helvetica, sans-serif",
+    "fontSize": "20px",
+    "padding": "0px",
+    "color": "rgb(23, 23, 23)",
+    "backgroundColor": "rgba(0, 0, 0, 0)",
+    "borderRadius": "0px",
+    "border": "0px solid rgb(23, 23, 23)"
+  },
+  "button": {
+    "fontFamily": "Arial, Helvetica, sans-serif",
+    "fontSize": "16px",
+    "padding": "0px",
+    "color": "rgb(23, 23, 23)",
+    "backgroundColor": "rgba(0, 0, 0, 0)",
+    "borderRadius": "0px",
+    "border": "0px solid rgb(23, 23, 23)"
+  },
+  "card": {
+    "fontFamily": "Arial, Helvetica, sans-serif",
+    "fontSize": "14px",
+    "padding": "4px 12px 4px 36px",
+    "color": "rgb(23, 23, 23)",
+    "backgroundColor": "rgb(255, 255, 255)",
+    "borderRadius": "6px",
+    "border": "1px solid rgb(23, 23, 23)"
+  }
+}
