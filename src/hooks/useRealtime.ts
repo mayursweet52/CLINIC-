@@ -4,15 +4,15 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import type { ClinicEvent } from '@/lib/events.types';
 
 export interface RealtimeEvent<T = any> {
-  id?: string;
+  id: string;
   type: string;
   orgId?: string;
   doctorId?: string;
   payload: T;
-  timestamp?: string;
+  timestamp: string;
 }
 
-interface UseRealtimeOptions {
+export interface UseRealtimeOptions {
   orgId?: string;
   doctorId?: string;
   onEvent?: (event: RealtimeEvent) => void;
@@ -53,7 +53,7 @@ export function playHospitalChime() {
     osc2.start(ctx.currentTime + 0.15);
     osc2.stop(ctx.currentTime + 1.5);
   } catch (e) {
-    // Audio might be blocked before first user gesture
+    // Audio context may be restricted before user gesture
   }
 }
 
@@ -84,47 +84,57 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
       const es = new EventSource(url);
       eventSourceRef.current = es;
 
-      es.addEventListener('connected', () => {
-        setIsConnected(true);
-        retryCount.current = 0;
-      });
-
       es.onopen = () => {
         setIsConnected(true);
         retryCount.current = 0;
       };
 
-      // Generic message handler
-      es.onmessage = (e) => {
-        try {
-          const parsed: RealtimeEvent = JSON.parse(e.data);
-          handleIncomingEvent(parsed);
-        } catch {
-          // ignore raw keepalives
+      const handleEvent = (data: RealtimeEvent) => {
+        setLastEvent(data);
+        setEvents((prev) => [data, ...prev.slice(0, 49)]);
+
+        if (enableChime) {
+          playHospitalChime();
+        }
+
+        if (onEvent) {
+          onEvent(data);
+        }
+
+        const typeListeners = listenersRef.current.get(data.type);
+        if (typeListeners) {
+          typeListeners.forEach((fn) => fn(data.payload));
+        }
+        const wildcardListeners = listenersRef.current.get('*');
+        if (wildcardListeners) {
+          wildcardListeners.forEach((fn) => fn(data));
         }
       };
 
-      // Typed event listeners
+      es.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleEvent(data);
+        } catch (err) {
+          // ignore keepalives
+        }
+      };
+
       const registeredTypes = [
         'appointment.created',
-        'appointment.updated',
-        'appointment.cancelled',
         'patient.checked_in',
         'queue.next',
-        'prescription.created',
         'prescription.ready',
         'prescription.dispensed',
         'bill.paid',
-        'lab.report_ready',
-        'heartbeat',
+        'lab.report_ready'
       ];
 
       registeredTypes.forEach((eventType) => {
         es.addEventListener(eventType, (e: MessageEvent) => {
-          if (eventType === 'heartbeat') return;
           try {
             const parsed: RealtimeEvent = JSON.parse(e.data);
-            handleIncomingEvent(parsed);
+            handleEvent(parsed);
           } catch (err) {
             console.error('Failed to parse SSE event', err);
           }
@@ -135,34 +145,10 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
         setIsConnected(false);
         es.close();
 
-        // Exponential backoff reconnect (capped at 10s)
         const timeout = Math.min(10000, 1000 * Math.pow(2, retryCount.current));
         retryCount.current += 1;
         reconnectTimeoutRef.current = setTimeout(connect, timeout);
       };
-    }
-
-    function handleIncomingEvent(event: RealtimeEvent) {
-      setLastEvent(event);
-      setEvents((prev) => [event, ...prev.slice(0, 49)]);
-
-      if (enableChime) {
-        playHospitalChime();
-      }
-
-      if (onEvent) {
-        onEvent(event);
-      }
-
-      // Notify type-specific listeners
-      const typeListeners = listenersRef.current.get(event.type);
-      if (typeListeners) {
-        typeListeners.forEach((fn) => fn(event.payload));
-      }
-      const wildcardListeners = listenersRef.current.get('*');
-      if (wildcardListeners) {
-        wildcardListeners.forEach((fn) => fn(event));
-      }
     }
 
     connect();
@@ -184,7 +170,7 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
       await fetch('/api/realtime', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, payload, orgId, doctorId }),
+        body: JSON.stringify({ type, payload, orgId, doctorId })
       });
     } catch (err) {
       console.error('Failed to broadcast realtime event:', err);
@@ -207,6 +193,6 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
     events,
     emit,
     on,
-    playHospitalChime,
+    playHospitalChime
   };
 }
