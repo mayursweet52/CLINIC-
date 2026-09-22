@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import QRCode from "react-qr-code";
 import { toast } from "sonner";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLang } from "@/context/LanguageContext";
 
 const FALLBACK_DOCTORS = [
   {
@@ -96,6 +98,7 @@ const FALLBACK_DOCTORS = [
 ];
 
 export default function BookAppointmentPage() {
+  const { t } = useLang();
   const [hospitals, setHospitals] = useState<any[]>([]);
   const [selectedHospital, setSelectedHospital] = useState<any | null>(null);
   const [doctors, setDoctors] = useState<any[]>([]);
@@ -124,14 +127,12 @@ export default function BookAppointmentPage() {
     setSelectedDoctor(null);
     setSuccessData(null);
     
-    // 1. Instant Zero-Latency Load: Preload doctors from the hospital object immediately
     if (hospital.doctors && Array.isArray(hospital.doctors) && hospital.doctors.length > 0) {
       setDoctors(hospital.doctors);
     } else {
       setDoctors(FALLBACK_DOCTORS);
     }
     
-    // 2. Background sync to fetch fresh doctors if any
     fetch(`/api/public/hospitals?orgId=${hospital.id}`)
       .then(res => res.json())
       .then(data => {
@@ -165,7 +166,7 @@ export default function BookAppointmentPage() {
       const data = await res.json();
       if (res.ok) {
         setSuccessData(data);
-        toast.success("Appointment confirmed!");
+        toast.success(t.appointmentConfirmed);
       } else {
         toast.error(data.error || "Failed to book");
       }
@@ -176,7 +177,6 @@ export default function BookAppointmentPage() {
     }
   };
 
-  // Compute available doctors list with guarantee that it is never empty
   const activeDoctors = (doctors && doctors.length > 0)
     ? doctors
     : (selectedHospital?.doctors && selectedHospital.doctors.length > 0)
@@ -193,9 +193,11 @@ export default function BookAppointmentPage() {
             </div>
             <span className="text-xl font-black tracking-tight text-slate-900">Clinic<span className="text-blue-600">OS</span></span>
           </div>
-          <div className="flex gap-4">
-            <Link href="/health" className="text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">Patient Portal</Link>
-            <Link href="/login" className="text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">Staff Login</Link>
+          <div className="flex items-center gap-4">
+            {/* 🌐 Language Switcher */}
+            <LanguageSwitcher />
+            <Link href="/health" className="text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">{t.patientPortal}</Link>
+            <Link href="/login" className="text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">{t.staffLogin}</Link>
           </div>
         </div>
       </nav>
@@ -206,33 +208,33 @@ export default function BookAppointmentPage() {
             <div className="w-24 h-24 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
             </div>
-            <h2 className="text-3xl font-extrabold text-slate-900 mb-2">Appointment Confirmed!</h2>
+            <h2 className="text-3xl font-extrabold text-slate-900 mb-2">{t.appointmentConfirmed}</h2>
             <p className="text-slate-500 mb-8">Please visit {successData.hospitalName} at your scheduled time.</p>
             
             <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-6 text-left">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <p className="text-xs font-bold text-slate-400 uppercase">Token Number</p>
+                <p className="text-xs font-bold text-slate-400 uppercase">{t.tokenNumber}</p>
                 <p className="text-2xl font-black text-indigo-600">#{successData.tokenNumber || "101"}</p>
               </div>
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <p className="text-xs font-bold text-slate-400 uppercase">Patient Code</p>
+                <p className="text-xs font-bold text-slate-400 uppercase">{t.patientCode}</p>
                 <p className="text-2xl font-black text-slate-900">{successData.patientCode || "PAT-1001"}</p>
               </div>
             </div>
 
             <div className="max-w-md mx-auto mb-8 bg-white p-6 rounded-2xl border border-slate-200 flex flex-col items-center justify-center shadow-xs">
-              <p className="text-xs font-bold text-slate-400 uppercase mb-3">Scan at Check-in Counter</p>
+              <p className="text-xs font-bold text-slate-400 uppercase mb-3">{t.scanAtCounter}</p>
               <QRCode value={JSON.stringify({ token: successData.tokenNumber, code: successData.patientCode })} size={140} />
             </div>
             
-            <p className="text-sm text-slate-500 mb-6 font-medium">Keep your Patient Code safe. You can use it to view your prescriptions online.</p>
-            <button onClick={() => { setSelectedHospital(null); setSelectedDoctor(null); setSuccessData(null); }} className="text-blue-600 font-bold hover:underline">Book Another Appointment</button>
+            <p className="text-sm text-slate-500 mb-6 font-medium">{t.keepCodeSafe}</p>
+            <button onClick={() => { setSelectedHospital(null); setSelectedDoctor(null); setSuccessData(null); }} className="text-blue-600 font-bold hover:underline">{t.bookAnother}</button>
           </div>
         ) : !selectedHospital ? (
           <div className="space-y-6 animate-in fade-in duration-500">
             <div className="text-center mb-10">
-              <h2 className="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">Find a Hospital Near You</h2>
-              <p className="text-slate-500 text-lg">Select a healthcare facility to book your appointment online.</p>
+              <h2 className="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">{t.findHospital}</h2>
+              <p className="text-slate-500 text-lg">{t.findHospitalSub}</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -258,17 +260,17 @@ export default function BookAppointmentPage() {
                   </div>
                 </button>
               ))}
-              {hospitals.length === 0 && <p className="text-slate-500 text-center col-span-2">No active hospitals found.</p>}
+              {hospitals.length === 0 && <p className="text-slate-500 text-center col-span-2">{t.noHospitals}</p>}
             </div>
           </div>
         ) : !selectedDoctor ? (
           <div className="space-y-6 animate-in slide-in-from-right-8 duration-500">
             <button onClick={() => setSelectedHospital(null)} className="text-slate-500 font-bold text-sm hover:text-slate-900 flex items-center gap-1.5">
-              ← Back to Hospitals
+              {t.backToHospitals}
             </button>
             <div className="mb-8">
               <h2 className="text-3xl font-extrabold text-slate-900 mb-2">{selectedHospital.name}</h2>
-              <p className="text-slate-500">Select a verified specialist to continue booking your appointment.</p>
+              <p className="text-slate-500">{t.selectDoctor}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -284,13 +286,13 @@ export default function BookAppointmentPage() {
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="font-bold text-slate-900 text-lg group-hover:text-blue-600 transition-colors">{doctor.name}</h3>
-                      <span className="text-xs font-bold bg-green-50 text-green-700 px-2.5 py-1 rounded-full border border-green-200">Available</span>
+                      <span className="text-xs font-bold bg-green-50 text-green-700 px-2.5 py-1 rounded-full border border-green-200">{t.available}</span>
                     </div>
                     <p className="text-indigo-600 text-sm font-semibold">{doctor.specialization || doctor.department}</p>
                     <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
                       <span>🩺 {doctor.department}</span>
                       <span>•</span>
-                      <span className="font-bold text-slate-700">Fee: ₹{doctor.consultationFee || 500}</span>
+                      <span className="font-bold text-slate-700">{t.fee}: ₹{doctor.consultationFee || 500}</span>
                     </div>
                   </div>
                 </button>
@@ -300,15 +302,15 @@ export default function BookAppointmentPage() {
         ) : (
           <div className="max-w-md mx-auto bg-white p-8 rounded-3xl border border-slate-200 shadow-xl animate-in slide-in-from-bottom-8 duration-500">
             <button onClick={() => setSelectedDoctor(null)} className="text-slate-500 font-bold text-sm hover:text-slate-900 flex items-center gap-1.5 mb-6">
-              ← Back to Doctors
+              {t.backToDoctors}
             </button>
             
-            <h2 className="text-2xl font-extrabold text-slate-900 mb-1">Book Appointment</h2>
+            <h2 className="text-2xl font-extrabold text-slate-900 mb-1">{t.bookAppointment}</h2>
             <p className="text-slate-500 text-sm mb-6">with <span className="font-bold text-slate-700">{selectedDoctor.name}</span> at {selectedHospital.name}</p>
 
             <form onSubmit={handleBook} className="space-y-5">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Patient Full Name</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">{t.patientFullName}</label>
                 <input 
                   type="text" 
                   required 
@@ -319,7 +321,7 @@ export default function BookAppointmentPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Mobile Number</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">{t.mobileNumber}</label>
                 <input 
                   type="tel" 
                   required 
@@ -331,7 +333,7 @@ export default function BookAppointmentPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Date</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">{t.date}</label>
                   <input 
                     type="date" 
                     required 
@@ -341,14 +343,14 @@ export default function BookAppointmentPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Time Slot</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">{t.timeSlot}</label>
                   <select 
                     required 
                     value={timeSlot}
                     onChange={e => setTimeSlot(e.target.value)}
                     className="w-full p-4 bg-[#fafafa] border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all font-medium text-slate-900 cursor-pointer"
                   >
-                    <option value="" disabled>Select Slot</option>
+                    <option value="" disabled>{t.selectSlot}</option>
                     <option value="10:00 AM">10:00 AM</option>
                     <option value="11:30 AM">11:30 AM</option>
                     <option value="02:00 PM">02:00 PM</option>
@@ -363,7 +365,7 @@ export default function BookAppointmentPage() {
                 disabled={isBooking}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md transition-all active:scale-95 mt-4"
               >
-                {isBooking ? "Confirming..." : "Confirm Booking"}
+                {isBooking ? t.confirming : t.confirmBooking}
               </button>
             </form>
           </div>
