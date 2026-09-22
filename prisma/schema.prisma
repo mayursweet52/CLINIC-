@@ -26,8 +26,10 @@ model Organization {
   labReports    LabReport[]
 
   // Existing models for generic features
-  medicines Medicine[]
-  billings  Billing[]
+  medicines       Medicine[]
+  billings        Billing[]
+  availabilities  DoctorAvailability[]
+  timeOffs        DoctorTimeOff[]
 }
 
 model User {
@@ -49,10 +51,12 @@ model User {
   availableDays   String[] // e.g. ["MONDAY", "WEDNESDAY"]
   slotDuration    Int? // e.g. 15
 
-  organization  Organization        @relation(fields: [organizationId], references: [id])
-  appointments  HealthAppointment[] @relation("DoctorAppointments")
-  visits        PatientVisit[]      @relation("DoctorVisits")
-  prescriptions Prescription[]      @relation("DoctorPrescriptions")
+  organization    Organization          @relation(fields: [organizationId], references: [id])
+  appointments    HealthAppointment[]   @relation("DoctorAppointments")
+  visits          PatientVisit[]        @relation("DoctorVisits")
+  prescriptions   Prescription[]        @relation("DoctorPrescriptions")
+  availabilities  DoctorAvailability[]  @relation("DoctorAvailability")
+  timeOffs        DoctorTimeOff[]       @relation("DoctorTimeOff")
 }
 
 model Patient {
@@ -287,4 +291,36 @@ model NotificationLog {
   sentAt    DateTime?
   error     String?
   createdAt DateTime @default(now())
+}
+
+model DoctorAvailability {
+  id           String   @id @default(uuid())
+  doctorId     String
+  dayOfWeek    Int      // 0=Sun, 1=Mon, ..., 6=Sat
+  startTime    String   // "09:00"
+  endTime      String   // "17:00"
+  slotDuration Int      @default(15) // minutes
+  isActive     Boolean  @default(true)
+  orgId        String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  doctor User         @relation("DoctorAvailability", fields: [doctorId], references: [id])
+  org    Organization @relation(fields: [orgId], references: [id])
+
+  @@unique([doctorId, dayOfWeek])
+}
+
+model DoctorTimeOff {
+  id        String   @id @default(uuid())
+  doctorId  String
+  date      DateTime // specific date off
+  reason    String?
+  orgId     String
+  createdAt DateTime @default(now())
+
+  doctor User         @relation("DoctorTimeOff", fields: [doctorId], references: [id])
+  org    Organization @relation(fields: [orgId], references: [id])
+
+  @@unique([doctorId, date])
 }
