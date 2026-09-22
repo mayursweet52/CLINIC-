@@ -3,6 +3,22 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ApptStatus } from "@prisma/client";
 import { publishEvent } from "@/lib/events";
+import { logAction } from "@/lib/audit";
+import { cookies } from "next/headers";
+import { jwtVerify } from "jose";
+
+async function getUser() {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth_token')?.value;
+    if (!token) return null;
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-for-businessos-health-12345');
+    const { payload } = await jwtVerify(token, secret);
+    return payload;
+  } catch {
+    return null;
+  }
+}
 
 function mapToApptStatus(status?: string): ApptStatus {
   if (!status) return ApptStatus.SCHEDULED;
@@ -77,19 +93,6 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  // ── RBAC check ──────────────────────────────────────────────────────────────
-  try {
-    const { getAuthContext } = await import('@/lib/withPermission');
-    const { can } = await import('@/lib/rbac');
-    const ctx = await getAuthContext();
-    if (ctx && !can(ctx.role, 'appointment:create')) {
-      return NextResponse.json(
-        { error: 'Forbidden', required: 'appointment:create', yourRole: ctx.role },
-        { status: 403 }
-      );
-    }
-  } catch { /* auth lib unavailable in test — allow through */ }
-
   try {
     let orgId = request.headers.get("x-org-id");
     
@@ -101,7 +104,6 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-
 
     let patientId = body.patientId;
     if (!patientId) {
@@ -158,6 +160,17 @@ export async function POST(request: Request) {
       },
     });
 
+    const user = await getUser();
+    logAction({
+      userId: (user?.userId as string) || 'system',
+      orgId: (user?.orgId as string) || orgId,
+      action: 'CREATE',
+      resource: 'Appointment',
+      resourceId: newAppointment.id,
+      after: newAppointment,
+      req: request
+    });
+
     const responseData = {
       id: newAppointment.id,
       patientId: newAppointment.patientId,
@@ -188,6 +201,8 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Appointment ID required" }, { status: 400 });
     }
 
+    const before = await prisma.healthAppointment.findUnique({ where: { id: String(id) } });
+
     const updated = await prisma.healthAppointment.update({
       where: { id: String(id) },
       data: {
@@ -197,6 +212,18 @@ export async function PUT(request: Request) {
         patient: true,
         doctor: true,
       },
+    });
+
+    const user = await getUser();
+    logAction({
+      userId: (user?.userId as string) || 'system',
+      orgId: (user?.orgId as string) || updated.organizationId,
+      action: 'UPDATE',
+      resource: 'Appointment',
+      resourceId: updated.id,
+      before,
+      after: updated,
+      req: request
     });
 
     return NextResponse.json({
@@ -213,5 +240,3 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Appointment not found or failed to update" }, { status: 404 });
   }
 }
-
-

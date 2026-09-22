@@ -1,7 +1,23 @@
-﻿import logger from '@/lib/logger';
+import logger from '@/lib/logger';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Role } from '@prisma/client';
+import { logAction } from '@/lib/audit';
+import { cookies } from "next/headers";
+import { jwtVerify } from "jose";
+
+async function getUser() {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth_token')?.value;
+    if (!token) return null;
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-for-businessos-health-12345');
+    const { payload } = await jwtVerify(token, secret);
+    return payload;
+  } catch {
+    return null;
+  }
+}
 
 export async function GET() {
   try {
@@ -54,7 +70,9 @@ export async function POST(request: Request) {
 
     const email = body.email || `staff-${Date.now()}@clinic.local`;
 
-    const user = await prisma.user.upsert({
+    const before = await prisma.user.findUnique({ where: { email } });
+
+    const userObj = await prisma.user.upsert({
       where: { email },
       update: {
         name: body.name,
@@ -72,8 +90,21 @@ export async function POST(request: Request) {
       },
     });
 
+    const user = await getUser();
+
+    logAction({
+      userId: (user?.userId as string) || 'system',
+      orgId: (user?.orgId as string) || userObj.organizationId,
+      action: before ? 'UPDATE' : 'CREATE',
+      resource: 'Staff',
+      resourceId: userObj.id,
+      before,
+      after: userObj,
+      req: request
+    });
+
     return NextResponse.json(
-      { message: 'Staff created or updated successfully', staff: user },
+      { message: 'Staff created or updated successfully', staff: userObj },
       { status: 200 }
     );
   } catch (error) {
@@ -81,4 +112,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to process staff request' }, { status: 400 });
   }
 }
-

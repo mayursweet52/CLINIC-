@@ -1,6 +1,22 @@
-﻿import logger from '@/lib/logger';
+import logger from '@/lib/logger';
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { logAction } from "@/lib/audit";
+import { cookies } from "next/headers";
+import { jwtVerify } from "jose";
+
+async function getUser() {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth_token')?.value;
+    if (!token) return null;
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-for-businessos-health-12345');
+    const { payload } = await jwtVerify(token, secret);
+    return payload;
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(request: Request) {
   try {
@@ -54,6 +70,17 @@ export async function POST(request: Request) {
       },
     });
 
+    const user = await getUser();
+    logAction({
+      userId: (user?.userId as string) || 'system',
+      orgId: (user?.orgId as string) || orgId,
+      action: 'CREATE',
+      resource: 'Patient',
+      resourceId: newPatient.id,
+      after: newPatient,
+      req: request
+    });
+
     return NextResponse.json(
       {
         message: "Patient created successfully",
@@ -75,5 +102,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 }
-
-
