@@ -18,6 +18,7 @@ import { usePermissions } from "@/components/providers/PermissionsProvider";
 const NAV_CONFIG = {
   doctor: [
     { name: "Dashboard", href: "/doctor", icon: Home, perm: "dashboard:read" },
+    { name: "My Schedule", href: "/doctor/schedule", icon: Calendar, perm: "appointment:read" },
     { name: "Appointments", href: "/doctor/appointments", icon: Calendar, perm: "appointment:read" },
     { name: "Patients", href: "/doctor/patients", icon: Users, perm: "patient:read" },
   ],
