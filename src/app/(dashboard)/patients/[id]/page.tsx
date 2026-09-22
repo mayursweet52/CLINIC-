@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, use } from 'react';
 import { usePatient } from '@/features/patients/hooks';
 import { PatientHeader } from '@/features/patients/components/PatientHeader';
 import { VisitTimeline } from '@/features/patients/components/VisitTimeline';
@@ -7,8 +7,9 @@ import { VitalsChart } from '@/features/patients/components/VitalsChart';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Calendar as CalendarIcon } from 'lucide-react';
 
-export default function PatientDetailPage({ params }: { params: { id: string } }) {
-  const { data: patient, isLoading } = usePatient(params.id);
+export default function PatientDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const { data: patient, isLoading } = usePatient(id);
   const [activeTab, setActiveTab] = useState('overview');
 
   const tabs = [
@@ -22,7 +23,7 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
 
   // Using a mock patient if backend isn't ready
   const currentPatient = patient || {
-    id: params.id,
+    id: id,
     name: 'Jane Doe',
     patientCode: 'PT-2024-892',
     phone: '+1 555-0198',

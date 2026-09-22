@@ -25,12 +25,14 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginInput) => {
     try {
       const res = await login.mutateAsync(data)
-      const role = res.user.role.toUpperCase()
+      // API returns { message, role } — use res.role directly
+      const role = (res as any).role?.toUpperCase() || ''
       if (role === 'DOCTOR') router.push('/doctor')
       else if (role === 'RECEPTIONIST') router.push('/reception')
       else if (role === 'PHARMACIST') router.push('/pharmacy')
       else if (role === 'ADMIN' || role === 'SUPERADMIN') router.push('/admin')
-      else router.push('/dashboard')
+      else if (role === 'ACCOUNTANT') router.push('/billing')
+      else router.push('/admin')
     } catch (err: any) {
       // Error is handled by useLogin's onError toast
     }

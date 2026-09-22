@@ -1,14 +1,15 @@
 'use client';
-import React from 'react';
+import React, { use } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import Link from 'next/link';
 import { ArrowLeft, User, UserCheck, Calendar as CalendarIcon, Clock, Stethoscope, CheckCircle2 } from 'lucide-react';
 
-export default function AppointmentDetailPage({ params }: { params: { id: string } }) {
+export default function AppointmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   // Mock appointment data
   const appointment = {
-    id: params.id,
+    id: id,
     tokenNumber: 42,
     appointmentNo: 'AMC-2024-0147',
     status: 'ARRIVED',
