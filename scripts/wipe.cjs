@@ -1,0 +1,1 @@
+const { PrismaClient } = require('@prisma/client'); const p = new PrismaClient(); async function m() { await p.healthAppointment.deleteMany(); await p.user.deleteMany(); console.log('Deleted old users and appointments.'); } m().catch(console.error).finally(()=>p.$disconnect());

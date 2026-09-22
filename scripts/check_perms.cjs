@@ -1,0 +1,1 @@
+const { PrismaClient } = require('@prisma/client'); const p = new PrismaClient(); async function m() { const perms = await p.permission.findMany(); console.log('Perms:', perms.length); const rp = await p.rolePermission.findMany(); console.log('RolePerms:', rp.length); } m().catch(console.error).finally(()=>p.$disconnect());

@@ -1,0 +1,1 @@
+const { PrismaClient } = require('@prisma/client'); const p = new PrismaClient(); async function m() { const users = await p.user.findMany({select: {id:true, email:true}}); console.table(users); } m().catch(console.error).finally(()=>p.$disconnect());
