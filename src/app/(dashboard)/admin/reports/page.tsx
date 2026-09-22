@@ -13,10 +13,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TableSkeleton } from "@/components/shared/TableSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 
 export default function ReportsPage() {
-  const [range, setRange] = useState("30d");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const range = searchParams.get("range") || "30d";
+
+  const setRange = (newRange: string) => {
+    router.push(`/admin/reports?range=${newRange}`);
+  };
+
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -58,7 +66,7 @@ export default function ReportsPage() {
   };
 
   const handleExport = () => {
-    window.open(`/api/analytics/export?range=${range}`, '_blank');
+    window.location.href = `/api/analytics/export?range=${range}&format=csv`;
   };
 
   return (
