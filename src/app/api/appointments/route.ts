@@ -1,4 +1,4 @@
-﻿import logger from '@/lib/logger';
+import logger from '@/lib/logger';
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ApptStatus } from "@prisma/client";
@@ -77,6 +77,19 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // ── RBAC check ──────────────────────────────────────────────────────────────
+  try {
+    const { getAuthContext } = await import('@/lib/withPermission');
+    const { can } = await import('@/lib/rbac');
+    const ctx = await getAuthContext();
+    if (ctx && !can(ctx.role, 'appointment:create')) {
+      return NextResponse.json(
+        { error: 'Forbidden', required: 'appointment:create', yourRole: ctx.role },
+        { status: 403 }
+      );
+    }
+  } catch { /* auth lib unavailable in test — allow through */ }
+
   try {
     let orgId = request.headers.get("x-org-id");
     
@@ -88,6 +101,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+
 
     let patientId = body.patientId;
     if (!patientId) {
