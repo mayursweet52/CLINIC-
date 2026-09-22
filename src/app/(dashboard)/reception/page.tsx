@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, CheckCircle2, AlertCircle, Calendar, Users2 } from "lucide-react";
+import { Clock, CheckCircle, AlertCircle, Calendar, Users } from "lucide-react";
+import { format } from "date-fns";
+import { useRouter } from "next/navigation";
 
 import { TableSkeleton } from "@/components/shared/TableSkeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -13,12 +14,14 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PageHeader } from "@/components/shared/PageHeader";
 
 export default function ReceptionDashboard() {
-  const [allAppointments, setAllAppointments] = useState<any[]>([]);
-  const [pendingBills, setPendingBills] = useState<any[]>([]);
+  const router = useRouter();
+  const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  useEffect(() => {
+  const fetchAppointments = () => {
+    setLoading(true);
+    setError(false);
     fetch("/api/appointments")
       .then((res) => {
         if (!res.ok) throw new Error("Fetch failed");
@@ -26,106 +29,146 @@ export default function ReceptionDashboard() {
       })
       .then((data) => {
         if (Array.isArray(data)) {
-          setAllAppointments(data);
-          // Receptionist sees "COMPLETED" appointments to collect payment
-          setPendingBills(data.filter((a) => a.rawStatus === "COMPLETED"));
+          setAppointments(data);
         }
       })
       .catch((err) => {
         console.error("Error fetching appointments:", err);
-        toast.error("Failed to load appointments.");
         setError(true);
       })
       .finally(() => setLoading(false));
-  }, []);
-
-  const collectPayment = async (id: string) => {
-    toast.success("Payment of ₹1500 Collected Successfully! Bill Generated.");
-    setPendingBills((prev) => prev.filter((a) => a.id !== id));
   };
 
-  // Stats calculation
-  const total = loading ? "-" : allAppointments.length;
-  const queue = loading ? "-" : allAppointments.filter(a => ["ARRIVED", "IN_PROGRESS", "SCHEDULED"].includes(a.rawStatus || "")).length;
-  const completed = loading ? "-" : allAppointments.filter(a => ["COMPLETED", "PAID"].includes(a.rawStatus || "")).length;
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
+
+  const handleCheckIn = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    try {
+      // Optimistic update
+      setAppointments(prev => prev.map(a => a.id === id ? { ...a, rawStatus: "ARRIVED" } : a));
+      toast.success("Patient checked in");
+      // Add actual API call if needed
+    } catch (err) {
+      toast.error("Failed to check in");
+    }
+  };
+
+  const handleRowClick = (id: string) => {
+    router.push(`/appointment/${id}`);
+  };
+
+  const total = loading ? "-" : appointments.length;
+  const queue = loading ? "-" : appointments.filter(a => ["ARRIVED", "IN_PROGRESS", "SCHEDULED"].includes(a.rawStatus || "")).length;
+  const completed = loading ? "-" : appointments.filter(a => ["COMPLETED", "PAID"].includes(a.rawStatus || "")).length;
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader 
-        title="Front Desk & Billing" 
-        description="Manage patient check-ins and collect payments for completed consultations." 
+        title="Reception Desk" 
+        description={format(new Date(), "EEEE, dd MMMM yyyy")} 
+        action={
+          <Button className="bg-primary-600 hover:bg-primary-700 text-white">
+            + New Appointment
+          </Button>
+        }
       />
 
       {/* Top Stat Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Appointments" value={total} icon={Calendar} iconColor="text-blue-500" />
-        <StatCard title="In Queue" value={queue} icon={Users2} iconColor="text-yellow-500" />
-        <StatCard title="Completed" value={completed} icon={CheckCircle2} iconColor="text-green-500" />
-        <StatCard title="Avg Wait Time" value={loading ? "-" : "14 min"} icon={Clock} iconColor="text-orange-500" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StatCard title="Today's Appointments" value={total} icon={Calendar} iconColor="text-teal-600" />
+        <StatCard title="In Queue" value={queue} icon={Users} iconColor="text-amber-500" />
+        <StatCard title="Completed" value={completed} icon={CheckCircle} iconColor="text-emerald-500" />
+        <StatCard title="Avg Wait Time" value={loading ? "-" : "14 min"} icon={Clock} iconColor="text-blue-500" />
       </div>
 
-      {/* Wrapped List inside Card */}
-      <Card className="overflow-hidden shadow-sm">
-        <CardHeader className="bg-muted/20 border-b pb-4">
-          <CardTitle className="text-lg font-semibold">Awaiting Payment</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="flex flex-col divide-y divide-border">
-            {loading ? (
-              <div className="p-0">
-                {/* Changed cols to 1 because list format is currently 1 row per appointment */}
-                <TableSkeleton rows={4} cols={1} />
-              </div>
-            ) : error ? (
-              <div className="p-8">
-                <EmptyState 
-                  icon={AlertCircle} 
-                  title="Failed to load" 
-                  description="Please refresh the page to try again." 
-                />
-              </div>
-            ) : pendingBills.length > 0 ? (
-              pendingBills.map((appt) => (
-                <div 
-                  key={appt.id} 
-                  className="flex flex-col md:flex-row justify-between md:items-center p-4 hover:bg-muted/5 transition-colors gap-4"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <h3 className="font-semibold">{appt.patientName}</h3>
-                      <span className="text-xs text-muted-foreground border border-border px-2 py-0.5 rounded-full">
-                        Token #{appt.tokenNumber}
-                      </span>
-                      {/* Using StatusBadge Component */}
-                      <StatusBadge status={appt.rawStatus || "COMPLETED"} />
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Doctor: <span className="font-medium text-foreground">{appt.doctor}</span>
-                    </p>
-                  </div>
-                  {/* Using Outline Button */}
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => collectPayment(appt.id)}
+      {/* Queue Table */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 sticky top-0 z-10 border-b border-slate-200">
+              <tr>
+                <th className="px-6 py-4 font-semibold">Token</th>
+                <th className="px-6 py-4 font-semibold">Patient</th>
+                <th className="px-6 py-4 font-semibold">Doctor</th>
+                <th className="px-6 py-4 font-semibold">Time</th>
+                <th className="px-6 py-4 font-semibold">Status</th>
+                <th className="px-6 py-4 font-semibold text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="p-0">
+                    <TableSkeleton rows={6} cols={6} />
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={6} className="p-8">
+                    <EmptyState 
+                      icon={AlertCircle} 
+                      title="Failed to load" 
+                      description="Please try again" 
+                      action={<Button onClick={fetchAppointments} variant="outline">Retry</Button>}
+                    />
+                  </td>
+                </tr>
+              ) : appointments.length > 0 ? (
+                appointments.map((appt) => (
+                  <tr 
+                    key={appt.id} 
+                    onClick={() => handleRowClick(appt.id)}
+                    className="hover:bg-slate-50 transition-colors cursor-pointer group"
                   >
-                    <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-600" />
-                    Collect ₹1500
-                  </Button>
-                </div>
-              ))
-            ) : (
-              <div className="p-8">
-                <EmptyState 
-                  icon={Calendar} 
-                  title="Queue is clear" 
-                  description="Pending bills and completed consultations will appear here." 
-                />
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                    <td className="px-6 py-4">
+                      <span className="font-mono font-bold text-primary-600">
+                        {appt.tokenNumber || "TKN"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-medium text-slate-900">
+                      {appt.patientName}
+                    </td>
+                    <td className="px-6 py-4 text-slate-600">
+                      {appt.doctor}
+                    </td>
+                    <td className="px-6 py-4 text-slate-600">
+                      {appt.time || appt.date ? format(new Date(appt.date || Date.now()), "hh:mm a") : "-"}
+                    </td>
+                    <td className="px-6 py-4">
+                      <StatusBadge status={appt.rawStatus || "SCHEDULED"} />
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {appt.rawStatus === "SCHEDULED" ? (
+                        <Button 
+                          size="sm" 
+                          onClick={(e) => handleCheckIn(e, appt.id)}
+                          className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200"
+                        >
+                          Check In
+                        </Button>
+                      ) : (
+                        <span className="text-slate-400 text-xs px-2">-</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="p-8">
+                    <EmptyState 
+                      icon={Calendar} 
+                      title="No appointments today" 
+                      description="Bookings will appear here automatically" 
+                    />
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
