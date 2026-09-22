@@ -27,7 +27,6 @@ const NAV_CONFIG = {
   ],
   pharmacist: [
     { name: "Pharmacy", href: "/pharmacy", icon: Pill, perm: "pharmacy:dispense" },
-    { name: "Inventory", href: "/pharmacy/inventory", icon: Activity, perm: "pharmacy:inventory" },
   ],
   admin: [
     { name: "Overview", href: "/admin", icon: Home, perm: "dashboard:read" },
