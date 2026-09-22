@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Calendar, Receipt, Pill, LogOut, ArrowRight, Loader2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import PayButton from '@/components/portal/PayButton';
 
 export default function PortalDashboard() {
   const router = useRouter();
@@ -134,13 +135,16 @@ export default function PortalDashboard() {
                         <p className="font-medium">{bill.invoiceNo || 'Invoice'}</p>
                         <p className="text-xs text-muted-foreground">{new Date(bill.date).toLocaleDateString()}</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex flex-col items-end gap-1">
                         <p className="font-bold">₹{bill.amount}</p>
                         <span className={`text-[10px] uppercase font-bold tracking-wider ${
                           bill.status === 'PAID' ? 'text-green-600' : 'text-orange-600'
                         }`}>
                           {bill.status}
                         </span>
+                        {bill.status !== 'PAID' && (
+                          <PayButton billId={bill.id} amount={bill.amount} />
+                        )}
                       </div>
                     </div>
                   ))}
