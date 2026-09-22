@@ -15,12 +15,11 @@ async function main() {
   const page = await ctx.newPage();
   
   const urls = [
-    '/portal',
+    '/doctor',
+    '/reception',
     '/admin',
-    '/staff/billing',
     '/pharmacy',
-    '/admin/audit',
-    '/doctor'
+    '/portal'
   ];
 
   let successCount = 0;

@@ -271,3 +271,16 @@ model AuditLog {
   userAgent   String?
   createdAt   DateTime @default(now())
 }
+
+model NotificationLog {
+  id        String   @id @default(cuid())
+  orgId     String
+  channel   String   // email | sms | whatsapp
+  to        String
+  template  String
+  payload   Json
+  status    String   @default("PENDING") // PENDING | SENT | FAILED
+  sentAt    DateTime?
+  error     String?
+  createdAt DateTime @default(now())
+}
