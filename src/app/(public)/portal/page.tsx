@@ -145,6 +145,13 @@ export default function PortalDashboard() {
                         {bill.status !== 'PAID' && (
                           <PayButton billId={bill.id} amount={bill.amount} />
                         )}
+                        {bill.status === 'PAID' && (
+                          <Button variant="outline" size="sm" className="mt-1 text-[10px] h-6 px-2" asChild>
+                            <a href={`/api/portal/invoices/${bill.id}`} target="_blank" rel="noopener noreferrer">
+                              Download
+                            </a>
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}

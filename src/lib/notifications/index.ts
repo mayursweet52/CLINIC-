@@ -51,6 +51,7 @@ export async function dispatch(channel: Channel, payload: NotificationPayload) {
           subject: content.subject,
           template: payload.templateName,
           data: payload.data,
+          attachments: payload.data?.attachments,
         });
       } else if (channel === "sms") {
         await sendSMS({

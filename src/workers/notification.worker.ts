@@ -99,11 +99,20 @@ subscribeToChannel("*", async (event) => {
         include: { appointment: { include: { patient: true } } },
       });
       if (bill?.appointment?.patient?.email) {
+        let attachments = [];
+        try {
+          const { generateInvoicePDF } = require('../lib/invoice');
+          const { path: pdfPath } = await generateInvoicePDF(bill.id);
+          attachments.push({ filename: `invoice-${bill.invoiceNo || bill.id}.pdf`, path: pdfPath });
+        } catch (err) {
+          logger.error("Failed to generate invoice for email attachment", err);
+        }
+
         await emailQueue.add("send", {
           orgId: bill.organizationId,
           to: bill.appointment.patient.email,
           templateName: "paymentConfirmation",
-          data: { amount: bill.totalAmount }
+          data: { amount: bill.totalAmount, attachments }
         }, { attempts: 3, backoff: { type: "exponential", delay: 1000 } });
       }
     }
