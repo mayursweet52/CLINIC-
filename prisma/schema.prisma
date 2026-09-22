@@ -242,3 +242,48 @@ enum TxType {
   EXPENSE
 }
 
+// ─────────────────────────────────────────
+// RBAC
+// ─────────────────────────────────────────
+
+model Permission {
+  id          String           @id @default(uuid())
+  key         String           @unique
+  description String?
+  category    String?
+  createdAt   DateTime         @default(now())
+
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  role         String
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([role, permissionId])
+  @@index([role])
+}
+
+// ─────────────────────────────────────────
+// AUDIT LOGS
+// ─────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  orgId      String?
+  action     String
+  resource   String
+  resourceId String?
+  before     Json?
+  after      Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([orgId])
+  @@index([userId])
+  @@index([createdAt])
+}
+

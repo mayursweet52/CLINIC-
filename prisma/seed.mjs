@@ -1,9 +1,44 @@
-import { PrismaClient, Role, ApptStatus, PayStatus } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// ── Inline permission definitions (mirrors src/lib/rbac.ts) ──────────────────
+const ALL_PERMISSIONS = [
+  { key: 'appointment:create',   description: 'Create appointments',        category: 'appointment'  },
+  { key: 'appointment:read',     description: 'View appointments',          category: 'appointment'  },
+  { key: 'appointment:update',   description: 'Update appointments',        category: 'appointment'  },
+  { key: 'appointment:delete',   description: 'Delete appointments',        category: 'appointment'  },
+  { key: 'patient:create',       description: 'Register new patients',      category: 'patient'      },
+  { key: 'patient:read',         description: 'View patient records',       category: 'patient'      },
+  { key: 'patient:update',       description: 'Update patient records',     category: 'patient'      },
+  { key: 'prescription:create',  description: 'Create prescriptions',       category: 'prescription' },
+  { key: 'prescription:read',    description: 'View prescriptions',         category: 'prescription' },
+  { key: 'bill:create',          description: 'Create bills',               category: 'billing'      },
+  { key: 'bill:read',            description: 'View bills',                 category: 'billing'      },
+  { key: 'bill:update',          description: 'Update billing status',      category: 'billing'      },
+  { key: 'pharmacy:dispense',    description: 'Dispense medicines',         category: 'pharmacy'     },
+  { key: 'pharmacy:inventory',   description: 'Manage inventory',           category: 'pharmacy'     },
+  { key: 'report:read',          description: 'View reports',               category: 'reports'      },
+  { key: 'report:export',        description: 'Export reports',             category: 'reports'      },
+  { key: 'user:manage',          description: 'Manage staff',               category: 'admin'        },
+  { key: 'settings:manage',      description: 'Manage org settings',        category: 'admin'        },
+];
+
+const ROLE_PERMISSIONS = {
+  DOCTOR:        ['appointment:read','appointment:update','patient:read','patient:update','prescription:create','prescription:read','report:read'],
+  RECEPTIONIST:  ['appointment:create','appointment:read','appointment:update','patient:create','patient:read','bill:read','bill:create','bill:update','report:read'],
+  PHARMACIST:    ['pharmacy:dispense','pharmacy:inventory','appointment:read','patient:read','prescription:read'],
+  ADMIN:         ['appointment:create','appointment:read','appointment:update','appointment:delete','patient:create','patient:read','patient:update','prescription:create','prescription:read','bill:create','bill:read','bill:update','pharmacy:dispense','pharmacy:inventory','report:read','report:export','user:manage','settings:manage'],
+  SUPERADMIN:    ['appointment:create','appointment:read','appointment:update','appointment:delete','patient:create','patient:read','patient:update','prescription:create','prescription:read','bill:create','bill:read','bill:update','pharmacy:dispense','pharmacy:inventory','report:read','report:export','user:manage','settings:manage'],
+  PATIENT:       ['appointment:read','bill:read','prescription:read'],
+};
+
+
 async function main() {
   console.log("Clearing existing data...");
+  await prisma.auditLog.deleteMany();
+  await prisma.rolePermission.deleteMany();
+  await prisma.permission.deleteMany();
   await prisma.billing.deleteMany();
   await prisma.prescription.deleteMany();
   await prisma.labReport.deleteMany();
@@ -14,6 +49,30 @@ async function main() {
   await prisma.user.deleteMany();
   await prisma.organization.deleteMany();
 
+  // ── Permissions ────────────────────────────────────────
+  console.log("Seeding Permissions...");
+  const createdPerms = {};
+  for (const p of ALL_PERMISSIONS) {
+    const perm = await prisma.permission.create({
+      data: { key: p.key, description: p.description, category: p.category },
+    });
+    createdPerms[p.key] = perm.id;
+  }
+
+  // ── Role Permissions ────────────────────────────────────
+  console.log("Seeding Role Permissions...");
+  const roles = ["DOCTOR", "RECEPTIONIST", "PHARMACIST", "ADMIN", "SUPERADMIN", "PATIENT"];
+  for (const role of roles) {
+    const perms = ROLE_PERMISSIONS[role] || [];
+    for (const permKey of perms) {
+      const permId = createdPerms[permKey];
+      if (permId) {
+        await prisma.rolePermission.create({ data: { role, permissionId: permId } });
+      }
+    }
+  }
+
+  // ── Organization ───────────────────────────────────────
   console.log("Seeding Organization...");
   const org = await prisma.organization.create({
     data: {
@@ -22,11 +81,12 @@ async function main() {
       address: "123 Health Avenue, Phase 1",
       city: "Mumbai",
       state: "Maharashtra",
-      phone: "+91-9876543210"
+      phone: "+91-9876543210",
     },
   });
 
-  console.log("Seeding Users / Staff (Including Doctors)...");
+  // ── Users ──────────────────────────────────────────────
+  console.log("Seeding Users...");
   const doctorSmith = await prisma.user.create({
     data: {
       organizationId: org.id,
@@ -35,16 +95,16 @@ async function main() {
       passwordHash: "hashed_password_123",
       role: Role.DOCTOR,
       department: "Cardiology",
-      phone: "+1-555-0101",
+      phone: "+91-9876500001",
       specialization: "Cardiologist",
       registrationNo: "MED-12345",
       consultationFee: 500,
       availableDays: ["MONDAY", "WEDNESDAY", "FRIDAY"],
-      slotDuration: 15
+      slotDuration: 15,
     },
   });
 
-  const adminUser = await prisma.user.create({
+  await prisma.user.create({
     data: {
       organizationId: org.id,
       name: "Admin Boss",
@@ -52,22 +112,23 @@ async function main() {
       passwordHash: "hashed_password_123",
       role: Role.ADMIN,
       department: "Management",
-      phone: "+1-555-0999",
+      phone: "+91-9876500002",
     },
   });
 
-  const receptionistAlice = await prisma.user.create({
+  await prisma.user.create({
     data: {
       organizationId: org.id,
-      name: "Alice",
+      name: "Alice Receptionist",
       email: "alice@clinic.com",
       passwordHash: "hashed_password_123",
       role: Role.RECEPTIONIST,
       department: "Front Desk",
-      phone: "+1-555-0103",
+      phone: "+91-9876500003",
     },
   });
 
+  // ── Patient ────────────────────────────────────────────
   console.log("Seeding Patients...");
   const patientJohn = await prisma.patient.create({
     data: {
@@ -76,86 +137,41 @@ async function main() {
       name: "John Doe",
       phone: "123-456-7890",
       email: "john.doe@example.com",
-      address: "123 Main St",
       dob: new Date("1990-01-01"),
       gender: "Male",
       bloodGroup: "O+",
-      allergies: ["Dust", "Peanuts"],
-      chronicConds: ["Diabetes"],
-      emergencyContact: "987-654-3210"
     },
   });
 
-  console.log("Seeding Appointments & Visits...");
+  // ── Appointment ────────────────────────────────────────
   const appt1 = await prisma.healthAppointment.create({
     data: {
       organizationId: org.id,
-      appointmentNo: "APT-001",
       patientId: patientJohn.id,
       doctorId: doctorSmith.id,
       appointmentDate: new Date(),
       timeSlot: "10:30 AM",
-      status: ApptStatus.COMPLETED,
+      status: "COMPLETED",
       fee: 500,
-      isPaid: true
+      isPaid: true,
     },
   });
 
-  const visit1 = await prisma.patientVisit.create({
+  // ── Audit log entry ────────────────────────────────────
+  await prisma.auditLog.create({
     data: {
-      organizationId: org.id,
-      patientId: patientJohn.id,
-      doctorId: doctorSmith.id,
-      appointmentId: appt1.id,
-      visitDate: new Date(),
-      vitalsBP: "120/80",
-      vitalsPulse: 72,
-      vitalsTemp: 98.6,
-      vitalsWeight: 70.5,
-      chiefComplaint: "Fever and mild headache",
-      diagnosis: "Viral Fever",
-      notes: "Rest and take fluids",
-      followUpDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      userId: doctorSmith.id,
+      orgId: org.id,
+      action: "appointment:update",
+      resource: "HealthAppointment",
+      resourceId: appt1.id,
+      after: { status: "COMPLETED" },
     },
   });
 
-  console.log("Seeding Prescriptions & Lab Reports...");
-  await prisma.prescription.create({
-    data: {
-      organizationId: org.id,
-      patientId: patientJohn.id,
-      visitId: visit1.id,
-      doctorId: doctorSmith.id,
-      medicines: [
-        { name: "Paracetamol 500mg", dosage: "1-0-1", days: 3 },
-        { name: "Vitamin C", dosage: "1-0-0", days: 7 }
-      ],
-      diet: "Liquid diet, avoid cold food",
-      instructions: "Take medicine after meals",
-      validUntil: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
-    },
-  });
-
-  await prisma.labReport.create({
-    data: {
-      organizationId: org.id,
-      patientId: patientJohn.id,
-      testName: "CBC",
-      results: { hemoglobin: "13.5", wbc: "8000" },
-      normalRange: "Hb: 13-17, WBC: 4000-11000",
-      interpretation: "Normal Report",
-      fileUrl: "https://example.com/report1.pdf"
-    },
-  });
-
-  console.log("Seeding completed successfully!");
+  console.log("✅ Seed completed!");
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .catch((e) => { console.error(e); process.exit(1); })
+  .finally(() => prisma.$disconnect());

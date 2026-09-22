@@ -1,32 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auditService } from '@/lib/audit';
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { jwtVerify } from 'jose';
+import { prisma } from '@/lib/prisma';
+import { getRecentLogs } from '@/lib/audit';
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const limit = Number(searchParams.get('limit')) || 50;
-  const action = searchParams.get('action') || undefined;
+export const dynamic = 'force-dynamic';
 
-  const logs = auditService.getLogs(limit, action);
-  return NextResponse.json(logs);
-}
-
-export async function POST(req: NextRequest) {
+export async function GET() {
   try {
-    const body = await req.json();
-    const { actor, role, action, resource, resourceId, details, status } = body;
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth_token')?.value;
 
-    const record = auditService.log({
-      actor: actor || 'system@clinic.com',
-      role: role || 'STAFF',
-      action: action || 'GENERIC_ACTION',
-      resource: resource || 'System',
-      resourceId,
-      details: details || {},
-      status: status || 'SUCCESS'
-    });
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    return NextResponse.json({ success: true, record }, { status: 201 });
-  } catch (err: any) {
-    return NextResponse.json({ error: 'Failed to record audit log' }, { status: 500 });
+    const secret = new TextEncoder().encode(
+      process.env.JWT_SECRET || 'super-secret-key-for-businessos-health-12345'
+    );
+    const { payload } = await jwtVerify(token, secret);
+    const orgId = payload.orgId as string | undefined;
+
+    try {
+      const logs = await prisma.auditLog.findMany({
+        where: orgId ? { orgId } : {},
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      });
+      return NextResponse.json({ logs, source: 'database' });
+    } catch {
+      // DB unavailable — use in-memory logs
+      const logs = getRecentLogs(orgId, 100);
+      return NextResponse.json({ logs, source: 'memory' });
+    }
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 }
