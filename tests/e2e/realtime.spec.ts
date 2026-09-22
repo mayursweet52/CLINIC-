@@ -29,7 +29,7 @@ test.describe('Real-time Updates', () => {
     await docBtn.click();
     await patientPage.getByRole('button', { name: /Next/i }).click();
 
-    const dateBtn = patientPage.locator('button[name="day"]').filter({ hasNotClass: /opacity-50/ }).first();
+    const dateBtn = patientPage.locator('button[name="day"]:not(.opacity-50)').first();
     if (await dateBtn.isVisible()) await dateBtn.click();
     
     const slotBtn = patientPage.locator('button:not([disabled])', { hasText: /AM|PM/ }).first();

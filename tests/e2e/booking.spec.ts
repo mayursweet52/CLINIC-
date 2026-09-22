@@ -21,7 +21,7 @@ test.describe('Booking Flow', () => {
 
     // Step 3: Date & Time
     // Wait for calendar to be visible
-    const dateBtn = page.locator('button[name="day"]').filter({ hasNotClass: /opacity-50/ }).first();
+    const dateBtn = page.locator('button[name="day"]:not(.opacity-50)').first();
     if (await dateBtn.isVisible()) {
       await dateBtn.click();
     }
@@ -39,7 +39,7 @@ test.describe('Booking Flow', () => {
     // Expect token to be visible
     await expect(page.locator('text=/Token/i')).toBeVisible();
     // QR Code (assumed to be an svg or img with qr role/alt)
-    await expect(page.locator('svg, img[alt*="QR"]')).first().toBeVisible();
+    await expect(page.locator('svg, img[alt*="QR"]').first()).toBeVisible();
   });
 
   test('Test slot selection (only available slots clickable)', async ({ page }) => {
