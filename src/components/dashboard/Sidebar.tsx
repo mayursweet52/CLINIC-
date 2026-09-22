@@ -32,6 +32,7 @@ const NAV_CONFIG = {
     { name: "Overview", href: "/admin", icon: Home, perm: "dashboard:read" },
     { name: "Staff", href: "/admin/staff", icon: Users, perm: "user:manage" },
     { name: "Settings", href: "/admin/settings", icon: Settings, perm: "settings:manage" },
+    { name: "Notifications", href: "/admin/notifications", icon: Activity, perm: "dashboard:read" },
   ],
 };
 

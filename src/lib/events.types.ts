@@ -4,6 +4,7 @@ export type EventName =
   | "appointment.cancelled"
   | "patient.checked_in"
   | "prescription.created"
+  | "bill.generated"
   | "bill.paid";
 
 export interface EventPayload {
