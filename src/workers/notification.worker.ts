@@ -25,6 +25,13 @@ subscribeToChannel("*", async (event) => {
     if (!payload) return;
 
     if (type === "appointment.created") {
+      // Invalidate analytics cache
+      const orgId = payload.orgId || 'org-1';
+      const redisClient = createWorkerConnection();
+      const keys = await redisClient.keys(`analytics:${orgId}:*`);
+      if (keys.length > 0) await redisClient.del(...keys);
+      redisClient.quit();
+
       const apt = await prisma.healthAppointment.findUnique({
         where: { id: payload.appointmentId || payload.id },
         include: { patient: true },
@@ -94,6 +101,13 @@ subscribeToChannel("*", async (event) => {
       }
     }
     else if (type === "bill.paid") {
+      // Invalidate analytics cache
+      const orgId = payload.orgId || 'org-1';
+      const redisClient = createWorkerConnection();
+      const keys = await redisClient.keys(`analytics:${orgId}:*`);
+      if (keys.length > 0) await redisClient.del(...keys);
+      redisClient.quit();
+
       const bill = await prisma.billing.findUnique({
         where: { id: payload.billId || payload.id },
         include: { appointment: { include: { patient: true } } },
