@@ -54,8 +54,32 @@ export const GET = withPermission('appointment:read', async (request: Request) =
       orgId = defaultOrg.id;
     }
 
+    const url = new URL(request.url);
+    const doctorId = url.searchParams.get("doctorId");
+    const dateParam = url.searchParams.get("date");
+
+    const whereClause: any = { organizationId: orgId };
+    
+    if (doctorId) {
+      whereClause.doctorId = doctorId;
+    }
+
+    if (dateParam === "today") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      whereClause.appointmentDate = { gte: today, lt: tomorrow };
+    } else if (dateParam) {
+      const specificDate = new Date(dateParam);
+      specificDate.setHours(0, 0, 0, 0);
+      const nextDay = new Date(specificDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      whereClause.appointmentDate = { gte: specificDate, lt: nextDay };
+    }
+
     const appointments = await prisma.healthAppointment.findMany({
-      where: { organizationId: orgId },
+      where: whereClause,
       include: {
         patient: true,
         doctor: true,
