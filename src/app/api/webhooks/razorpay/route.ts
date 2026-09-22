@@ -68,7 +68,7 @@ export async function POST(request: Request) {
         id: updatedBill.id,
         amount: updatedBill.totalAmount,
         invoiceNo: updatedBill.invoiceNo,
-        patientId: updatedBill.appointment.patientId,
+        patientId: updatedBill.appointment?.patientId || '',
       }, updatedBill.organizationId);
 
     } else if (event.event === 'payment.failed') {

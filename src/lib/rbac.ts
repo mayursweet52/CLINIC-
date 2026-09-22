@@ -23,7 +23,7 @@ export async function getUserPermissions(userId: string): Promise<string[]> {
       include: { permission: true }
     });
 
-    const perms = rolePerms.map(rp => rp.permission.key);
+    const perms = rolePerms.map((rp: any) => rp.permission.key);
     
     // Ensure admin gets wildcard
     if (user.role === 'ADMIN' && !perms.includes('*')) {
