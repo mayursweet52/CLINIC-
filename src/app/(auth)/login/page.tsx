@@ -1,104 +1,81 @@
 "use client"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
-import { LoginSchema, LoginInput } from "@/features/auth/types"
 import { useLogin } from "@/features/auth/hooks"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2 } from "lucide-react"
+import { Loader2, Stethoscope, UserCog, Pill, Users } from "lucide-react"
+
+const DEMO_ACCOUNTS = [
+  {
+    role: "Doctor",
+    email: "ananya.sharma@aarogyaclinic.in",
+    icon: Stethoscope,
+    color: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+  },
+  {
+    role: "Receptionist",
+    email: "kavita.nair@aarogyaclinic.in",
+    icon: Users,
+    color: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
+  },
+  {
+    role: "Pharmacist",
+    email: "suresh.patel@aarogyaclinic.in",
+    icon: Pill,
+    color: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
+  },
+  {
+    role: "Admin",
+    email: "vikram.singh@aarogyaclinic.in",
+    icon: UserCog,
+    color: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
+  }
+]
 
 export default function LoginPage() {
   const router = useRouter()
   const login = useLogin()
-  const form = useForm<LoginInput>({
-    resolver: zodResolver(LoginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  })
 
-  const onSubmit = async (data: LoginInput) => {
+  const handleFastLogin = async (email: string) => {
     try {
-      const res = await login.mutateAsync(data)
-      // API returns { message, role } — use res.role directly
+      const res = await login.mutateAsync({ email, password: "demo-password" })
       const role = (res as any).role?.toUpperCase() || ''
       if (role === 'DOCTOR') router.push('/doctor')
       else if (role === 'RECEPTIONIST') router.push('/reception')
       else if (role === 'PHARMACIST') router.push('/pharmacy')
-      else if (role === 'ADMIN' || role === 'SUPERADMIN') router.push('/admin')
-      else if (role === 'ACCOUNTANT') router.push('/billing')
       else router.push('/admin')
-    } catch (err: any) {
-      // Error is handled by useLogin's onError toast
-    }
+    } catch (err) {}
   }
 
   return (
-    <Card className="w-full shadow-lg border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-950">
-      <CardHeader>
-        <CardTitle>Welcome back</CardTitle>
-        <CardDescription>Enter your credentials to access your dashboard</CardDescription>
+    <Card className="w-full shadow-xl border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-950">
+      <CardHeader className="text-center pb-2">
+        <CardTitle className="text-2xl font-bold">Demo Access</CardTitle>
+        <CardDescription>Click a role card below to instantly log in.</CardDescription>
       </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email address</FormLabel>
-                  <FormControl>
-                    <Input placeholder="name@clinic.com" {...field} />
-                  </FormControl>
-                  <FormDescription className="text-xs">
-                    Email addresses are case-sensitive in this system.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center justify-between">
-                    <FormLabel>Password</FormLabel>
-                  </div>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex items-center space-x-2">
-              <Checkbox id="remember" />
-              <label
-                htmlFor="remember"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      <CardContent className="pt-4 relative">
+        {login.isPending && (
+          <div className="absolute inset-0 bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        )}
+        <div className="grid grid-cols-2 gap-4">
+          {DEMO_ACCOUNTS.map((account) => {
+            const Icon = account.icon;
+            return (
+              <button
+                key={account.role}
+                onClick={() => handleFastLogin(account.email)}
+                className="flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:shadow-md hover:border-primary/50 transition-all active:scale-95 group relative overflow-hidden"
               >
-                Remember me for 30 days
-              </label>
-            </div>
-            <Button type="submit" className="w-full" disabled={login.isPending}>
-              {login.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                "Sign in"
-              )}
-            </Button>
-          </form>
-        </Form>
+                <div className={`p-4 rounded-full mb-3 transition-transform group-hover:scale-110 ${account.color}`}>
+                  <Icon className="w-6 h-6" />
+                </div>
+                <h3 className="font-semibold text-slate-800 dark:text-slate-200">{account.role}</h3>
+                <p className="text-xs text-slate-500 mt-1">One-click login</p>
+              </button>
+            )
+          })}
+        </div>
       </CardContent>
     </Card>
   )
