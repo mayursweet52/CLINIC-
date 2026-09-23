@@ -117,7 +117,7 @@ export const POST = withPermission(
           const { publishEvent } = await import("@/lib/events");
           await publishEvent(`org:${resolvedOrgId}:notifications`, {
             type: "appointment.cancelled" as any,
-            payload: { appointmentId: apt.id, reason: "Doctor on leave" },
+            payload: { id: apt.id, orgId: resolvedOrgId, appointmentId: apt.id, reason: "Doctor on leave" },
             timestamp: new Date().toISOString(),
           });
         } catch (e) {}

@@ -54,7 +54,7 @@ export async function GET() {
         doctorName: upcomingAppt.doctor?.name || "Doctor",
         specialty: upcomingAppt.doctor?.specialization || "General",
         date: upcomingAppt.appointmentDate.toISOString().split('T')[0],
-        time: upcomingAppt.appointmentTime,
+        time: upcomingAppt.timeSlot || '00:00',
         status: upcomingAppt.status
       } : null,
       recentPrescriptions: patient.prescriptions.map((rx: any) => ({
