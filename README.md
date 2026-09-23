@@ -137,5 +137,21 @@
 ### Booking Flow
 ![Booking](./ui-audit/demo/scene2-booking-step1.png)
 
-### Analytics
-![Analytics](./ui-audit/demo/scene8-analytics.png)
+## Multi-Tenant Onboarding
+
+### Add New Clinic
+
+```bash
+node scripts/add-clinic.cjs "Clinic Name" "owner@email.com" "Password@123" "+91 phone"
+```
+
+This creates:
+- Organization (isolated data)
+- Owner admin account
+- RBAC permissions
+
+### Verify Isolation
+
+Each clinic's data is fully isolated. Test:
+1. Login as Clinic A admin → see only Clinic A data
+2. Login as Clinic B admin → see only Clinic B data
