@@ -255,6 +255,8 @@ async function main() {
     },
   ];
 
+  const patientHash = await bcrypt.hash("Patient@123", 10);
+
   const patients = [];
   for (const pt of patientData) {
     const patient = await prisma.patient.upsert({
@@ -264,12 +266,13 @@ async function main() {
           patientCode: pt.code
         }
       },
-      update: {},
+      update: { passwordHash: patientHash },
       create: {
         patientCode: pt.code,
         name: pt.name,
         phone: pt.phone,
         email: pt.email || null,
+        passwordHash: patientHash,
         dob: new Date(pt.dob),
         gender: pt.gender,
         bloodGroup: pt.blood,

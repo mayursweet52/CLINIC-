@@ -1,68 +1,55 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import { prisma } from '@/lib/prisma';
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
+import * as jose from "jose";
 
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get('patient_token')?.value;
-
+    const token = cookieStore.get("patient_token")?.value;
+    
     if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-for-businessos-health-12345');
-    const { payload } = await jwtVerify(token, secret);
-    
-    const phone = payload.phone as string;
-    const patientId = payload.userId as string;
+    const secret = new TextEncoder().encode(
+      process.env.JWT_SECRET || "super-secret-key-for-businessos-health-12345"
+    );
 
-    let patient: any = null;
-    let appointments: any[] = [];
-    let bills: any[] = [];
-    
-    try {
-      patient = await prisma.patient.findFirst({ where: { phone } });
-      if (patient) {
-        appointments = await prisma.healthAppointment.findMany({
-          where: { patientId: patient.id },
-          include: { doctor: true },
-          orderBy: { appointmentDate: 'desc' }
-        });
-        
-        bills = await prisma.billing.findMany({
-          where: { appointment: { patientId: patient.id } },
-          orderBy: { createdAt: 'desc' }
-        });
-      }
-    } catch {
-      // Mock data if DB offline or doesn't have data
-    }
+    const { payload } = await jose.jwtVerify(token, secret);
+    const patientId = payload.patientId as string;
+
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+      include: {
+        appointments: {
+          include: { doctor: true, visit: true },
+          orderBy: { appointmentDate: "desc" },
+          take: 20,
+        },
+        prescriptions: {
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        },
+        bills: {
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        },
+        labReports: {
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        },
+      },
+    });
 
     if (!patient) {
-      patient = { id: patientId, name: 'Guest Patient', phone };
+      return NextResponse.json({ error: "Patient not found" }, { status: 404 });
     }
 
-    return NextResponse.json({
-      patient,
-      appointments: appointments.map(a => ({
-        id: a.id,
-        date: a.appointmentDate,
-        time: a.timeSlot,
-        doctor: a.doctor?.name || 'Unknown Doctor',
-        status: a.status,
-        token: a.tokenNumber
-      })),
-      bills: bills.map(b => ({
-        id: b.id,
-        amount: b.totalAmount,
-        status: b.status,
-        invoiceNo: b.invoiceNo,
-        date: b.createdAt
-      }))
-    });
+    // Remove sensitive data
+    const { passwordHash, ...safe } = patient as any;
+    return NextResponse.json(safe);
   } catch (error) {
-    return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    return NextResponse.json({ error: "Session expired" }, { status: 401 });
   }
 }

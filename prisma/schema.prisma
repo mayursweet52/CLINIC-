@@ -66,6 +66,7 @@ model Patient {
   name             String
   phone            String
   email            String?
+  passwordHash     String?
   address          String?
   dob              DateTime?
   gender           String
