@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation"
 import { useLogin } from "@/features/auth/hooks"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Stethoscope, UserCog, Pill, Users, UserRound } from "lucide-react"
+import { Loader2, Stethoscope, UserCog, Pill, Users, UserRound, CalendarPlus } from "lucide-react"
 
 const DEMO_ACCOUNTS = [
   {
@@ -34,6 +34,12 @@ const DEMO_ACCOUNTS = [
     phone: "9876543210",
     icon: UserRound,
     color: "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"
+  },
+  {
+    role: "Book Appointment",
+    email: "",
+    icon: CalendarPlus,
+    color: "bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400"
   }
 ]
 
@@ -53,6 +59,11 @@ export default function LoginPage() {
         if (res.ok) {
           router.push('/portal');
         }
+        return;
+      }
+
+      if (account.role === "Book Appointment") {
+        router.push('/book');
         return;
       }
 
@@ -85,7 +96,7 @@ export default function LoginPage() {
               <button
                 key={account.role}
                 onClick={() => handleFastLogin(account)}
-                className={`flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:shadow-md hover:border-primary/50 transition-all active:scale-95 group relative overflow-hidden ${account.role === "Patient Portal" ? "lg:col-span-1 col-span-2" : ""}`}
+                className={`flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:shadow-md hover:border-primary/50 transition-all active:scale-95 group relative overflow-hidden`}
               >
                 <div className={`p-4 rounded-full mb-3 transition-transform group-hover:scale-110 ${account.color}`}>
                   <Icon className="w-6 h-6" />
