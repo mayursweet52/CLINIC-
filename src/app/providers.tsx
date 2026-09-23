@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { AuthProvider } from "@/features/auth/AuthProvider"
 import { RealtimeProvider } from "@/components/layout/RealtimeProvider"
+import { LanguageProvider } from "@/context/LanguageContext"
 import { queryClient } from "@/lib/query-client"
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -12,9 +13,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <AuthProvider>
           <RealtimeProvider>
-            <TooltipProvider>
-              {children}
-            </TooltipProvider>
+            <LanguageProvider>
+              <TooltipProvider>
+                {children}
+              </TooltipProvider>
+            </LanguageProvider>
           </RealtimeProvider>
         </AuthProvider>
       </ThemeProvider>

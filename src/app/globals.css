@@ -46,7 +46,6 @@
   /* Font */
   --font-sans: 'Inter', system-ui, sans-serif;
 }
-
 /* Dark mode overrides */
 .dark {
   --color-background: hsl(222.2 84% 4.9%);
