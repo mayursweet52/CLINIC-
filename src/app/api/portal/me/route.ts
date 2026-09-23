@@ -31,10 +31,6 @@ export async function GET() {
           orderBy: { createdAt: "desc" },
           take: 10,
         },
-        bills: {
-          orderBy: { createdAt: "desc" },
-          take: 10,
-        },
         labReports: {
           orderBy: { createdAt: "desc" },
           take: 10,

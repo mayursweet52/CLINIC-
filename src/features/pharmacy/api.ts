@@ -1,20 +1,19 @@
 import { api } from "@/lib/api-client";
 
 export const getPendingPrescriptions = async () => {
-  const { data } = await api.get('/pharmacy/pending');
-  return data;
+  const res = await api.get<any>('/pharmacy/pending');
+  return res?.data ?? res;
 };
 
 export const getInventory = async () => {
-  const { data } = await api.get('/pharmacy/inventory');
-  return data;
+  const res = await api.get<any>('/pharmacy/inventory');
+  return res?.data ?? res;
 };
 
 export const dispensePrescription = async (id: string) => {
-  const { data } = await api.post(`/pharmacy/dispense`, { 
+  const res = await api.post<any>(`/pharmacy/dispense`, { 
     appointmentId: id,
     items: [{ medicineId: 'm1', quantity: 1 }]
   });
-  return data;
+  return res?.data ?? res;
 };
-

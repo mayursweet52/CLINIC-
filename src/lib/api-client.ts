@@ -53,6 +53,13 @@ export const api = {
       body: data instanceof FormData ? data : JSON.stringify(data) 
     }),
     
+  put: <T>(endpoint: string, data?: any, options?: RequestInit) => 
+    request<T>(endpoint, { 
+      ...options, 
+      method: 'PUT', 
+      body: data instanceof FormData ? data : JSON.stringify(data) 
+    }),
+    
   del: <T>(endpoint: string, options?: RequestInit) => 
     request<T>(endpoint, { ...options, method: 'DELETE' }),
 }
