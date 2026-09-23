@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card"
 import { Receipt, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PatientDashboard } from "../types"
+import { toast } from "sonner"
 
 interface BillCardProps {
   bill: PatientDashboard['pendingBills'][0]
@@ -20,10 +21,10 @@ export function BillCard({ bill }: BillCardProps) {
         </div>
       </div>
       <div className="flex gap-2">
-        <Button size="sm" variant="outline" className="h-8 w-8 p-0">
+        <Button onClick={() => toast.info("Coming soon in Phase 2!")} size="sm" variant="outline" className="h-8 w-8 p-0">
           <Download className="w-4 h-4 text-slate-600 dark:text-slate-400" />
         </Button>
-        <Button size="sm" className="h-8 text-xs px-3">
+        <Button onClick={() => toast.info("Razorpay integration coming soon in Phase 2!")} size="sm" className="h-8 text-xs px-3">
           Pay Now
         </Button>
       </div>

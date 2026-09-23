@@ -26,23 +26,22 @@ export async function POST(request: Request) {
 
     try {
       // 1. Try DB creation
-      let patient = await prisma.patient.findFirst({
-        where: { name: patientName, phone: patientPhone, organizationId: orgId }
+      const count = await prisma.patient.count({ where: { organizationId: orgId } });
+      const patient = await prisma.patient.upsert({
+        where: {
+          organizationId_phone: { organizationId: orgId, phone: patientPhone }
+        },
+        update: {},
+        create: {
+          organizationId: orgId,
+          patientCode: `PAT-${1000 + count + 1}`,
+          name: patientName,
+          phone: patientPhone,
+          dob: new Date("1990-01-01"),
+          gender: "Not Specified",
+          passwordHash: null
+        }
       });
-
-      if (!patient) {
-        const count = await prisma.patient.count({ where: { organizationId: orgId } });
-        patient = await prisma.patient.create({
-          data: {
-            organizationId: orgId,
-            patientCode: `PAT-${1000 + count + 1}`,
-            name: patientName,
-            phone: patientPhone,
-            dob: new Date("1990-01-01"),
-            gender: "Not Specified"
-          }
-        });
-      }
 
       // 2. Create the appointment in DB
       const appointmentDate = date ? new Date(date) : new Date();

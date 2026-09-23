@@ -94,6 +94,35 @@ export const POST = withPermission(
         },
       });
 
+      // Auto-cancel existing appointments on this date
+      const startOfDay = new Date(parsedDate);
+      const endOfDay = new Date(parsedDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      const affected = await prisma.healthAppointment.findMany({
+        where: {
+          doctorId: resolvedDoctorId,
+          appointmentDate: { gte: startOfDay, lte: endOfDay },
+          status: { in: ["SCHEDULED", "ARRIVED", "CONFIRMED"] },
+        },
+      });
+
+      for (const apt of affected) {
+        await prisma.healthAppointment.update({
+          where: { id: apt.id },
+          data: { status: "CANCELLED" },
+        });
+        
+        try {
+          const { publishEvent } = await import("@/lib/events");
+          await publishEvent(`org:${resolvedOrgId}:notifications`, {
+            type: "appointment.cancelled" as any,
+            payload: { appointmentId: apt.id, reason: "Doctor on leave" },
+            timestamp: new Date().toISOString(),
+          });
+        } catch (e) {}
+      }
+
       try {
         const { publishEvent } = await import("@/lib/events");
         await publishEvent(`org:${resolvedOrgId}:appointments`, {

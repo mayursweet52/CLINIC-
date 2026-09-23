@@ -2,6 +2,8 @@ import { CheckCircle2, QrCode } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BookingResponse } from "../types"
 import { useRouter } from "next/navigation"
+import { useEffect } from "react"
+import confetti from "canvas-confetti"
 
 interface SuccessScreenProps {
   data: BookingResponse
@@ -9,6 +11,33 @@ interface SuccessScreenProps {
 
 export function SuccessScreen({ data }: SuccessScreenProps) {
   const router = useRouter()
+
+  useEffect(() => {
+    const end = Date.now() + 2 * 1000;
+    const colors = ['#14b8a6', '#0d9488', '#5eead4'];
+    
+    (function frame() {
+      confetti({
+        particleCount: 3,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        colors: colors
+      });
+      confetti({
+        particleCount: 3,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        colors: colors
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    }());
+  }, [])
+
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center space-y-6 animate-in fade-in zoom-in duration-500">
       <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center">

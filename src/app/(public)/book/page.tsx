@@ -180,7 +180,51 @@ export default function BookPage() {
         )}
 
         {step === 5 && (
-          <SuccessScreen data={bookMutation.data!} />
+          <div className="space-y-8">
+            <SuccessScreen data={bookMutation.data!} />
+            
+            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                Live Clinic Queue
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm p-3 bg-white dark:bg-slate-950 rounded-lg shadow-sm border border-slate-100 dark:border-slate-800">
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">Token #998</span>
+                    <span className="text-xs text-slate-500">In Consultation</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="block font-medium">Dr. Sharma</span>
+                    <span className="text-xs text-emerald-600 font-medium">Cardiology</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-sm p-3 bg-white dark:bg-slate-950 rounded-lg shadow-sm border border-slate-100 dark:border-slate-800 opacity-70">
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">Token #999</span>
+                    <span className="text-xs text-slate-500">Next in line</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="block font-medium">Dr. Verma</span>
+                    <span className="text-xs text-blue-600 font-medium">Pediatrics</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-sm p-3 bg-white dark:bg-slate-950 rounded-lg shadow-sm border border-slate-100 dark:border-slate-800 opacity-50">
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">Token {bookMutation.data?.tokenNumber}</span>
+                    <span className="text-xs text-slate-500">Scheduled</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="block font-medium">Your slot</span>
+                    <span className="text-xs text-slate-500 font-medium">{timeSlot}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

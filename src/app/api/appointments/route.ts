@@ -55,13 +55,18 @@ export const GET = withPermission('appointment:read', async (request: Request) =
     }
 
     const url = new URL(request.url);
-    const doctorId = url.searchParams.get("doctorId");
     const dateParam = url.searchParams.get("date");
 
     const whereClause: any = { organizationId: orgId };
     
-    if (doctorId) {
-      whereClause.doctorId = doctorId;
+    const user = await getUser();
+    if (user?.role === 'DOCTOR') {
+      whereClause.doctorId = user.userId;
+    } else {
+      const queryDoctorId = url.searchParams.get("doctorId");
+      if (queryDoctorId) {
+        whereClause.doctorId = queryDoctorId;
+      }
     }
 
     if (dateParam === "today") {
@@ -285,6 +290,25 @@ export const PUT = withPermission('appointment:update', async (request: Request)
         doctor: true,
       },
     });
+
+    // Auto-generate bill if COMPLETED
+    if (updated.status === 'COMPLETED') {
+      const existingBill = await prisma.billing.findUnique({ where: { appointmentId: updated.id } });
+      if (!existingBill) {
+        const standardConsultationFee = 500;
+        await prisma.billing.create({
+          data: {
+            organizationId: updated.organizationId,
+            invoiceNo: `INV-${Math.floor(100000 + Math.random() * 900000)}`,
+            appointmentId: updated.id,
+            consultationFee: standardConsultationFee,
+            medicineCharges: 0,
+            totalAmount: standardConsultationFee,
+            paymentStatus: "UNPAID",
+          }
+        });
+      }
+    }
 
     const user = await getUser();
     logAction({

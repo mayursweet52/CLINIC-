@@ -53,6 +53,16 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
       </div>
 
       <div className="flex items-center gap-2">
+        {process.env.NODE_ENV === 'development' && (
+          <div className="hidden lg:flex items-center mr-4 bg-amber-100 dark:bg-amber-900/30 p-1 rounded-md border border-amber-200 dark:border-amber-800">
+            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase px-2 mr-1">Dev</span>
+            <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={() => window.location.href = '/portal'}>Patient</Button>
+            <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={() => window.location.href = '/reception'}>Reception</Button>
+            <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={() => window.location.href = '/doctor'}>Doctor</Button>
+            <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={() => window.location.href = '/admin'}>Admin</Button>
+          </div>
+        )}
+
         <ThemeToggle />
         
         <DropdownMenu>

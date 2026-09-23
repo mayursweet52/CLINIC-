@@ -83,6 +83,7 @@ model Patient {
   prescriptions Prescription[]
 
   @@unique([organizationId, patientCode])
+  @@unique([organizationId, phone])
 }
 
 model HealthAppointment {

@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { LucideIcon } from "lucide-react"
+import { motion } from "framer-motion"
 
 export interface StatCardProps {
   label: string
@@ -28,29 +29,31 @@ export function StatCard({
   hint
 }: StatCardProps) {
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between space-y-0 pb-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {label}
-          </p>
-          <div className={cn("rounded-lg p-2.5", variantStyles[iconVariant])}>
-            <Icon className="h-4 w-4" />
-          </div>
-        </div>
-        <div className="flex flex-col gap-1">
-          <div className="text-3xl font-bold tracking-tight">{value}</div>
-          {trend && (
-            <p className={cn("text-xs font-medium", trend.isUp ? "text-success" : "text-danger")}>
-              {trend.isUp ? "↑" : "↓"} {trend.value}
-              {hint && <span className="ml-1 font-normal text-muted-foreground">{hint}</span>}
+    <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.15 }}>
+      <Card className="h-full">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between space-y-0 pb-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              {label}
             </p>
-          )}
-          {!trend && hint && (
-            <p className="text-xs text-muted-foreground">{hint}</p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            <div className={cn("rounded-lg p-2.5", variantStyles[iconVariant])}>
+              <Icon className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <div className="text-3xl font-bold tracking-tight">{value}</div>
+            {trend && (
+              <p className={cn("text-xs font-medium", trend.isUp ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
+                {trend.isUp ? "↑" : "↓"} {trend.value}
+                {hint && <span className="ml-1 font-normal text-muted-foreground">{hint}</span>}
+              </p>
+            )}
+            {!trend && hint && (
+              <p className="text-xs text-muted-foreground">{hint}</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }

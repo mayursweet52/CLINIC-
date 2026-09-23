@@ -5,7 +5,8 @@ import * as jose from "jose";
 
 export async function POST(req: Request) {
   try {
-    const { phone, password } = await req.json();
+    let { phone, password } = await req.json();
+    phone = phone?.trim().replace(/\s+/g, '');
 
     if (!phone || !password) {
       return NextResponse.json(

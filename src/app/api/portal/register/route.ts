@@ -22,7 +22,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const { name, phone, email, password } = parsed.data;
+    let { name, phone, email, password } = parsed.data;
+    phone = phone.trim().replace(/\s+/g, '');
 
     // Default org (first one)
     const org = await prisma.organization.findFirst();
@@ -30,15 +31,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No clinic configured" }, { status: 500 });
     }
 
-    // Check existing
     const existing = await prisma.patient.findFirst({
       where: { organizationId: org.id, phone },
     });
     if (existing) {
-      return NextResponse.json(
-        { error: "Phone already registered. Please login." },
-        { status: 409 }
-      );
+      if (existing.passwordHash) {
+        return NextResponse.json(
+          { error: "Phone already registered. Please login." },
+          { status: 409 }
+        );
+      }
+      
+      const passwordHash = await bcrypt.hash(password, 10);
+      const updated = await prisma.patient.update({
+        where: { id: existing.id },
+        data: {
+          name, // update name if they provided a better one during registration
+          email: email || existing.email,
+          passwordHash,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        patientCode: updated.patientCode,
+        message: "Account linked successfully",
+      });
     }
 
     // Generate patient code

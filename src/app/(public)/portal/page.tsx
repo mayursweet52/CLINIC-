@@ -5,17 +5,31 @@ import { AppointmentCard } from "@/features/portal/components/AppointmentCard"
 import { PrescriptionCard } from "@/features/portal/components/PrescriptionCard"
 import { BillCard } from "@/features/portal/components/BillCard"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Bell, Calendar, Pill, User, Home, FileText } from "lucide-react"
+import { Bell, Calendar, Pill, User, Home, FileText, LogOut } from "lucide-react"
 import { Loader2 } from "lucide-react"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 export default function PortalDashboard() {
   const { data: dashboard, isLoading } = usePatientDashboard()
+  const router = useRouter()
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
   }
 
   if (!dashboard) return null
+
+  const comingSoon = () => toast.info("Coming soon in Phase 2!")
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/portal/logout', { method: 'POST' });
+      router.push('/portal/login');
+    } catch (e) {
+      toast.error("Logout failed");
+    }
+  }
 
   return (
     <div className="pb-20 min-h-screen bg-slate-50 dark:bg-slate-900">
@@ -31,9 +45,8 @@ export default function PortalDashboard() {
             <h1 className="font-bold text-slate-900 dark:text-slate-100">{dashboard.name}</h1>
           </div>
         </div>
-        <button className="relative p-2 rounded-full hover:bg-slate-100 dark:bg-slate-800">
-          <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+        <button onClick={handleLogout} className="relative p-2 rounded-full hover:bg-slate-100 dark:bg-slate-800 text-red-500">
+          <LogOut className="w-5 h-5" />
         </button>
       </header>
 
@@ -69,7 +82,7 @@ export default function PortalDashboard() {
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Recent Prescriptions</h2>
-              <button className="text-sm text-primary font-medium">View all</button>
+              <button onClick={comingSoon} className="text-sm text-primary font-medium">View all</button>
             </div>
             <div className="space-y-2">
               {dashboard.recentPrescriptions.map(rx => (
@@ -99,15 +112,15 @@ export default function PortalDashboard() {
             <Home className="w-5 h-5" />
             <span className="text-[10px] font-medium">Home</span>
           </button>
-          <button className="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-600 dark:text-slate-400">
+          <button onClick={comingSoon} className="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-600 dark:text-slate-400">
             <Calendar className="w-5 h-5" />
             <span className="text-[10px] font-medium">Visits</span>
           </button>
-          <button className="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-600 dark:text-slate-400">
+          <button onClick={comingSoon} className="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-600 dark:text-slate-400">
             <Pill className="w-5 h-5" />
             <span className="text-[10px] font-medium">Rx</span>
           </button>
-          <button className="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-600 dark:text-slate-400">
+          <button onClick={comingSoon} className="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-600 dark:text-slate-400">
             <User className="w-5 h-5" />
             <span className="text-[10px] font-medium">Profile</span>
           </button>
