@@ -9,25 +9,25 @@ export async function GET(request: Request) {
     const where: any = { role: "DOCTOR" };
     
     // Simple mock mapping for department IDs since they are hardcoded on frontend
-    if (department === '1') where.department = 'Cardiology';
-    else if (department === '2') where.department = 'Neurology';
-    else if (department === '3') where.department = 'Pediatrics';
-    else if (department === '4') where.department = 'General Medicine';
+    if (department === '1') where.specialization = 'General Physician';
+    else if (department === '2') where.specialization = 'Orthopedic Surgeon';
+    else if (department === '3') where.specialization = 'Pediatrician';
 
     const doctors = await prisma.user.findMany({
       where,
       select: {
         id: true,
         name: true,
-        department: true,
+        specialization: true,
+        consultationFee: true,
       }
     });
 
     const mapped = doctors.map(d => ({
       id: d.id,
       name: d.name,
-      specialty: d.department || 'Specialist',
-      consultationFee: 1000
+      specialty: d.specialization || 'Specialist',
+      consultationFee: d.consultationFee || 1000
     }));
 
     return NextResponse.json(mapped);

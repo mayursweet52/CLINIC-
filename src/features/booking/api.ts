@@ -3,10 +3,9 @@ import { Department, Doctor, TimeSlot, BookingInput, BookingResponse } from "./t
 
 export const bookingApi = {
   getDepartments: () => api.get<Department[]>('/public/departments').catch(() => [
-    { id: '1', name: 'Cardiology', icon: 'heart' },
-    { id: '2', name: 'Neurology', icon: 'brain' },
+    { id: '1', name: 'General Physician', icon: 'stethoscope' },
+    { id: '2', name: 'Orthopedics', icon: 'bone' },
     { id: '3', name: 'Pediatrics', icon: 'baby' },
-    { id: '4', name: 'General Medicine', icon: 'stethoscope' },
   ]),
   getDoctors: (departmentId: string) => api.get<Doctor[]>(`/public/doctors?department=${departmentId}`).catch(() => [
     { id: '1', name: 'Dr. Sarah Smith', specialty: 'Cardiologist', consultationFee: 1000 },
