@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
   :root {
@@ -65,16 +63,3 @@
     --ring: 173 80% 40%;
   }
 }
-
-@layer base {
-  html { 
-    font-size: 14px; 
-    -webkit-font-smoothing: antialiased; 
-  }
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background-color: transparent; }
-::-webkit-scrollbar-thumb { background-color: var(--color-slate-300, #cbd5e1); border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background-color: var(--color-slate-400, #94a3b8); }
