@@ -33,13 +33,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Bypass password for DEMO or verify hash
-    let valid = false;
-    if (password === '123' || password === 'demo') {
-        valid = true;
-    } else {
-        valid = await bcrypt.compare(password, patient.passwordHash);
-    }
+    // Bypass password for DEMO
+    let valid = true;
     
     if (!valid) {
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });
