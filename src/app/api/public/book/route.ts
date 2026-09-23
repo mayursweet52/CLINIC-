@@ -11,10 +11,17 @@ import { auditService } from "@/lib/audit";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { orgId, doctorId, patientName, patientPhone, date, timeSlot } = body;
+    let orgId = body.orgId;
+    const { doctorId, patientName, patientPhone, date, timeSlot } = body;
 
-    if (!orgId || !doctorId || !patientName || !patientPhone) {
+    if (!doctorId || !patientName || !patientPhone) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    if (!orgId) {
+      const org = await prisma.organization.findFirst();
+      if (!org) return NextResponse.json({ error: "No organization found" }, { status: 400 });
+      orgId = org.id;
     }
 
     try {

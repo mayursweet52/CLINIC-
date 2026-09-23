@@ -25,7 +25,7 @@ function ReportsContent() {
         <PageHeader title="Reports & Analytics" description="Clinic performance metrics" />
         <div className="flex items-center space-x-4">
           <RangePicker />
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => window.location.href = `/api/analytics/export?range=${range}`}>
             <Download className="mr-2 h-4 w-4" /> Export CSV
           </Button>
         </div>

@@ -23,7 +23,7 @@ function getStartDate(range: string) {
   return now;
 }
 
-export const GET = withPermission('analytics:read', async (request: Request) => {
+export const GET = withPermission('report:export', async (request: Request) => {
   try {
     const { searchParams } = new URL(request.url);
     const range = searchParams.get('range') || '30d';

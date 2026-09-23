@@ -10,6 +10,7 @@ export function withPermission(permissionKey: string, handler: Function) {
       const token = cookieStore.get('auth_token')?.value;
       
       if (!token) {
+        console.error("withPermission: No auth_token cookie found in request");
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
@@ -22,6 +23,7 @@ export function withPermission(permissionKey: string, handler: Function) {
       const userPerms = await getUserPermissions(userId);
       
       if (!can({ id: userId, role, permissions: userPerms }, permissionKey)) {
+        console.error(`Forbidden: user ${userId} lacks ${permissionKey}. User perms:`, userPerms);
         return NextResponse.json({ error: 'Forbidden', required: permissionKey }, { status: 403 });
       }
 
@@ -30,7 +32,7 @@ export function withPermission(permissionKey: string, handler: Function) {
 
       return handler(request, ...args);
     } catch (error) {
-      console.error("Auth Error:", error);
+      console.error("Auth Error in withPermission:", error);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
   };

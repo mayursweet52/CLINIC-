@@ -1,17 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTodaySchedule, getStats, completeConsultation } from './api';
 
-export function useTodaySchedule() {
+export function useTodaySchedule(doctorId?: string) {
   return useQuery({
-    queryKey: ['doctor-schedule-today'],
-    queryFn: getTodaySchedule,
+    queryKey: ['doctor-schedule-today', doctorId],
+    queryFn: () => getTodaySchedule(doctorId),
   });
 }
 
-export function useDoctorStats() {
+export function useDoctorStats(doctorId?: string) {
   return useQuery({
-    queryKey: ['doctor-stats'],
-    queryFn: getStats,
+    queryKey: ['doctor-stats', doctorId],
+    queryFn: () => getStats(doctorId),
   });
 }
 

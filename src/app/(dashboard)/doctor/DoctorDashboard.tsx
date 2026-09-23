@@ -26,11 +26,11 @@ export function DoctorDashboard({ user }: { user: any }) {
         action={<LiveBadge />}
       />
       
-      <DoctorStatCards />
+      <DoctorStatCards doctorId={user?.id} />
       
       <div className="bg-slate-50 dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
         <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Today's Schedule</h2>
-        <ScheduleTimeline />
+        <ScheduleTimeline doctorId={user?.id} />
       </div>
     </div>
   );

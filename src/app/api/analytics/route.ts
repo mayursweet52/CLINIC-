@@ -29,7 +29,7 @@ function formatDate(date: Date | string) {
   return d.toISOString().split('T')[0];
 }
 
-export const GET = withPermission('analytics:read', async (request: Request) => {
+export const GET = withPermission('report:read', async (request: Request) => {
   try {
     const { searchParams } = new URL(request.url);
     const range = searchParams.get('range') || '30d';

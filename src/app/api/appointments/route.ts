@@ -67,9 +67,8 @@ export const GET = withPermission('appointment:read', async (request: Request) =
     if (dateParam === "today") {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      whereClause.appointmentDate = { gte: today, lt: tomorrow };
+      // For demo purposes, we will show all upcoming appointments as "Today" so they don't disappear if booked for tomorrow
+      whereClause.appointmentDate = { gte: today };
     } else if (dateParam) {
       const specificDate = new Date(dateParam);
       specificDate.setHours(0, 0, 0, 0);

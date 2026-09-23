@@ -9,8 +9,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { useRealtime } from '@/components/layout/RealtimeProvider';
 
-export function ScheduleTimeline() {
-  const { data: schedule, isLoading, isError, refetch } = useTodaySchedule();
+export function ScheduleTimeline({ doctorId }: { doctorId?: string }) {
+  const { data: schedule, isLoading, isError, refetch } = useTodaySchedule(doctorId);
   const queryClient = useQueryClient();
   const { lastEvent } = useRealtime();
 

@@ -3,8 +3,8 @@ import { useDoctorStats } from '../hooks';
 import { StatCard } from '@/components/shared/StatCard';
 import { Calendar, CheckCircle, Clock, Users } from 'lucide-react';
 
-export function DoctorStatCards() {
-  const { data: stats, isLoading } = useDoctorStats();
+export function DoctorStatCards({ doctorId }: { doctorId?: string }) {
+  const { data: stats, isLoading } = useDoctorStats(doctorId);
 
   if (isLoading || !stats) {
     return (
