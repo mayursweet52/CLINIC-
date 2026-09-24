@@ -95,7 +95,7 @@ export const POST = withPermission('user:manage', async (request: Request) => {
 
     logAction({
       userId: (user?.userId as string) || 'system',
-      orgId: (user?.orgId as string) || userObj.organizationId,
+      orgId: (user?.orgId as string) || userObj.organizationId!,
       action: before ? 'UPDATE' : 'CREATE',
       resource: 'Staff',
       resourceId: userObj.id,

@@ -71,7 +71,7 @@ export const POST = withPermission(
             { status: 404 }
           );
         }
-        resolvedOrgId = doctor.organizationId;
+        resolvedOrgId = doctor.organizationId!;
       }
 
       const parsedDate = new Date(date);

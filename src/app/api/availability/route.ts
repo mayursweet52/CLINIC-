@@ -79,7 +79,7 @@ export const POST = withPermission(
             { status: 404 }
           );
         }
-        resolvedOrgId = doctor.organizationId;
+        resolvedOrgId = doctor.organizationId!;
       }
 
       const availability = await prisma.doctorAvailability.upsert({
