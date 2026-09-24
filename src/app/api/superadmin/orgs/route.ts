@@ -26,7 +26,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const org = await prisma.organization.create({
       data: {
-        name: body.name,
+          name: body.name,
+          slug: body.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Date.now(),
         domain: body.domain,
         address: body.address,
         city: body.city,
