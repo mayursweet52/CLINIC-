@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         data: {
           organizationId: appointment.organizationId,
           patientId: appointment.patientId,
-          doctorId: appointment.doctorId,
+          doctorId: appointment.doctorId || "",
           appointmentId: appointment.id,
           rating,
           comment: comment || null,
@@ -58,16 +58,16 @@ export async function POST(req: Request) {
 
       // 7b. Recalculate doctor rating
       const agg = await tx.review.aggregate({
-        where: { doctorId: appointment.doctorId, isPublic: true },
+        where: { doctorId: appointment.doctorId || "", isPublic: true },
         _avg: { rating: true },
         _count: true,
       });
       
       await tx.user.update({
-        where: { id: appointment.doctorId },
+        where: { id: appointment.doctorId || "" },
         data: {
-          averageRating: agg._avg.rating || 0,
-          totalReviews: agg._count,
+          averageRating: agg._avg?.rating || 0,
+          totalReviews: (typeof agg._count === "number" ? agg._count : (agg._count as any)?._all) || 0,
         },
       });
 
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
       });
       
       await tx.organization.update({
-        where: { id: appointment.organizationId },
+        where: { id: appointment.organizationId || "" },
         data: {
           rating: orgAgg._avg.rating || 0,
           totalReviews: orgAgg._count,

@@ -29,7 +29,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
       bill.appointment
     );
 
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as unknown as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

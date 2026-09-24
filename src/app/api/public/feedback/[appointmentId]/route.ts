@@ -30,7 +30,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ appointm
 
     return NextResponse.json({
       eligible: true,
-      doctorName: appointment.doctor.name,
+      doctorName: appointment.doctor?.name || "Doctor",
       patientName: appointment.patient.name.split(" ")[0],
       reason: appointment.reason,
       clinic: {

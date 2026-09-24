@@ -36,17 +36,17 @@ async function runFeedbackWorker() {
     for (const appointment of eligibleAppointments) {
       const feedbackLink = `https://clinicos.in/feedback/${appointment.id}`;
       
-      const message = `Hi ${appointment.patient.name.split(" ")[0]}, how was your visit with ${appointment.doctor.name}? Rate your experience here: ${feedbackLink}`;
+      const message = `Hi ${appointment.patient.name.split(" ")[0]}, how was your visit with ${appointment.doctor?.name || "Doctor"}? Rate your experience here: ${feedbackLink}`;
 
       // In a real app, integrate Twilio/WhatsApp API here.
       // For now, log to NotificationLog
       await prisma.notificationLog.create({
         data: {
-          organizationId: appointment.organizationId,
-          type: "SMS",
-          recipient: appointment.patient.phone,
-          title: "Feedback Request",
-          message: message,
+          orgId: appointment.organizationId,
+          channel: "SMS",
+          to: appointment.patient.phone,
+          template: "FEEDBACK_REQUEST",
+          payload: { message },
           status: "SENT",
         }
       });
