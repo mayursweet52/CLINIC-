@@ -12,6 +12,7 @@ import {
   ClipboardList,
   Settings,
   HeartPulse,
+  Building2,
 } from "lucide-react"
 import { useAuth } from "@/features/auth/useAuth"
 
@@ -30,6 +31,7 @@ const NAV_GROUPS = [
       { href: "/records", label: "Medical Records", icon: LineChart, roles: ["DOCTOR", "RECEPTIONIST", "ADMIN"] },
       { href: "/pharmacy", label: "Pharmacy", icon: Package, roles: ["PHARMACIST", "ADMIN"] },
       { href: "/admin", label: "Administration", icon: Settings, roles: ["ADMIN"] },
+      { href: "/admin/departments", label: "Departments", icon: Building2, roles: ["ADMIN"] },
     ],
   },
 ]
