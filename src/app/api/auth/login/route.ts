@@ -103,7 +103,20 @@ export async function POST(request: Request) {
 
     // Set cookie
     const response = NextResponse.json(
-      { message: "Login successful", role: user.role, name: user.name },
+      {
+        message: "Login successful",
+        role: user.role,
+        name: user.name,
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          organizationId: user.organizationId,
+          organization: user.organization
+        }
+      },
       { status: 200 }
     );
     

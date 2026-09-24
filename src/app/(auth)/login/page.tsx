@@ -6,7 +6,7 @@ import { Loader2, HeartPulse, Mail, Lock, Eye, EyeOff, Copy, CheckCircle2 } from
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner"; // Assuming sonner is used, or fallback
+import { toast } from "sonner";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -28,26 +28,13 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     try {
       const res = await login.mutateAsync(data);
-      const role = (res as any).role?.toUpperCase() || '';
+      const role = (res as any).role?.toUpperCase() || (res as any).user?.role?.toUpperCase() || '';
       if (role === 'DOCTOR') router.push('/doctor');
       else if (role === 'RECEPTIONIST') router.push('/reception');
       else if (role === 'PHARMACIST') router.push('/pharmacy');
       else router.push('/admin');
     } catch (err) {
       toast.error("Invalid credentials. Please try again.");
-    }
-  };
-
-  const quickLogin = async (email: string) => {
-    try {
-      const res = await login.mutateAsync({ email, password: "Aarogya@2024" });
-      const role = (res as any).role?.toUpperCase() || '';
-      if (role === 'DOCTOR') router.push('/doctor');
-      else if (role === 'RECEPTIONIST') router.push('/reception');
-      else if (role === 'PHARMACIST') router.push('/pharmacy');
-      else router.push('/admin');
-    } catch {
-      toast.error("Login failed. Please try again.");
     }
   };
 
@@ -58,10 +45,10 @@ export default function LoginPage() {
   };
 
   const demoAccounts = [
-    { role: "Doctor", email: "ananya.sharma@aarogyaclinic.in", badge: "🩺 Doctor" },
-    { role: "Reception", email: "kavita.nair@aarogyaclinic.in", badge: "📋 Reception" },
-    { role: "Pharmacist", email: "suresh.patel@aarogyaclinic.in", badge: "💊 Pharmacy" },
-    { role: "Admin", email: "vikram.singh@aarogyaclinic.in", badge: "⚙️ Admin" }
+    { role: "Doctor", email: "ananya.sharma@aarogyaclinic.in" },
+    { role: "Reception", email: "kavita.nair@aarogyaclinic.in" },
+    { role: "Pharmacist", email: "suresh.patel@aarogyaclinic.in" },
+    { role: "Admin", email: "vikram.singh@aarogyaclinic.in" }
   ];
 
   return (
@@ -136,41 +123,26 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Demo Credentials Box with 1-Click Login */}
+          {/* Demo Credentials Box */}
           <div className="mt-8 bg-surface-low rounded-xl p-4 border border-outline-variant/20">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Demo Accounts (1-Click Instant Login)</h3>
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-medical-green/10 text-medical-green font-medium">⚡ Instant</span>
-            </div>
+            <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Demo Credentials</h3>
             <div className="space-y-2">
               {demoAccounts.map((acc) => (
-                <div key={acc.role} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-surface-lowest/60 hover:bg-surface-lowest border border-outline-variant/10 transition-colors">
+                <div key={acc.role} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded-lg hover:bg-surface-lowest transition-colors">
                   <div className="text-sm">
-                    <span className="font-semibold text-on-surface mr-2">{acc.badge}</span>
-                    <span className="text-xs text-on-surface-variant block sm:inline">{acc.email}</span>
+                    <span className="font-medium text-on-surface mr-2">{acc.role}:</span>
+                    <span className="text-on-surface-variant break-all">{acc.email}</span>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button 
-                      type="button"
-                      onClick={() => copyCreds(acc.email, acc.role)}
-                      className="flex items-center gap-1 text-xs text-on-surface-variant hover:text-on-surface px-2 py-1 rounded transition-colors"
-                      title="Copy credentials"
-                    >
-                      {copiedRole === acc.role ? (
-                        <><CheckCircle2 className="w-3.5 h-3.5 text-medical-green" /> Copied</>
-                      ) : (
-                        <><Copy className="w-3.5 h-3.5" /> Copy</>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={login.isPending}
-                      onClick={() => quickLogin(acc.email)}
-                      className="px-2.5 py-1 text-xs font-semibold rounded-md bg-primary-500 text-white hover:bg-primary-600 transition-colors shadow-xs disabled:opacity-50"
-                    >
-                      Login ⚡
-                    </button>
-                  </div>
+                  <button 
+                    onClick={() => copyCreds(acc.email, acc.role)}
+                    className="flex items-center gap-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors shrink-0"
+                  >
+                    {copiedRole === acc.role ? (
+                      <><CheckCircle2 className="w-3.5 h-3.5 text-medical-green" /> Copied!</>
+                    ) : (
+                      <><Copy className="w-3.5 h-3.5" /> Copy</>
+                    )}
+                  </button>
                 </div>
               ))}
             </div>
