@@ -1,9 +1,8 @@
 "use client"
-import { useState, useEffect } from "react"
-import { Bell, Menu, Search } from "lucide-react"
+import { useState } from "react"
+import { Bell, Menu, Search, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "./ThemeToggle"
-import { CommandPalette } from "./CommandPalette"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,93 +14,71 @@ import {
 import { useAuth } from "@/features/auth/useAuth"
 
 export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
-  const [cmdOpen, setCmdOpen] = useState(false)
-  const { logout } = useAuth()
-
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        setCmdOpen((open) => !open)
-      }
-    }
-    document.addEventListener("keydown", down)
-    return () => document.removeEventListener("keydown", down)
-  }, [])
+  const { user, logout } = useAuth()
+  
+  const initials = user?.name?.slice(0, 2).toUpperCase() || "U"
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-white dark:bg-slate-950/75 px-4 backdrop-blur-md">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick} aria-label="Menu">
+    <header className="fixed top-0 left-0 md:left-72 right-0 h-20 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-4 md:px-8">
+      
+      {/* Mobile Menu Button & Search */}
+      <div className="flex items-center w-full max-w-md gap-2 md:gap-0">
+        <Button variant="ghost" size="icon" className="md:hidden shrink-0 text-on-surface" onClick={onMenuClick} aria-label="Menu">
           <Menu className="h-5 w-5" />
         </Button>
-      </div>
-
-      <div className="flex flex-1 items-center justify-center px-4 md:px-8">
-        <Button
-          variant="outline"
-          className="relative h-9 w-full max-w-md justify-start rounded-[0.5rem] bg-slate-50 dark:bg-slate-900 dark:bg-slate-900 text-sm text-muted-foreground shadow-none sm:pr-12 md:w-80 lg:w-96"
-          onClick={() => setCmdOpen(true)}
-        >
-          <Search className="mr-2 h-4 w-4 shrink-0" />
-          <span className="inline-flex">Search patients, actions...</span>
-          <kbd className="pointer-events-none absolute right-1.5 top-1.5 hidden h-6 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-            <span className="text-xs">⌘</span>K
-          </kbd>
-        </Button>
-        <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} />
-      </div>
-
-      <div className="flex items-center gap-2">
-        <ThemeToggle />
         
+        <div className="relative w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant" />
+          <input 
+            type="text" 
+            placeholder="Search patients, staff, records..."
+            className="w-full pl-10 pr-4 py-2 bg-surface-low rounded-lg text-sm text-on-surface placeholder:text-on-surface-variant focus:bg-surface-lowest focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+          />
+        </div>
+      </div>
+
+      {/* Right side controls */}
+      <div className="flex items-center gap-2 md:gap-4 shrink-0">
+        
+        {/* System Status Pill - hidden on small mobile */}
+        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-low">
+          <span className="w-2.5 h-2.5 rounded-full bg-medical-green animate-pulse" />
+          <span className="text-xs font-medium text-on-surface">
+            System Online
+          </span>
+        </div>
+
+        {/* Theme Toggle Wrapper (re-using existing logic via wrapper, or just keeping the existing ThemeToggle button if it handles icon inside. We wrap it to ensure it fits the design if possible, or just render it directly. The prompt says "Keep existing theme toggle logic", so I'll include the ThemeToggle directly if it handles the design, but let's restyle it if it's a child. Since we can't easily change the child without editing it, let's just use it.) */}
+        <div className="flex items-center justify-center">
+          <ThemeToggle />
+        </div>
+
+        {/* Notifications Bell */}
+        <Button variant="ghost" size="icon" className="relative w-10 h-10 rounded-lg bg-surface-low hover:bg-surface-high text-on-surface">
+          <Bell className="h-5 w-5" />
+          <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-error"></span>
+        </Button>
+
+        {/* User Avatar Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-danger"></span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel className="flex justify-between">
-              Notifications
-              <Button variant="link" className="h-auto p-0 text-xs font-normal">Mark all read</Button>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <div className="max-h-[300px] overflow-y-auto">
-              <div className="p-4 text-center text-sm text-muted-foreground">No new notifications</div>
+            <div className="w-8 h-8 ml-2 rounded-full bg-primary-500 text-white flex items-center justify-center cursor-pointer font-semibold text-sm">
+              {initials}
             </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <div className="mx-2 h-6 w-px bg-border"></div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 rounded-full">
-              <span className="sr-only">Open user menu</span>
-              <UserAvatar />
-            </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => logout()}>Log out</DropdownMenuItem>
+          <DropdownMenuContent align="end" className="w-56 bg-surface-lowest border-outline-variant/30">
+            <DropdownMenuLabel className="text-on-surface">My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-outline-variant/30" />
+            <DropdownMenuItem className="text-on-surface focus:bg-surface-low">Profile</DropdownMenuItem>
+            <DropdownMenuItem className="text-on-surface focus:bg-surface-low">Settings</DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-outline-variant/30" />
+            <DropdownMenuItem onClick={() => logout()} className="text-error focus:bg-error-container focus:text-error cursor-pointer">
+              Sign out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
       </div>
     </header>
-  )
-}
-
-function UserAvatar() {
-  const { user } = useAuth()
-  return (
-    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-100">
-      {user?.name?.slice(0, 2).toUpperCase() || "U"}
-    </div>
   )
 }

@@ -5,10 +5,12 @@ import { usePathname } from "next/navigation"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Topbar } from "@/components/layout/Topbar"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
+import { useAuth } from "@/features/auth/useAuth"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+  const { user } = useAuth()
 
   // Close mobile menu on navigate
   useEffect(() => {
@@ -16,22 +18,25 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, [pathname])
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-900">
-      <div className="hidden md:flex">
-        <Sidebar />
-      </div>
+    <div className="min-h-screen bg-surface">
+      {/* Desktop Sidebar (hidden on mobile) */}
+      <Sidebar />
       
+      {/* Mobile Sidebar via Sheet */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="p-0 w-[260px]">
+        <SheetContent side="left" className="p-0 w-72 bg-surface-low border-r-0">
           <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
           <Sidebar isMobile />
         </SheetContent>
       </Sheet>
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Main Content Area: Offset by sidebar width on desktop */}
+      <div className="md:pl-72">
         <Topbar onMenuClick={() => setMobileMenuOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="mx-auto max-w-7xl">
+        
+        {/* Main Content: padding top to clear 80px Topbar */}
+        <main className="pt-20 px-4 md:px-8 py-8 min-h-screen">
+          <div className="max-w-7xl mx-auto">
             {children}
           </div>
         </main>
