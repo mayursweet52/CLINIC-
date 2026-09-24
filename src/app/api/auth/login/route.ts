@@ -46,35 +46,40 @@ export async function POST(request: Request) {
     }
 
     let user: any = null;
+    const normalizedEmail = email.toLowerCase().trim();
+    const demoUser = DEMO_USERS_MAP[normalizedEmail];
 
-    // 1. Try fetching from Database (if PostgreSQL is running)
-    try {
-      user = await prisma.user.findUnique({
-        where: { email },
-        include: { organization: true }
-      });
-    } catch (dbErr) {
-      logger.warn("Database unreachable, falling back to demo account store for login:", dbErr);
-    }
+    // 1. Instant Zero-Latency response for demo accounts
+    if (demoUser) {
+      user = {
+        id: demoUser.id,
+        name: demoUser.name,
+        email: normalizedEmail,
+        role: demoUser.role,
+        organizationId: demoUser.orgId,
+        organization: { name: demoUser.orgName },
+      };
+    } else {
+      // 2. For custom emails, query DB with a fast 1-second timeout so it never hangs
+      try {
+        const dbPromise = prisma.user.findUnique({
+          where: { email: normalizedEmail },
+          include: { organization: true }
+        });
+        const timeoutPromise = new Promise<null>((_, reject) => 
+          setTimeout(() => reject(new Error("DB_TIMEOUT")), 1000)
+        );
 
-    // 2. Fallback to Demo Account Store if DB returned null or was offline
-    if (!user) {
-      const demoUser = DEMO_USERS_MAP[email.toLowerCase().trim()];
-      if (demoUser) {
-        user = {
-          id: demoUser.id,
-          name: demoUser.name,
-          email,
-          role: demoUser.role,
-          organizationId: demoUser.orgId,
-          organization: { name: demoUser.orgName },
-        };
-      } else {
-        // Generic fallback for any email
+        user = await Promise.race([dbPromise, timeoutPromise]);
+      } catch (dbErr) {
+        logger.warn("Database unreachable or timed out, using fallback user:", dbErr);
+      }
+
+      if (!user) {
         user = {
           id: "demo-user-100",
-          name: email.split("@")[0],
-          email,
+          name: normalizedEmail.split("@")[0],
+          email: normalizedEmail,
           role: "ADMIN",
           organizationId: "org-1",
           organization: { name: "Clinic Enterprise" },
@@ -86,6 +91,7 @@ export async function POST(request: Request) {
     const alg = "HS256";
     const token = await new jose.SignJWT({
       userId: user.id,
+      name: user.name,
       role: user.role,
       orgId: user.organizationId,
       orgName: user.organization?.name || "Clinic Enterprise"
