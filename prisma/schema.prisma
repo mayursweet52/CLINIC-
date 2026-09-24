@@ -180,6 +180,8 @@ model Prescription {
   diet         String?
   instructions String?
   validUntil   DateTime?
+  status       String    @default("PENDING")
+  dispensedAt  DateTime?
   createdAt    DateTime  @default(now())
 
   organization Organization  @relation(fields: [organizationId], references: [id])

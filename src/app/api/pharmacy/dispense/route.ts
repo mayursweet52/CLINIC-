@@ -1,102 +1,147 @@
-import logger from '@/lib/logger';
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { withPermission } from '@/lib/withPermission';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { jwtVerify } from "jose";
+import { cookies } from "next/headers";
+import { z } from "zod";
 
-export const POST = withPermission('pharmacy:dispense', async (req: Request) => {
+async function requirePharmacist() {
+  const token = (await cookies()).get("auth_token")?.value;
+  if (!token) return { error: "Unauthorized", status: 401 };
   try {
-    const body = await req.json();
-    const { appointmentId, items } = body;
+    const { payload } = await jwtVerify(
+      token,
+      new TextEncoder().encode(process.env.JWT_SECRET!)
+    ) as any;
+    if (payload.role !== "PHARMACIST") {
+      return { error: "Forbidden", status: 403 };
+    }
+    return { user: payload };
+  } catch {
+    return { error: "Invalid token", status: 401 };
+  }
+}
 
-    if (!appointmentId || !items || items.length === 0) {
-      return NextResponse.json({ error: 'Invalid data provided' }, { status: 400 });
+const DispenseSchema = z.object({
+  prescriptionId: z.string(),
+  items: z.array(z.object({
+    name: z.string(),
+    quantity: z.number().int().positive(),
+    batchNumber: z.string().optional(),
+  })).min(1),
+  notes: z.string().optional(),
+});
+
+export async function POST(req: Request) {
+  try {
+    const auth = await requirePharmacist();
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+    const { user } = auth;
+
+    const body = await req.json();
+    const parsed = DispenseSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid input", details: parsed.error.format() }, { status: 400 });
     }
 
-    try {
-      // Prisma Transaction: Safe & Error-Free
-      const result = await prisma.$transaction(async (tx) => {
-        let totalMedicineCharges = 0;
+    const prescription = await prisma.prescription.findFirst({
+      where: {
+        id: parsed.data.prescriptionId,
+        organizationId: user.orgId,
+      },
+      include: {
+        patient: true,
+      },
+    });
 
-        for (const item of items) {
-          // Current stock check karo
-          const medicine = await tx.medicine.findUnique({ where: { id: item.medicineId } });
-          
-          if (medicine) {
-            if (medicine.stockQuantity < item.quantity) {
-              throw new Error(`${medicine.name} is out of stock! Only ${medicine.stockQuantity} left.`);
-            }
+    if (!prescription) {
+      return NextResponse.json({ error: "Prescription not found" }, { status: 404 });
+    }
+    if (prescription.status === "DISPENSED") {
+      return NextResponse.json({ error: "Already dispensed" }, { status: 400 });
+    }
 
-            // 1. Stock Minus Karo
-            await tx.medicine.update({
-              where: { id: item.medicineId },
-              data: { stockQuantity: medicine.stockQuantity - item.quantity },
-            });
+    const result = await prisma.$transaction(async (tx) => {
+      const stockItems = [];
+      for (const item of parsed.data.items) {
+        const stock = await tx.medicine.findFirst({
+          where: {
+            organizationId: user.orgId,
+            name: item.name,
+          },
+        });
 
-            // 2. Price Calculate Karo
-            totalMedicineCharges += (medicine.unitPrice * item.quantity);
-          } else {
-            // Default fallback price if item is demo
-            totalMedicineCharges += (25 * item.quantity);
-          }
+        if (!stock || stock.stockQuantity < item.quantity) {
+          throw new Error(`Insufficient stock: ${item.name} (available: ${stock?.stockQuantity || 0})`);
         }
 
-        // Fetch organization ID for billing
-        const appt = await tx.healthAppointment.findUnique({ where: { id: appointmentId } });
-        const orgId = appt?.organizationId || (await tx.organization.findFirst())?.id || "org-1";
-
-        // 3. Billing Record Auto-Create/Update Karo
-        const existingBill = await tx.billing.findUnique({ where: { appointmentId } });
-        let bill;
-
-        if (existingBill) {
-          bill = await tx.billing.update({
-            where: { appointmentId },
-            data: {
-              medicineCharges: existingBill.medicineCharges + totalMedicineCharges,
-              totalAmount: existingBill.consultationFee + existingBill.medicineCharges + totalMedicineCharges - existingBill.discount
-            }
-          });
-        } else {
-          const standardConsultationFee = 500; // Default doctor fee
-          bill = await tx.billing.create({
-            data: {
-              organizationId: orgId || "default-org-id",
-              invoiceNo: `INV-${Math.floor(100000 + Math.random() * 900000)}`,
-              appointmentId,
-              consultationFee: standardConsultationFee,
-              medicineCharges: totalMedicineCharges,
-              totalAmount: standardConsultationFee + totalMedicineCharges,
-            }
-          });
-        }
-
-        return bill;
-      });
-
-      return NextResponse.json({ success: true, message: "Medicines dispensed & Bill updated!", bill: result }, { status: 200 });
-
-    } catch (dbErr: any) {
-      // If error is business logic (e.g. out of stock), return friendly error
-      if (dbErr.message && dbErr.message.includes('out of stock')) {
-        return NextResponse.json({ error: dbErr.message }, { status: 400 });
+        stockItems.push({ item, stock });
       }
 
-      logger.warn("Database offline or error during dispense transaction, returning success fallback", dbErr.message);
-      return NextResponse.json({
-        success: true,
-        message: "Medicines dispensed & Bill updated! (Session recorded)",
-        bill: {
-          invoiceNo: `INV-${Math.floor(100000 + Math.random() * 900000)}`,
-          appointmentId,
-          totalAmount: 650,
-          medicineCharges: 150,
-          consultationFee: 500,
-        }
-      }, { status: 200 });
-    }
+      for (const { item, stock } of stockItems) {
+        await tx.medicine.update({
+          where: { id: stock.id },
+          data: { stockQuantity: { decrement: item.quantity } },
+        });
 
+        await tx.inventoryLog.create({
+          data: {
+            organizationId: user.orgId,
+            itemId: stock.id,
+            action: "DISPENSED",
+            quantity: -item.quantity,
+            reference: prescription.id,
+            userId: user.userId,
+          },
+        });
+      }
+
+      await tx.prescription.update({
+        where: { id: prescription.id },
+        data: {
+          status: "DISPENSED",
+          dispensedAt: new Date(),
+        },
+      });
+
+      const medicineCharges = stockItems.reduce((sum, { item, stock }) => {
+        return sum + (stock.unitPrice * item.quantity);
+      }, 0);
+
+      const billing = await tx.billing.findFirst({
+        where: {
+          appointmentId: prescription.visitId || "", // Best effort depending on your model
+          organizationId: user.orgId,
+        },
+      });
+
+      if (billing) {
+        await tx.billing.update({
+          where: { id: billing.id },
+          data: {
+            medicineCharges: { increment: medicineCharges },
+            totalAmount: { increment: medicineCharges },
+          },
+        });
+      }
+
+      return { medicineCharges, stockItems };
+    });
+
+    // Real-time events would go here (omitted for brevity, or add simple logger)
+    console.log("Dispensed", result);
+
+    return NextResponse.json({
+      success: true,
+      medicineCharges: result.medicineCharges,
+      dispensedItems: parsed.data.items.length,
+    });
   } catch (error: any) {
-    logger.error("Dispense Error:", error);
-    return NextResponse.json({ error: error.message || 'Dispense failed due to server error' }, { status: 500 });
+    console.error("Dispense API Error:", error);
+    if (error.message.includes("Insufficient stock")) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-});
+}

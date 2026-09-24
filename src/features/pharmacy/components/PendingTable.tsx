@@ -58,7 +58,7 @@ export const PendingTable = ({ data, isLoading }: { data: any[], isLoading: bool
       />
       <DispenseDialog 
         open={!!selectedRx} 
-        onOpenChange={(open) => !open && setSelectedRx(null)} 
+        onOpenChange={(open: boolean) => !open && setSelectedRx(null)} 
         prescription={selectedRx} 
       />
     </>

@@ -11,17 +11,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TableSkeleton } from "@/components/shared/TableSkeleton";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function PharmacyPage() {
+  const queryClient = useQueryClient();
   const { data: pending, isLoading: pendingLoading } = usePendingPrescriptions();
   const { data: inventory, isLoading: inventoryLoading } = useInventory();
   
   const [selectedRx, setSelectedRx] = useState<any>(null);
   const [searchInv, setSearchInv] = useState("");
+  const [showLowStock, setShowLowStock] = useState(false);
 
-  const filteredInventory = (inventory || []).filter((item: any) => 
-    !searchInv || item.name.toLowerCase().includes(searchInv.toLowerCase())
-  );
+  const filteredInventory = (inventory || []).filter((item: any) => {
+    if (showLowStock && item.status !== "Low Stock" && item.status !== "Out of Stock") return false;
+    if (searchInv && !item.name.toLowerCase().includes(searchInv.toLowerCase())) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-6 h-full flex flex-col pb-12">
@@ -94,8 +99,8 @@ export default function PharmacyPage() {
           </TabsContent>
 
           <TabsContent value="inventory" className="m-0 flex-1 min-h-0 bg-surface-lowest rounded-xl shadow-sm border border-outline-variant/20 overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-outline-variant/20 bg-surface-lowest">
-              <div className="relative w-full max-w-md">
+            <div className="p-4 border-b border-outline-variant/20 bg-surface-lowest flex gap-3">
+              <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant" />
                 <Input 
                   placeholder="Search medicines..." 
@@ -104,6 +109,13 @@ export default function PharmacyPage() {
                   className="pl-9 bg-surface-low border-outline-variant/30 text-on-surface focus-visible:ring-primary-500" 
                 />
               </div>
+              <Button 
+                variant={showLowStock ? "default" : "outline"} 
+                onClick={() => setShowLowStock(!showLowStock)}
+                className={showLowStock ? "bg-warning text-warning-foreground hover:bg-warning/90" : ""}
+              >
+                <AlertTriangle className="mr-2 h-4 w-4" /> Low Stock
+              </Button>
             </div>
             <div className="flex-1 overflow-auto">
               {inventoryLoading ? (
@@ -161,8 +173,13 @@ export default function PharmacyPage() {
 
       <DispenseDialog 
         open={!!selectedRx} 
-        onOpenChange={(open) => !open && setSelectedRx(null)} 
-        prescription={selectedRx} 
+        onOpenChange={(open: boolean) => !open && setSelectedRx(null)} 
+        prescription={selectedRx}
+        onSuccess={() => {
+          setSelectedRx(null);
+          queryClient.invalidateQueries({ queryKey: ["prescriptions", "pending"] });
+          queryClient.invalidateQueries({ queryKey: ["inventory"] });
+        }}
       />
     </div>
   );
