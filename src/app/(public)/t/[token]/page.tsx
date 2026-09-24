@@ -46,7 +46,7 @@ export default function PublicTrackPage({ params }: { params: Promise<{ token: s
   if (loading && !data) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   if (error) return <div className="p-8 text-center text-error"><AlertCircle className="w-10 h-10 mx-auto mb-4" />{error}</div>;
 
-  const { appointment, patient, doctor, clinic, timeline, hasPrescription, billToken, billPaid } = data;
+  const { appointment, patient, doctor, clinic, timeline, hasPrescription, prescriptionId, billToken, billPaid } = data;
 
   return (
     <div className="min-h-screen bg-surface md:p-4 pb-20">
@@ -130,9 +130,11 @@ export default function PublicTrackPage({ params }: { params: Promise<{ token: s
 
           {/* Section E — Actions */}
           <div className="space-y-3 pt-4 border-t border-outline-variant">
-            {hasPrescription && (
+            {hasPrescription && prescriptionId && (
               <Button variant="outline" className="w-full h-12" asChild>
-                <a href="#"><FileText className="w-4 h-4 mr-2" /> Download Prescription</a>
+                <a href={`/api/prescriptions/${prescriptionId}/pdf`} download>
+                  <FileText className="w-4 h-4 mr-2" /> Download Prescription
+                </a>
               </Button>
             )}
             
@@ -144,7 +146,9 @@ export default function PublicTrackPage({ params }: { params: Promise<{ token: s
 
             {billToken && billPaid && (
               <Button variant="outline" className="w-full h-12 text-success border-success/30 hover:bg-success/10" asChild>
-                <a href={`/receipt/${billToken}`}><Receipt className="w-4 h-4 mr-2" /> Download Receipt</a>
+                <a href={`/api/public/bills/${billToken}/pdf`} download>
+                  <Receipt className="w-4 h-4 mr-2" /> Download Receipt
+                </a>
               </Button>
             )}
           </div>

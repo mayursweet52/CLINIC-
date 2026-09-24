@@ -43,8 +43,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
         medicineCharges: bill.medicineCharges,
         paymentStatus: bill.paymentStatus,
         createdAt: bill.createdAt,
-        items: bill.items,
-      },
+              },
       patient: {
         firstName: patient.name.split(" ")[0],
         patientCode: patient.patientCode,

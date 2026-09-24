@@ -61,6 +61,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
       },
       timeline,
       hasPrescription,
+      prescriptionId: hasPrescription ? visit?.prescriptions[0].id : null,
       billToken: billing?.publicToken || null,
       billPaid,
     });

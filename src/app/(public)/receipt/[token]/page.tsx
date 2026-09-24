@@ -70,8 +70,10 @@ export default function PublicReceiptPage({ params }: { params: Promise<{ token:
           </div>
 
           <div className="border-t border-dashed border-outline-variant pt-6 space-y-3">
-            <Button className="w-full h-12 gap-2" variant="outline">
-              <Download className="w-4 h-4" /> Download Receipt
+            <Button className="w-full h-12 gap-2" variant="outline" asChild>
+              <a href={`/api/public/bills/${token}/pdf`} download>
+                <Download className="w-4 h-4" /> Download Receipt
+              </a>
             </Button>
             <Button className="w-full h-12 gap-2" asChild>
               <a href="/"><ArrowLeft className="w-4 h-4" /> Back to Home</a>
