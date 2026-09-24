@@ -4,130 +4,209 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Seeding Aarogya Clinic demo data...\n");
+  console.log("🌱 Seeding ClinicOS enterprise data...\n");
 
   // ═══════════════════════════════════════════════════
-  // 0. RBAC PERMISSIONS (CRITICAL FOR APP TO WORK)
+  // 1. SUPERADMIN (Platform Owner)
   // ═══════════════════════════════════════════════════
-  const permissions = [
-    { key: 'appointment:create', category: 'Appointment', description: 'Create appointments' },
-    { key: 'appointment:read', category: 'Appointment', description: 'Read appointments' },
-    { key: 'appointment:read:own', category: 'Appointment', description: 'Read own appointments' },
-    { key: 'appointment:update', category: 'Appointment', description: 'Update appointments' },
-    { key: 'appointment:delete', category: 'Appointment', description: 'Delete appointments' },
-    { key: 'patient:create', category: 'Patient', description: 'Create patients' },
-    { key: 'patient:read', category: 'Patient', description: 'Read patients' },
-    { key: 'patient:update', category: 'Patient', description: 'Update patients' },
-    { key: 'prescription:create', category: 'Prescription', description: 'Create prescriptions' },
-    { key: 'prescription:read', category: 'Prescription', description: 'Read prescriptions' },
-    { key: 'bill:create', category: 'Billing', description: 'Create bills' },
-    { key: 'bill:read', category: 'Billing', description: 'Read bills' },
-    { key: 'bill:read:own', category: 'Billing', description: 'Read own bills' },
-    { key: 'bill:update', category: 'Billing', description: 'Update bills' },
-    { key: 'pharmacy:dispense', category: 'Pharmacy', description: 'Dispense pharmacy items' },
-    { key: 'pharmacy:inventory', category: 'Pharmacy', description: 'Manage pharmacy inventory' },
-    { key: 'report:read', category: 'Report', description: 'Read reports' },
-    { key: 'report:export', category: 'Report', description: 'Export reports' },
-    { key: 'user:manage', category: 'Admin', description: 'Manage users' },
-    { key: 'settings:manage', category: 'Admin', description: 'Manage settings' },
-  ];
-
-  for (const p of permissions) {
-    await prisma.permission.upsert({
-      where: { key: p.key },
-      update: {},
-      create: p,
-    });
-  }
-
-  const allPerms = await prisma.permission.findMany();
-  const permMap = Object.fromEntries(allPerms.map((p) => [p.key, p.id]));
-
-  const roleMappings = {
-    DOCTOR: ['appointment:read:own', 'patient:read', 'prescription:create'],
-    RECEPTIONIST: ['appointment:create', 'appointment:read', 'appointment:update', 'appointment:delete', 'patient:read', 'patient:create'],
-    PHARMACIST: ['pharmacy:dispense', 'pharmacy:inventory'],
-    ADMIN: permissions.map(p => p.key), // admin -> *
-    PATIENT: ['appointment:read:own', 'bill:read:own'],
-  };
-
-  for (const [role, perms] of Object.entries(roleMappings)) {
-    for (const pKey of perms) {
-      if (!permMap[pKey]) continue;
-      await prisma.rolePermission.upsert({
-        where: {
-          roleId_permissionId: {
-            roleId: role,
-            permissionId: permMap[pKey],
-          },
-        },
-        update: {},
-        create: {
-          roleId: role,
-          permissionId: permMap[pKey],
-        },
-      });
-    }
-  }
-
-  // ═══════════════════════════════════════════════════
-  // 1. ORGANIZATION
-  // ═══════════════════════════════════════════════════
-  const org = await prisma.organization.upsert({
-    where: { domain: "aarogya.in" },
+  const superadminPassword = await bcrypt.hash("SuperAdmin@2024", 10);
+  
+  const superadmin = await prisma.user.upsert({
+    where: { email: "superadmin@clinicos.in" },
     update: {},
     create: {
+      email: "superadmin@clinicos.in",
+      passwordHash: superadminPassword,
+      name: "Platform Admin",
+      role: "SUPERADMIN",
+      phone: "+91 99999 00000",
+      organizationId: null, // Superadmin not tied to any org
+    },
+  });
+  console.log("✅ SuperAdmin:", superadmin.email);
+
+  // ═══════════════════════════════════════════════════
+  // 2. AAROGYA ORGANIZATION (Primary Demo Clinic)
+  // ═══════════════════════════════════════════════════
+  const org = await prisma.organization.upsert({
+    where: { slug: "aarogya-noida" },
+    update: {
       name: "Aarogya Multispeciality Clinic",
-      domain: "aarogya.in",
+      city: "Noida",
+      state: "Uttar Pradesh",
+      pincode: "201301",
       address: "Sector 18, Noida, Uttar Pradesh",
       phone: "+91 120 456 7890",
+      rating: 4.5,
+      totalReviews: 124,
+      isActive: true,
+    },
+    create: {
+      name: "Aarogya Multispeciality Clinic",
+      slug: "aarogya-noida",
+      // Removed plan and settings as they aren't in schema
+      city: "Noida",
+      state: "Uttar Pradesh",
+      pincode: "201301",
+      address: "Sector 18, Noida, Uttar Pradesh",
+      phone: "+91 120 456 7890",
+      rating: 4.5,
+      totalReviews: 124,
+      isActive: true,
     },
   });
   console.log("✅ Organization:", org.name);
 
   // ═══════════════════════════════════════════════════
-  // 2. PASSWORD HASHES
+  // 3. DEPARTMENTS (4)
+  // ═══════════════════════════════════════════════════
+  const departmentData = [
+    { name: "General Medicine", slug: "general-medicine", icon: "🩺", order: 1 },
+    { name: "Orthopedics", slug: "orthopedics", icon: "🦴", order: 2 },
+    { name: "Cardiology", slug: "cardiology", icon: "❤️", order: 3 },
+    { name: "Pediatrics", slug: "pediatrics", icon: "👶", order: 4 },
+  ];
+
+  const departments = {};
+  for (const dept of departmentData) {
+    const created = await prisma.department.upsert({
+      where: { 
+        organizationId_slug: { 
+          organizationId: org.id, 
+          slug: dept.slug 
+        } 
+      },
+      update: { name: dept.name, icon: dept.icon, order: dept.order },
+      create: {
+        organizationId: org.id,
+        name: dept.name,
+        slug: dept.slug,
+        icon: dept.icon,
+        order: dept.order,
+        isActive: true,
+      },
+    });
+    departments[dept.slug] = created;
+  }
+  console.log("✅ Departments:", Object.keys(departments).length);
+
+  // ═══════════════════════════════════════════════════
+  // 4. CONDITIONS (3 per department = 12 total)
+  // ═══════════════════════════════════════════════════
+  const conditionsData = {
+    "general-medicine": [
+      { name: "Fever, cold, cough", slug: "fever-cold-cough", icon: "🤒", keywords: ["fever", "cold", "cough", "flu"] },
+      { name: "General checkup", slug: "general-checkup", icon: "🩺", keywords: ["checkup", "routine", "annual"] },
+      { name: "Diabetes follow-up", slug: "diabetes-followup", icon: "💉", keywords: ["diabetes", "sugar", "glucose"] },
+    ],
+    "orthopedics": [
+      { name: "Knee pain", slug: "knee-pain", icon: "🦵", keywords: ["knee", "joint", "leg"] },
+      { name: "Back pain", slug: "back-pain", icon: "🦴", keywords: ["back", "spine", "lumbar"] },
+      { name: "Fracture", slug: "fracture", icon: "🩹", keywords: ["fracture", "broken", "bone"] },
+    ],
+    "cardiology": [
+      { name: "Chest pain", slug: "chest-pain", icon: "💔", keywords: ["chest", "heart", "angina"] },
+      { name: "High BP", slug: "high-bp", icon: "🩸", keywords: ["bp", "blood pressure", "hypertension"] },
+      { name: "Heart checkup", slug: "heart-checkup", icon: "❤️", keywords: ["heart", "cardiac", "ecg"] },
+    ],
+    "pediatrics": [
+      { name: "Vaccination", slug: "vaccination", icon: "💉", keywords: ["vaccine", "immunization"] },
+      { name: "Child fever", slug: "child-fever", icon: "🤒", keywords: ["child", "baby", "fever"] },
+      { name: "Growth checkup", slug: "growth-checkup", icon: "📏", keywords: ["growth", "development"] },
+    ],
+  };
+
+  let conditionCount = 0;
+  for (const [deptSlug, conditions] of Object.entries(conditionsData)) {
+    const dept = departments[deptSlug];
+    for (const cond of conditions) {
+      await prisma.condition.upsert({
+        where: { 
+          departmentId_slug: { 
+            departmentId: dept.id, 
+            slug: cond.slug 
+          } 
+        },
+        update: { name: cond.name, icon: cond.icon, keywords: cond.keywords },
+        create: {
+          departmentId: dept.id,
+          name: cond.name,
+          slug: cond.slug,
+          icon: cond.icon,
+          keywords: cond.keywords,
+        },
+      });
+      conditionCount++;
+    }
+  }
+  console.log("✅ Conditions:", conditionCount);
+
+  // ═══════════════════════════════════════════════════
+  // 5. STAFF USERS
   // ═══════════════════════════════════════════════════
   const doctorHash = await bcrypt.hash("Aarogya@2024", 10);
   const receptionHash = await bcrypt.hash("Front@2024", 10);
   const pharmacyHash = await bcrypt.hash("Pharma@2024", 10);
   const adminHash = await bcrypt.hash("Admin@2024", 10);
 
-  // ═══════════════════════════════════════════════════
-  // 3. DOCTORS
-  // ═══════════════════════════════════════════════════
-  const doctorData = [
+  // Doctors
+  const doctorsData = [
     {
       email: "ananya.sharma@aarogyaclinic.in",
       name: "Dr. Ananya Sharma",
       phone: "+91 98100 12345",
-      specialization: "General Physician",
-      license: "UP-MED-2015-45231",
-      fee: 800,
+      bio: "MBBS, MD (General Medicine) · 10 years experience",
+      yearsOfExperience: 10,
+      averageRating: 4.8,
+      totalReviews: 87,
+      departmentSlugs: ["general-medicine"],
+      profile: {
+        specialization: "General Physician",
+        licenseNumber: "UP-MED-2015-45231",
+        consultationFee: 800,
+      },
     },
     {
       email: "rohan.mehta@aarogyaclinic.in",
       name: "Dr. Rohan Mehta",
       phone: "+91 98100 12346",
-      specialization: "Orthopedic Surgeon",
-      license: "UP-MED-2013-38941",
-      fee: 1200,
+      bio: "MBBS, MS (Orthopedics) · 12 years experience",
+      yearsOfExperience: 12,
+      averageRating: 4.7,
+      totalReviews: 102,
+      departmentSlugs: ["orthopedics"],
+      profile: {
+        specialization: "Orthopedic Surgeon",
+        licenseNumber: "UP-MED-2013-38941",
+        consultationFee: 1200,
+      },
     },
     {
       email: "priya.iyer@aarogyaclinic.in",
       name: "Dr. Priya Iyer",
       phone: "+91 98100 12347",
-      specialization: "Pediatrician",
-      license: "UP-MED-2016-51207",
-      fee: 700,
+      bio: "MBBS, MD (Pediatrics) · 8 years experience",
+      yearsOfExperience: 8,
+      averageRating: 4.9,
+      totalReviews: 76,
+      departmentSlugs: ["pediatrics"],
+      profile: {
+        specialization: "Pediatrician",
+        licenseNumber: "UP-MED-2016-51207",
+        consultationFee: 700,
+      },
     },
   ];
 
-  const doctors = [];
-  for (const doc of doctorData) {
+  for (const doc of doctorsData) {
     const user = await prisma.user.upsert({
       where: { email: doc.email },
-      update: {},
+      update: {
+        bio: doc.bio,
+        yearsOfExperience: doc.yearsOfExperience,
+        averageRating: doc.averageRating,
+        totalReviews: doc.totalReviews,
+      },
       create: {
         email: doc.email,
         passwordHash: doctorHash,
@@ -135,18 +214,38 @@ async function main() {
         role: "DOCTOR",
         phone: doc.phone,
         organizationId: org.id,
-        specialization: doc.specialization,
-        registrationNo: doc.license,
-        consultationFee: doc.fee,
+        bio: doc.bio,
+        yearsOfExperience: doc.yearsOfExperience,
+        averageRating: doc.averageRating,
+        totalReviews: doc.totalReviews,
+        specialization: doc.profile.specialization,
+        registrationNo: doc.profile.licenseNumber,
+        consultationFee: doc.profile.consultationFee,
       },
     });
-    doctors.push(user);
+
+    // Assign to departments
+    for (const deptSlug of doc.departmentSlugs) {
+      const dept = departments[deptSlug];
+      await prisma.doctorDepartment.upsert({
+        where: { 
+          doctorId_departmentId: { 
+            doctorId: user.id, 
+            departmentId: dept.id 
+          } 
+        },
+        update: {},
+        create: {
+          doctorId: user.id,
+          departmentId: dept.id,
+        },
+      });
+    }
+
     console.log("✅ Doctor:", doc.name);
   }
 
-  // ═══════════════════════════════════════════════════
-  // 4. STAFF (Receptionist, Pharmacist, Admin)
-  // ═══════════════════════════════════════════════════
+  // Receptionist
   await prisma.user.upsert({
     where: { email: "kavita.nair@aarogyaclinic.in" },
     update: {},
@@ -161,6 +260,7 @@ async function main() {
   });
   console.log("✅ Receptionist: Kavita Nair");
 
+  // Pharmacist
   await prisma.user.upsert({
     where: { email: "suresh.patel@aarogyaclinic.in" },
     update: {},
@@ -175,6 +275,7 @@ async function main() {
   });
   console.log("✅ Pharmacist: Suresh Patel");
 
+  // Admin
   await prisma.user.upsert({
     where: { email: "vikram.singh@aarogyaclinic.in" },
     update: {},
@@ -190,9 +291,11 @@ async function main() {
   console.log("✅ Admin: Vikram Singh");
 
   // ═══════════════════════════════════════════════════
-  // 5. PATIENTS
+  // 6. PATIENTS
   // ═══════════════════════════════════════════════════
-  const patientData = [
+  const patientHash = await bcrypt.hash("Patient@123", 10);
+
+  const patientsData = [
     {
       code: "AMC-2024-0147",
       name: "Rajesh Kumar",
@@ -255,17 +358,9 @@ async function main() {
     },
   ];
 
-  const patientHash = await bcrypt.hash("Patient@123", 10);
-
-  const patients = [];
-  for (const pt of patientData) {
-    const patient = await prisma.patient.upsert({
-      where: { 
-        organizationId_patientCode: {
-          organizationId: org.id,
-          patientCode: pt.code
-        }
-      },
+  for (const pt of patientsData) {
+    await prisma.patient.upsert({
+      where: { organizationId_patientCode: { organizationId: org.id, patientCode: pt.code } },
       update: { passwordHash: patientHash },
       create: {
         patientCode: pt.code,
@@ -282,80 +377,42 @@ async function main() {
         organizationId: org.id,
       },
     });
-    patients.push(patient);
-    console.log("✅ Patient:", pt.name);
   }
+  console.log("✅ Patients:", patientsData.length);
 
   // ═══════════════════════════════════════════════════
-  // 6. DOCTOR AVAILABILITY
+  // 7. DOCTOR AVAILABILITY
   // ═══════════════════════════════════════════════════
-  for (const doctor of doctors) {
-    for (const day of [1, 2, 3, 4, 5, 6]) {
-      const morning = await prisma.doctorAvailability.findFirst({
-        where: { doctorId: doctor.id, dayOfWeek: day, startTime: "10:00" },
-      });
-      if (!morning) {
-        await prisma.doctorAvailability.create({
-          data: {
-            doctorId: doctor.id,
-            orgId: org.id,
-            dayOfWeek: day,
-            startTime: "10:00",
-            endTime: "14:00",
-            slotDuration: 15,
-            isActive: true,
-          },
-        });
-      }
-    }
-    console.log("✅ Availability set for:", doctor.name);
-  }
-
-  // ═══════════════════════════════════════════════════
-  // 7. TODAY'S APPOINTMENTS
-  // ═══════════════════════════════════════════════════
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  const makeTime = (h, m = 0) => {
-    const d = new Date(today);
-    d.setHours(h, m, 0, 0);
-    return d;
-  };
-
-  await prisma.healthAppointment.deleteMany({
-    where: {
-      organizationId: org.id,
-      appointmentDate: { gte: today },
-    },
+  const allDoctors = await prisma.user.findMany({
+    where: { role: "DOCTOR", organizationId: org.id },
   });
 
-  const appointments = [
-    { patient: patients[0], doctor: doctors[0], time: makeTime(10, 0), status: "SCHEDULED" },
-    { patient: patients[1], doctor: doctors[0], time: makeTime(10, 30), status: "SCHEDULED" },
-    { patient: patients[2], doctor: doctors[0], time: makeTime(11, 0), status: "ARRIVED" },
-    { patient: patients[3], doctor: doctors[0], time: makeTime(11, 30), status: "IN_CONSULTATION" },
-    { patient: patients[4], doctor: doctors[0], time: makeTime(12, 0), status: "COMPLETED" },
-    { patient: patients[0], doctor: doctors[1], time: makeTime(10, 15), status: "SCHEDULED" },
-    { patient: patients[2], doctor: doctors[2], time: makeTime(10, 45), status: "ARRIVED" },
-  ];
-
-  for (const apt of appointments) {
-    await prisma.healthAppointment.create({
-      data: {
-        organizationId: org.id,
-        patientId: apt.patient.id,
-        doctorId: apt.doctor.id,
-        appointmentDate: apt.time,
-        timeSlot: apt.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        status: apt.status,
-      },
+  for (const doctor of allDoctors) {
+    // Check if availability already exists
+    const existing = await prisma.doctorAvailability.findFirst({
+      where: { doctorId: doctor.id },
     });
+    if (existing) continue;
+
+    // Mon-Sat: 10-2
+    for (const day of [1, 2, 3, 4, 5, 6]) {
+      await prisma.doctorAvailability.create({
+        data: {
+          orgId: org.id,
+          doctorId: doctor.id,
+          dayOfWeek: day,
+          startTime: "10:00",
+          endTime: "14:00",
+          slotDuration: 15,
+          isActive: true,
+        },
+      });
+    }
   }
-  console.log(`✅ Created ${appointments.length} appointments for today`);
+  console.log("✅ Doctor availability set");
 
   // ═══════════════════════════════════════════════════
-  // 8. PHARMACY INVENTORY
+  // 8. INVENTORY
   // ═══════════════════════════════════════════════════
   const inventory = [
     { name: "Paracetamol 500mg", batch: "PCM2408A", qty: 850, price: 2.5, reorder: 200 },
@@ -391,19 +448,80 @@ async function main() {
       });
     }
   }
-  console.log(`✅ Inventory: ${inventory.length} medicines`);
+  console.log("✅ Inventory:", inventory.length);
+
+  // ═══════════════════════════════════════════════════
+  // 9. TODAY'S APPOINTMENTS
+  // ═══════════════════════════════════════════════════
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const makeTime = (h, m = 0) => {
+    const d = new Date(today);
+    d.setHours(h, m, 0, 0);
+    return d;
+  };
+
+  // Clear today's old appointments
+  await prisma.healthAppointment.deleteMany({
+    where: {
+      organizationId: org.id,
+      appointmentDate: { gte: today },
+    },
+  });
+
+  const allPatients = await prisma.patient.findMany({
+    where: { organizationId: org.id },
+    take: 5,
+  });
+
+  const ananya = allDoctors.find(d => d.email.includes("ananya"));
+  const rohan = allDoctors.find(d => d.email.includes("rohan"));
+  const priya = allDoctors.find(d => d.email.includes("priya"));
+
+  if (ananya && rohan && priya && allPatients.length >= 3) {
+    const appointments = [
+      { patient: allPatients[0], doctor: ananya, time: makeTime(10, 0), status: "SCHEDULED", token: "Q-001", reason: "Diabetes follow-up" },
+      { patient: allPatients[1], doctor: ananya, time: makeTime(10, 30), status: "SCHEDULED", token: "Q-002", reason: "Thyroid review" },
+      { patient: allPatients[2], doctor: ananya, time: makeTime(11, 0), status: "ARRIVED", token: "Q-003", reason: "Fever and cold" },
+      { patient: allPatients[0], doctor: rohan, time: makeTime(10, 15), status: "SCHEDULED", token: "Q-004", reason: "Knee pain" },
+      { patient: allPatients[2], doctor: priya, time: makeTime(10, 45), status: "ARRIVED", token: "Q-005", reason: "Vaccination" },
+    ];
+
+    let counter = 1;
+    for (const apt of appointments) {
+      await prisma.healthAppointment.create({
+        data: {
+          organizationId: org.id,
+          patientId: apt.patient.id,
+          doctorId: apt.doctor.id,
+          appointmentDate: apt.time,
+          status: apt.status,
+          timeSlot: "10:00",
+          tokenNumber: counter,
+          tokenDisplay: apt.token,
+          publicToken: `tok-${Date.now()}-${counter}`,
+        },
+      });
+      counter++;
+    }
+    console.log("✅ Appointments:", appointments.length);
+  }
 
   // ═══════════════════════════════════════════════════
   // DONE
   // ═══════════════════════════════════════════════════
   console.log("\n" + "=".repeat(60));
-  console.log("✅ Aarogya Clinic seeded successfully!");
+  console.log("✅ ClinicOS enterprise seed complete!");
   console.log("=".repeat(60));
   console.log("\n📋 LOGIN CREDENTIALS:\n");
+  console.log("   SUPERADMIN:   superadmin@clinicos.in / SuperAdmin@2024");
   console.log("   Doctor:       ananya.sharma@aarogyaclinic.in / Aarogya@2024");
+  console.log("   Doctor 2:     rohan.mehta@aarogyaclinic.in / Aarogya@2024");
+  console.log("   Doctor 3:     priya.iyer@aarogyaclinic.in / Aarogya@2024");
   console.log("   Receptionist: kavita.nair@aarogyaclinic.in / Front@2024");
   console.log("   Pharmacist:   suresh.patel@aarogyaclinic.in / Pharma@2024");
   console.log("   Admin:        vikram.singh@aarogyaclinic.in / Admin@2024");
+  console.log("   Patient:      9876543210 / Patient@123");
   console.log("");
 }
 

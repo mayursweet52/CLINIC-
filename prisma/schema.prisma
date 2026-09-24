@@ -8,15 +8,25 @@ datasource db {
 }
 
 model Organization {
-  id        String   @id @default(uuid())
-  name      String
-  domain    String?  @unique
-  address   String?
-  city      String?
-  state     String?
-  phone     String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id            String   @id @default(uuid())
+  name          String
+  slug          String   @unique
+  domain        String?  @unique
+  logoUrl       String?
+  coverImageUrl String?
+  address       String?
+  city          String?
+  state         String?
+  pincode       String?
+  phone         String?
+  latitude      Float?
+  longitude     Float?
+  rating        Float    @default(0)
+  totalReviews  Int      @default(0)
+  isActive      Boolean  @default(true)
+  plan          String?  @default("FREE")
+  settings      Json?
+  createdAt     DateTime @default(now())
 
   users         User[]
   patients      Patient[]
@@ -25,38 +35,60 @@ model Organization {
   prescriptions Prescription[]
   labReports    LabReport[]
 
-  // Existing models for generic features
-  medicines       Medicine[]
-  billings        Billing[]
-  availabilities  DoctorAvailability[]
-  timeOffs        DoctorTimeOff[]
+  medicines      Medicine[]
+  billings       Billing[]
+  availabilities DoctorAvailability[]
+  timeOffs       DoctorTimeOff[]
+
+  departments   Department[]
+  reviews       Review[]
+  inventoryLogs InventoryLog[]
 }
 
 model User {
   id             String   @id @default(uuid())
-  organizationId String
+  organizationId String?
   name           String
   email          String   @unique
   passwordHash   String
-  role           Role     @default(STAFF)
+  role           Role     @default(RECEPTIONIST)
   department     String?
   phone          String?
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
 
-  // --- DOCTOR SPECIFIC FIELDS (Requested by User) ---
   specialization  String?
   registrationNo  String?
   consultationFee Float?
-  availableDays   String[] // e.g. ["MONDAY", "WEDNESDAY"]
-  slotDuration    Int? // e.g. 15
+  availableDays   String[]
+  slotDuration    Int?
 
-  organization    Organization          @relation(fields: [organizationId], references: [id])
-  appointments    HealthAppointment[]   @relation("DoctorAppointments")
-  visits          PatientVisit[]        @relation("DoctorVisits")
-  prescriptions   Prescription[]        @relation("DoctorPrescriptions")
-  availabilities  DoctorAvailability[]  @relation("DoctorAvailability")
-  timeOffs        DoctorTimeOff[]       @relation("DoctorTimeOff")
+  bio               String?
+  yearsOfExperience Int?
+  averageRating     Float   @default(0)
+  totalReviews      Int     @default(0)
+
+  organization   Organization?        @relation(fields: [organizationId], references: [id])
+  appointments   HealthAppointment[]  @relation("DoctorAppointments")
+  visits         PatientVisit[]       @relation("DoctorVisits")
+  prescriptions  Prescription[]       @relation("DoctorPrescriptions")
+  availabilities DoctorAvailability[] @relation("DoctorAvailability")
+  timeOffs       DoctorTimeOff[]      @relation("DoctorTimeOff")
+
+  departments     DoctorDepartment[]
+  reviewsReceived Review[]           @relation("DoctorReviews")
+  inventoryLogs   InventoryLog[]
+  profile         DoctorProfile?
+}
+
+model DoctorProfile {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  specialization  String?
+  licenseNumber   String?
+  consultationFee Float?
+  bio             String?
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Patient {
@@ -81,6 +113,7 @@ model Patient {
   visits        PatientVisit[]
   labReports    LabReport[]
   prescriptions Prescription[]
+  reviews       Review[]
 
   @@unique([organizationId, patientCode])
 }
@@ -90,11 +123,15 @@ model HealthAppointment {
   organizationId  String
   patientId       String
   doctorId        String?
-  appointmentNo   String? // e.g. APT-001
+  appointmentNo   String?
   appointmentDate DateTime
   timeSlot        String
-  tokenNumber     Int        @default(autoincrement())
+  tokenNumber     Int        @default(0)
+  tokenDisplay    String     @default("")
+  publicToken     String     @unique @default(cuid())
+  qrCode          String?
   status          ApptStatus @default(SCHEDULED)
+  reason          String?
   fee             Float?
   isPaid          Boolean    @default(false)
   createdAt       DateTime   @default(now())
@@ -104,6 +141,7 @@ model HealthAppointment {
   doctor       User?         @relation("DoctorAppointments", fields: [doctorId], references: [id])
   visit        PatientVisit?
   billing      Billing?
+  review       Review?
 }
 
 model PatientVisit {
@@ -114,7 +152,6 @@ model PatientVisit {
   appointmentId  String   @unique
   visitDate      DateTime @default(now())
 
-  // Vitals
   vitalsBP     String?
   vitalsPulse  Int?
   vitalsTemp   Float?
@@ -139,7 +176,7 @@ model Prescription {
   visitId        String?
   doctorId       String?
 
-  medicines    Json // Detailed JSON struct containing medicines, dosages, etc.
+  medicines    Json
   diet         String?
   instructions String?
   validUntil   DateTime?
@@ -166,20 +203,12 @@ model LabReport {
   patient      Patient      @relation(fields: [patientId], references: [id])
 }
 
-// ----------------------------------------------------
-// KEEPING SUPPORTING ENUMS AND OTHER EXISTING MODELS
-// ----------------------------------------------------
-
 enum Role {
-  OWNER
-  ADMIN
-  MANAGER
-  ACCOUNTANT
+  SUPERADMIN
   DOCTOR
   RECEPTIONIST
   PHARMACIST
-  STAFF
-  VIEWER
+  ADMIN
 }
 
 enum ApptStatus {
@@ -209,25 +238,26 @@ model Medicine {
   expiryDate       DateTime
   reorderThreshold Int      @default(50)
 
-  organization Organization @relation(fields: [organizationId], references: [id])
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  logs         InventoryLog[]
 }
 
 model Billing {
-  id              String    @id @default(uuid())
-  organizationId  String
-  invoiceNo       String
-  appointmentId   String    @unique
-  consultationFee Float     @default(0)
-  medicineCharges Float     @default(0)
-  totalAmount     Float
-  discount        Float     @default(0)
-  paymentStatus   PayStatus @default(UNPAID)
-  paymentMethod   String?
+  id                String    @id @default(uuid())
+  organizationId    String
+  invoiceNo         String
+  appointmentId     String    @unique
+  consultationFee   Float     @default(0)
+  medicineCharges   Float     @default(0)
+  totalAmount       Float
+  discount          Float     @default(0)
+  paymentStatus     PayStatus @default(UNPAID)
+  paymentMethod     String?
   razorpayOrderId   String?
   razorpayPaymentId String?
   razorpaySignature String?
   paidAt            DateTime?
-  createdAt       DateTime  @default(now())
+  createdAt         DateTime  @default(now())
 
   organization Organization      @relation(fields: [organizationId], references: [id])
   appointment  HealthAppointment @relation(fields: [appointmentId], references: [id])
@@ -268,46 +298,46 @@ model RolePermission {
 }
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  userId      String?
-  orgId       String?
-  action      String
-  resource    String
-  resourceId  String?
-  before      Json?
-  after       Json?
-  ip          String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String?
+  orgId      String?
+  action     String
+  resource   String
+  resourceId String?
+  before     Json?
+  after      Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
 }
 
 model NotificationLog {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   orgId     String
-  channel   String   // email | sms | whatsapp
+  channel   String
   to        String
   template  String
   payload   Json
-  status    String   @default("PENDING") // PENDING | SENT | FAILED
+  status    String    @default("PENDING")
   sentAt    DateTime?
   error     String?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 }
 
 model DoctorAvailability {
   id           String   @id @default(uuid())
   doctorId     String
-  dayOfWeek    Int      // 0=Sun, 1=Mon, ..., 6=Sat
-  startTime    String   // "09:00"
-  endTime      String   // "17:00"
-  slotDuration Int      @default(15) // minutes
+  dayOfWeek    Int
+  startTime    String
+  endTime      String
+  slotDuration Int      @default(15)
   isActive     Boolean  @default(true)
-  orgId        String
+  orgId        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  doctor User         @relation("DoctorAvailability", fields: [doctorId], references: [id])
-  org    Organization @relation(fields: [orgId], references: [id])
+  doctor User          @relation("DoctorAvailability", fields: [doctorId], references: [id])
+  org    Organization? @relation(fields: [orgId], references: [id])
 
   @@unique([doctorId, dayOfWeek])
 }
@@ -315,7 +345,7 @@ model DoctorAvailability {
 model DoctorTimeOff {
   id        String   @id @default(uuid())
   doctorId  String
-  date      DateTime // specific date off
+  date      DateTime
   reason    String?
   orgId     String
   createdAt DateTime @default(now())
@@ -324,4 +354,84 @@ model DoctorTimeOff {
   org    Organization @relation(fields: [orgId], references: [id])
 
   @@unique([doctorId, date])
+}
+
+model Department {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  slug           String
+  description    String?
+  icon           String?
+  isActive       Boolean  @default(true)
+  order          Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  doctors      DoctorDepartment[]
+  conditions   Condition[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+}
+
+model DoctorDepartment {
+  doctorId     String
+  departmentId String
+  doctor       User       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@id([doctorId, departmentId])
+}
+
+model Condition {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String
+  departmentId String
+  icon         String?
+  keywords     String[]
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@unique([departmentId, slug])
+}
+
+model Review {
+  id             String   @id @default(cuid())
+  organizationId String
+  patientId      String
+  doctorId       String
+  appointmentId  String   @unique
+  rating         Int
+  comment        String?
+  isPublic       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  patient      Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor       User              @relation("DoctorReviews", fields: [doctorId], references: [id])
+  appointment  HealthAppointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId, isPublic])
+  @@index([organizationId])
+}
+
+model InventoryLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  itemId         String
+  action         String
+  quantity       Int
+  reference      String?
+  userId         String
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  item         Medicine     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@index([organizationId, itemId])
+  @@index([createdAt])
 }
