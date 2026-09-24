@@ -23,11 +23,34 @@ export async function GET() {
       where: { id: patientId },
       include: {
         appointments: {
-          include: { doctor: true, visit: true },
+          include: { 
+            doctor: {
+              select: {
+                id: true,
+                name: true,
+                specialization: true,
+              }
+            }, 
+            visit: true,
+            billing: true,
+            organization: {
+              select: {
+                id: true,
+                name: true,
+                address: true,
+                city: true,
+              }
+            }
+          },
           orderBy: { appointmentDate: "desc" },
           take: 20,
         },
         prescriptions: {
+          include: {
+            doctor: {
+              select: { id: true, name: true, specialization: true }
+            }
+          },
           orderBy: { createdAt: "desc" },
           take: 10,
         },
@@ -42,10 +65,19 @@ export async function GET() {
       return NextResponse.json({ error: "Patient not found" }, { status: 404 });
     }
 
-    // Remove sensitive data
+    // Extract bills from appointments
+    const bills = (patient.appointments || [])
+      .filter((a: any) => a.billing)
+      .map((a: any) => a.billing);
+
+    // Remove sensitive hash
     const { passwordHash, ...safe } = patient as any;
-    return NextResponse.json(safe);
+    return NextResponse.json({
+      ...safe,
+      bills,
+    });
   } catch (error) {
+    console.error("Portal ME API error:", error);
     return NextResponse.json({ error: "Session expired" }, { status: 401 });
   }
 }
