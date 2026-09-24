@@ -10,165 +10,108 @@ import {
   Package,
   LineChart,
   ClipboardList,
-  User,
   Settings,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Stethoscope,
-  ShieldCheck,
+  HeartPulse,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { useAuth } from "@/features/auth/useAuth"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const NAV_GROUPS = [
   {
     label: "MAIN",
     items: [
-      { href: "/", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["DOCTOR", "RECEPTIONIST", "PHARMACIST", "ADMIN"] },
     ],
   },
   {
     label: "MANAGE",
     items: [
-      { href: "/patients", label: "Patients", icon: UserRound },
-      { href: "/staff", label: "Staff", icon: Users },
-      { href: "/admin/roles", label: "Roles & Permissions", icon: ShieldCheck },
-      { href: "/inventory", label: "Inventory", icon: Package },
-    ],
-  },
-  {
-    label: "REPORTS",
-    items: [
-      { href: "/analytics", label: "Analytics", icon: LineChart },
-      { href: "/audit", label: "Audit", icon: ClipboardList },
-    ],
-  },
-  {
-    label: "SETTINGS",
-    items: [
-      { href: "/profile", label: "Profile", icon: User },
-      { href: "/settings", label: "Clinic Settings", icon: Settings },
+      { href: "/patients", label: "Patient Queue", icon: UserRound, roles: ["DOCTOR", "RECEPTIONIST", "ADMIN"] },
+      { href: "/appointments", label: "Appointments", icon: ClipboardList, roles: ["DOCTOR", "RECEPTIONIST", "ADMIN"] },
+      { href: "/records", label: "Medical Records", icon: LineChart, roles: ["DOCTOR", "RECEPTIONIST", "ADMIN"] },
+      { href: "/pharmacy", label: "Pharmacy", icon: Package, roles: ["PHARMACIST", "ADMIN"] },
+      { href: "/admin", label: "Administration", icon: Settings, roles: ["ADMIN"] },
     ],
   },
 ]
 
 export function Sidebar({ isMobile }: { isMobile?: boolean }) {
-  const [collapsed, setCollapsed] = useState(false)
   const pathname = usePathname()
-  const { user, logout } = useAuth()
-
-  useEffect(() => {
-    if (isMobile) return;
-    const saved = localStorage.getItem("sidebar-collapsed")
-    if (saved) {
-      setCollapsed(JSON.parse(saved))
-    }
-  }, [isMobile])
-
-  const toggleCollapse = () => {
-    if (isMobile) return;
-    const next = !collapsed
-    setCollapsed(next)
-    localStorage.setItem("sidebar-collapsed", JSON.stringify(next))
-  }
-
-  const isCollapsed = isMobile ? false : collapsed;
+  const { user } = useAuth()
+  
+  const initials = user?.name?.slice(0, 2).toUpperCase() || "U"
+  const roleDisplay = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase() : "Role"
 
   return (
     <aside
       className={cn(
-        "flex h-full flex-col border-r bg-white dark:bg-slate-950 transition-all duration-300 dark:bg-slate-950",
-        isCollapsed ? "w-16" : "w-[260px]",
-        isMobile && "w-full"
+        "flex h-full flex-col bg-surface-low z-50 transition-all duration-300",
+        isMobile ? "w-full" : "fixed left-0 top-0 w-72 pt-8 pb-6 hidden md:flex"
       )}
     >
-      <div className="flex h-16 items-center justify-between border-b px-4">
-        {!isCollapsed && (
-          <div className="flex items-center space-x-2 overflow-hidden">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Stethoscope className="h-5 w-5" />
-            </div>
-            <span className="truncate font-semibold tracking-tight">Clinic Enterprise</span>
-          </div>
-        )}
-        {isCollapsed && (
-          <div className="mx-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Stethoscope className="h-5 w-5" />
-          </div>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn("h-8 w-8 shrink-0", isCollapsed && "absolute -right-4 top-4 z-10 rounded-full border bg-background")}
-          onClick={toggleCollapse}
-        >
-          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </Button>
+      <div className={cn("px-6 mb-6 flex items-center gap-2", isMobile && "pt-6")}>
+        <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center shadow-sm">
+          <HeartPulse className="h-6 w-6 text-white" />
+        </div>
+        <div>
+          <span className="block font-semibold text-on-surface">ClinicOS</span>
+          <span className="block text-xs text-on-surface-variant">Multi-Tenant SaaS</span>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-4">
-        <div className="space-y-6">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.label} className="px-3">
-              {!isCollapsed && (
-                <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  {group.label}
-                </p>
-              )}
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
+        {NAV_GROUPS.map((group) => {
+          // Filter items based on user role (basic implementation based on provided logic)
+          const visibleItems = group.items.filter(item => 
+            !user?.role || item.roles.includes(user.role.toUpperCase())
+          )
+          
+          if (visibleItems.length === 0) return null;
+
+          return (
+            <div key={group.label} className="mb-6">
+              <p className="text-xs uppercase tracking-wider text-on-surface-variant px-2 mb-2">
+                {group.label}
+              </p>
               <div className="space-y-1">
-                {group.items.map((item) => {
-                  const isActive = pathname === item.href
+                {visibleItems.map((item) => {
+                  // For the sake of the redesign, treat /doctor as active for dashboard if we are on /doctor
+                  const isActive = pathname === item.href || (item.href === "/" && pathname.startsWith("/doctor"))
                   const Icon = item.icon
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
-                      title={isCollapsed ? item.label : undefined}
                       className={cn(
-                        "flex items-center rounded-md px-2 py-2 text-sm font-medium transition-colors hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800",
+                        "flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
                         isActive
-                          ? "border-l-2 border-primary-600 bg-primary-50 text-primary-700 hover:bg-primary-50 dark:bg-primary-900/20 dark:text-primary-400"
-                          : "text-slate-700 dark:text-slate-300 dark:text-slate-300",
-                        isCollapsed && "justify-center border-l-0 px-0"
+                          ? "bg-primary-500 text-white font-semibold shadow-sm"
+                          : "text-on-surface-variant hover:bg-surface-high hover:text-on-surface"
                       )}
                     >
-                      <Icon className={cn("h-[18px] w-[18px]", !isCollapsed && "mr-3")} />
-                      {!isCollapsed && <span className="truncate">{item.label}</span>}
+                      <Icon className="h-5 w-5 mr-3" />
+                      <span className="truncate">{item.label}</span>
                     </Link>
                   )
                 })}
               </div>
             </div>
-          ))}
-        </div>
-      </div>
+          )
+        })}
+      </nav>
 
-      <div className="border-t p-3">
-        <div
-          className={cn(
-            "flex items-center rounded-lg p-2 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800",
-            isCollapsed ? "justify-center" : "justify-between"
-          )}
-        >
-          <div className="flex items-center space-x-3 overflow-hidden">
-            <Avatar className="h-9 w-9">
-              <AvatarImage src={user?.avatar} />
-              <AvatarFallback>{user?.name?.slice(0, 2).toUpperCase() || 'U'}</AvatarFallback>
-            </Avatar>
-            {!isCollapsed && (
-              <div className="overflow-hidden">
-                <p className="truncate text-sm font-medium">{user?.name || 'User'}</p>
-                <p className="truncate text-xs text-muted-foreground capitalize">{user?.role?.toLowerCase() || 'Role'}</p>
-              </div>
-            )}
+      <div className="px-6 pt-4 border-t border-outline-variant/20 mt-auto">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-sm">
+            {initials}
           </div>
-          {!isCollapsed && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => logout()}>
-              <LogOut className="h-4 w-4" />
-            </Button>
-          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold truncate text-on-surface">
+              {user?.name || "User"}
+            </p>
+            <p className="text-xs text-on-surface-variant truncate">
+              {roleDisplay}
+            </p>
+          </div>
         </div>
       </div>
     </aside>
