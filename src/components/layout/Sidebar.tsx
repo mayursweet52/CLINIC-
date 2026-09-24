@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Stethoscope,
+  ShieldCheck,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/features/auth/useAuth"
@@ -33,6 +34,7 @@ const NAV_GROUPS = [
     items: [
       { href: "/patients", label: "Patients", icon: UserRound },
       { href: "/staff", label: "Staff", icon: Users },
+      { href: "/admin/roles", label: "Roles & Permissions", icon: ShieldCheck },
       { href: "/inventory", label: "Inventory", icon: Package },
     ],
   },
