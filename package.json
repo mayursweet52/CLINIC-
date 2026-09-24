@@ -11,7 +11,8 @@
     "prisma:seed": "node prisma/seed.mjs",
     "start": "next start",
     "lint": "eslint",
-    "worker:notifications": "node --import tsx src/workers/notification.worker.ts"
+    "worker:notifications": "node --import tsx src/workers/notification.worker.ts",
+    "worker:feedback": "node --import tsx src/workers/feedback.worker.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
