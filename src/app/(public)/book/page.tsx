@@ -1,320 +1,415 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { format, addDays } from "date-fns"
-import { useDepartments, useDoctors, useSlots, useBookAppointment } from "@/features/booking/hooks"
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, Loader2, CheckCircle2, CalendarPlus, UserPlus } from "lucide-react"
-import { Stethoscope, Heart, Brain, Baby, Bone, Eye } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { StepProgress } from "@/features/booking/components/StepProgress";
+import { HeartPulse, Search, MapPin, Star, User, Calendar, Clock, ChevronRight, ArrowLeft, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import confetti from "canvas-confetti";
+import { QRCodeSVG } from "qrcode.react";
 
-const STEPS = ["Department", "Doctor", "Time", "Details"]
+// Minimal mockup of types to avoid TS errors
+type Clinic = { id: string; name: string; slug: string; city: string; rating: number; coverImageUrl: string | null; logoUrl: string | null; };
+type Dept = { id: string; name: string; slug: string; icon: string | null; conditions: Condition[] };
+type Condition = { id: string; name: string; slug: string; icon: string | null };
+type Doctor = { id: string; name: string; specialization: string; consultationFee: number; averageRating: number; yearsOfExperience: number };
+type Slot = { time: string; status: 'AVAILABLE' | 'BOOKED' };
 
-const iconMap: Record<string, any> = {
-  heart: Heart,
-  brain: Brain,
-  baby: Baby,
-  stethoscope: Stethoscope,
-  bone: Bone,
-  eye: Eye,
-}
+function BookingWizard() {
+  const searchParams = useSearchParams();
+  const initClinic = searchParams.get("clinic");
+  const initDoctor = searchParams.get("doctor");
 
-export default function BookPage() {
-  const router = useRouter()
-  const [step, setStep] = useState(1)
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   
-  // Selections
-  const [departmentId, setDepartmentId] = useState<string>("")
-  const [doctorId, setDoctorId] = useState<string>("")
-  const [date, setDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
-  const [timeSlot, setTimeSlot] = useState<string>("")
+  // Data State
+  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [departments, setDepartments] = useState<Dept[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [slots, setSlots] = useState<Slot[]>([]);
+  
+  // Selection State
+  const [clinicSlug, setClinicSlug] = useState(initClinic || "");
+  const [clinicId, setClinicId] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
+  const [conditionId, setConditionId] = useState("");
+  const [doctorId, setDoctorId] = useState(initDoctor || "");
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [selectedTime, setSelectedTime] = useState("");
+  const [patient, setPatient] = useState({ name: "", phone: "", email: "", reason: "", symptoms: "" });
+  
+  // Success state
+  const [successData, setSuccessData] = useState<any>(null);
 
-  // Form
-  const [patientName, setPatientName] = useState("")
-  const [patientPhone, setPatientPhone] = useState("")
-  const [patientEmail, setPatientEmail] = useState("")
-  const [reason, setReason] = useState("")
+  // Step 1 Data
+  useEffect(() => {
+    if (step === 1) fetchClinics();
+  }, [step]);
 
-  // Queries
-  const { data: departments, isLoading: isLoadingDepts } = useDepartments()
-  const { data: doctors, isLoading: isLoadingDoctors } = useDoctors(departmentId)
-  const { data: slots, isLoading: isLoadingSlots } = useSlots(doctorId, date)
-  const bookMutation = useBookAppointment()
+  const fetchClinics = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/public/clinics");
+      if (res.ok) {
+        const data = await res.json();
+        setClinics(data.clinics);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const dates = Array.from({ length: 7 }).map((_, i) => addDays(new Date(), i))
+  // Skip to correct step based on init
+  useEffect(() => {
+    if (initClinic && step === 1) {
+      setClinicSlug(initClinic);
+      setStep(2);
+    }
+    // If doctor is preset, we assume clinic is too (or skip for demo)
+  }, [initClinic]);
 
-  const handleNext = () => setStep(s => Math.min(STEPS.length + 1, s + 1))
-  const handleBack = () => setStep(s => Math.max(1, s - 1))
+  // Step 2 Data
+  useEffect(() => {
+    if (step === 2 && clinicSlug) {
+      fetch(`/api/public/clinics/${clinicSlug}/departments`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.departments) setDepartments(data.departments);
+        });
+    }
+  }, [step, clinicSlug]);
 
-  const handleDepartmentSelect = (id: string) => {
-    setDepartmentId(id)
-    setDoctorId("")
-    setTimeSlot("")
-    handleNext()
-  }
+  // Step 3 Data
+  useEffect(() => {
+    if (step === 3 && clinicSlug) {
+      fetch(`/api/public/clinics/${clinicSlug}/doctors${departmentId ? `?departmentId=${departmentId}` : ''}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.doctors) setDoctors(data.doctors);
+        });
+    }
+  }, [step, clinicSlug, departmentId]);
 
-  const handleDoctorSelect = (id: string) => {
-    setDoctorId(id)
-    setTimeSlot("")
-    handleNext()
-  }
+  // Step 4 Data
+  useEffect(() => {
+    if (step === 4 && doctorId && selectedDate) {
+      // Mock slots for now until we update the slot API
+      setSlots([
+        { time: "09:00", status: "AVAILABLE" },
+        { time: "09:30", status: "BOOKED" },
+        { time: "10:00", status: "AVAILABLE" },
+        { time: "10:30", status: "AVAILABLE" },
+        { time: "11:00", status: "AVAILABLE" }
+      ]);
+    }
+  }, [step, doctorId, selectedDate]);
 
-  const handleSlotSelect = (time: string) => {
-    setTimeSlot(time)
-    handleNext()
-  }
+  const handleSlotClick = async (time: string) => {
+    setSelectedTime(time);
+    // Real implementation would lock via Redis here
+    setStep(5);
+  };
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    await bookMutation.mutateAsync({
-      departmentId, doctorId, date, timeSlot,
-      patientName, patientPhone, reason
-    })
-    setStep(5)
-  }
+  const handleBook = async () => {
+    if (!patient.name || !patient.phone || !patient.reason) {
+      setError("Please fill all required fields");
+      return;
+    }
+    
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/public/book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clinicId: clinics.find(c => c.slug === clinicSlug)?.id || clinicSlug,
+          departmentId: departmentId || undefined,
+          conditionId: conditionId || undefined,
+          doctorId,
+          appointmentDate: selectedDate + "T00:00:00Z",
+          timeSlot: selectedTime,
+          patientName: patient.name,
+          patientPhone: "+91" + patient.phone.replace(/^\+91/, ""),
+          patientEmail: patient.email,
+          reason: patient.reason,
+          symptoms: patient.symptoms
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Booking failed");
+      
+      setSuccessData(data);
+      setStep(6);
+      setTimeout(() => {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#0d9488', '#14b8a6', '#0f766e']
+        });
+      }, 300);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-surface py-12 px-4 selection:bg-primary-100 selection:text-primary-900 transition-colors">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-surface flex flex-col">
+      {/* Mini Nav */}
+      <header className="h-16 bg-surface-lowest/95 backdrop-blur border-b border-outline-variant sticky top-0 z-40">
+        <div className="h-full max-w-7xl mx-auto px-4 flex items-center justify-between">
+          <a href="/" className="flex items-center gap-2">
+            <HeartPulse className="w-6 h-6 text-primary" />
+            <span className="font-bold">ClinicOS</span>
+          </a>
+        </div>
+      </header>
+
+      <main className="flex-1 max-w-4xl w-full mx-auto p-4 py-8">
+        {step < 6 && <StepProgress currentStep={step} onStepClick={(s) => setStep(s)} />}
         
-        {/* STEP PROGRESS INDICATOR */}
-        {step < 5 && (
-          <div className="mb-12 flex items-center justify-center relative">
-            <div className="absolute left-1/2 top-4 -translate-x-1/2 w-3/4 h-0.5 bg-outline-variant/30 -z-10" />
-            <div className="flex justify-between w-3/4">
-              {STEPS.map((s, idx) => {
-                const sIdx = idx + 1
-                const isCompleted = step > sIdx
-                const isActive = step === sIdx
-                return (
-                  <div key={s} className="flex flex-col items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-                      isCompleted ? 'bg-medical-green text-white' : isActive ? 'bg-primary-500 text-white' : 'bg-surface-high text-on-surface-variant'
-                    }`}>
-                      {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : sIdx}
-                    </div>
-                    <span className={`text-xs font-medium ${isActive ? 'text-primary-600' : 'text-on-surface-variant'}`}>
-                      {s}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
+        {error && (
+          <div className="mb-6 p-4 bg-error-container text-on-error-container rounded-lg text-sm font-medium">
+            {error}
           </div>
         )}
 
-        {/* STEP 1 - Department */}
+        {/* STEP 1 */}
         {step === 1 && (
-          <div className="animate-in slide-in-from-right-8 duration-500 text-center">
-            <h1 className="text-3xl font-semibold text-on-surface mb-2">Choose Department</h1>
-            <p className="text-on-surface-variant mb-8">Select the specialization you need</p>
-            
-            {isLoadingDepts ? (
-              <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary-500" /></div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-left">
-                {departments?.map(dept => {
-                  const Icon = (dept.icon && iconMap[dept.icon]) ? iconMap[dept.icon] : Stethoscope
-                  return (
-                    <div 
-                      key={dept.id}
-                      onClick={() => handleDepartmentSelect(dept.id)}
-                      className="bg-surface-lowest rounded-xl p-6 shadow-sm hover:shadow-md cursor-pointer border border-outline-variant/20 transition-all group"
-                    >
-                      <div className="w-12 h-12 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                        <Icon className="w-6 h-6" />
-                      </div>
-                      <h3 className="font-medium text-on-surface">{dept.name}</h3>
-                      <p className="text-xs text-on-surface-variant mt-1">12 Doctors</p>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h1 className="text-2xl font-bold mb-6">Select a Clinic</h1>
+            {loading ? <p>Loading...</p> : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {clinics.map(clinic => (
+                  <div 
+                    key={clinic.id} 
+                    className="border border-outline-variant rounded-xl p-4 cursor-pointer hover:border-primary transition-colors flex gap-4 bg-surface-lowest"
+                    onClick={() => { setClinicSlug(clinic.slug); setClinicId(clinic.id); setStep(2); }}
+                  >
+                    <div className="w-16 h-16 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center font-bold overflow-hidden">
+                      {clinic.logoUrl ? <img src={clinic.logoUrl} alt="" className="w-full h-full object-cover" /> : clinic.name[0]}
                     </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* STEP 2 - Doctor */}
-        {step === 2 && (
-          <div className="animate-in slide-in-from-right-8 duration-500">
-            <div className="flex items-center gap-4 mb-8">
-              <Button variant="ghost" size="icon" onClick={handleBack} className="text-on-surface-variant hover:bg-surface-low rounded-full">
-                <ChevronLeft className="w-6 h-6" />
-              </Button>
-              <h1 className="text-2xl font-semibold text-on-surface">Select Doctor</h1>
-            </div>
-
-            <div className="mb-6">
-              <input type="text" placeholder="Search doctors..." className="w-full bg-surface-lowest border border-outline-variant/30 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all text-on-surface" />
-            </div>
-
-            {isLoadingDoctors ? (
-              <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary-500" /></div>
-            ) : doctors?.length ? (
-              <div className="flex flex-col gap-3">
-                {doctors.map(doc => (
-                  <div key={doc.id} className="bg-surface-lowest border border-outline-variant/20 p-4 rounded-2xl flex items-center justify-between shadow-sm hover:border-primary-300 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-lg font-bold">
-                        {doc.name.replace('Dr. ', '').substring(0,2).toUpperCase()}
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-on-surface">{doc.name}</h4>
-                        <p className="text-sm text-on-surface-variant">{doc.specialty}</p>
-                        <p className="font-semibold text-primary-600 mt-0.5">₹{doc.consultationFee}</p>
-                      </div>
+                    <div>
+                      <h3 className="font-bold">{clinic.name}</h3>
+                      <p className="text-sm text-on-surface-variant flex items-center gap-1"><MapPin className="w-3 h-3"/> {clinic.city}</p>
+                      <p className="text-sm text-secondary flex items-center gap-1"><Star className="w-3 h-3 fill-current"/> {clinic.rating.toFixed(1)}</p>
                     </div>
-                    <Button onClick={() => handleDoctorSelect(doc.id)} className="bg-primary-100 text-primary-700 hover:bg-primary-200">
-                      Select
-                    </Button>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="text-center py-12 text-on-surface-variant bg-surface-low rounded-xl border border-outline-variant/20">
-                No doctors available for this department.
-              </div>
             )}
           </div>
         )}
 
-        {/* STEP 3 - Slot Selection */}
-        {step === 3 && (
-          <div className="animate-in slide-in-from-right-8 duration-500">
-            <div className="flex items-center gap-4 mb-8">
-              <Button variant="ghost" size="icon" onClick={handleBack} className="text-on-surface-variant hover:bg-surface-low rounded-full">
-                <ChevronLeft className="w-6 h-6" />
-              </Button>
-              <h1 className="text-2xl font-semibold text-on-surface">Select Time</h1>
+        {/* STEP 2 */}
+        {step === 2 && (
+          <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <Button variant="ghost" size="icon" onClick={() => setStep(1)}><ArrowLeft className="w-5 h-5"/></Button>
+              <h1 className="text-2xl font-bold">What are you looking for?</h1>
             </div>
+            
+            <div className="space-y-8">
+              {departments.map(dept => (
+                <div key={dept.id}>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    {dept.icon} {dept.name}
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {dept.conditions?.map(cond => (
+                      <button 
+                        key={cond.id}
+                        onClick={() => { setDepartmentId(dept.id); setConditionId(cond.id); setStep(3); }}
+                        className="p-3 rounded-lg border border-outline-variant bg-surface-lowest text-left hover:border-primary hover:bg-primary/5 transition-all text-sm font-medium flex items-center gap-2"
+                      >
+                        <span className="text-xl">{cond.icon || "🦠"}</span>
+                        {cond.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              
+              <Button 
+                variant="outline" 
+                className="w-full mt-4" 
+                onClick={() => { setDepartmentId(""); setConditionId(""); setStep(3); }}
+              >
+                Not sure / Browse all doctors
+              </Button>
+            </div>
+          </div>
+        )}
 
-            <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x">
-              {dates.map((d) => {
-                const isSelected = date === format(d, 'yyyy-MM-dd')
-                return (
+        {/* STEP 3 */}
+        {step === 3 && (
+          <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <Button variant="ghost" size="icon" onClick={() => setStep(2)}><ArrowLeft className="w-5 h-5"/></Button>
+              <h1 className="text-2xl font-bold">Select a Doctor</h1>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {doctors.map(doc => (
+                <div key={doc.id} className="border border-outline-variant rounded-xl p-5 bg-surface-lowest hover:border-primary transition-colors">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-lg">
+                      {doc.name[0]}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg">{doc.name}</h3>
+                      <p className="text-sm text-on-surface-variant font-medium">{doc.specialization}</p>
+                      <div className="text-xs text-on-surface-variant mt-1">{doc.yearsOfExperience} yrs exp • ₹{doc.consultationFee}</div>
+                    </div>
+                  </div>
+                  <Button 
+                    className="w-full mt-4" 
+                    onClick={() => { setDoctorId(doc.id); setStep(4); }}
+                  >
+                    Select
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4 */}
+        {step === 4 && (
+          <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <Button variant="ghost" size="icon" onClick={() => setStep(3)}><ArrowLeft className="w-5 h-5"/></Button>
+              <h1 className="text-2xl font-bold">Select Date & Time</h1>
+            </div>
+            
+            <div className="bg-surface-lowest rounded-xl border border-outline-variant p-6">
+              <label className="text-sm font-medium mb-2 block">Appointment Date</label>
+              <Input 
+                type="date" 
+                value={selectedDate} 
+                onChange={(e) => setSelectedDate(e.target.value)} 
+                min={new Date().toISOString().split("T")[0]}
+                className="mb-6"
+              />
+              
+              <label className="text-sm font-medium mb-2 block">Available Slots</label>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {slots.map(slot => (
                   <button
-                    key={d.toISOString()}
-                    onClick={() => { setDate(format(d, 'yyyy-MM-dd')); setTimeSlot("") }}
-                    className={`flex flex-col items-center p-3 rounded-xl min-w-[80px] snap-start transition-all border ${
-                      isSelected ? 'bg-primary-500 border-primary-500 text-white shadow-md' : 'bg-surface-lowest border-outline-variant/20 text-on-surface-variant hover:bg-surface-low'
+                    key={slot.time}
+                    disabled={slot.status === 'BOOKED'}
+                    onClick={() => handleSlotClick(slot.time)}
+                    className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                      slot.status === 'BOOKED' 
+                        ? 'bg-surface-high text-on-surface-variant cursor-not-allowed' 
+                        : 'bg-primary-container/30 text-on-surface hover:bg-primary-container text-primary'
                     }`}
                   >
-                    <span className="text-xs font-medium uppercase mb-1">{format(d, 'EEE')}</span>
-                    <span className="text-xl font-bold">{format(d, 'dd')}</span>
+                    {slot.time}
                   </button>
-                )
-              })}
-            </div>
-
-            <div className="mt-6">
-              <div className="flex items-center gap-4 mb-4 text-xs font-medium text-on-surface-variant">
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-surface-highest"></span> Available</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary-500"></span> Selected</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-error"></span> Booked</span>
+                ))}
               </div>
-              
-              {isLoadingSlots ? (
-                <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary-500" /></div>
-              ) : slots?.length ? (
-                <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                  {slots.map((s: any) => {
-                    const isSelected = timeSlot === s.time
-                    const isBooked = !s.available
-                    return (
-                      <button
-                        key={s.time}
-                        disabled={isBooked}
-                        onClick={() => handleSlotSelect(s.time)}
-                        className={`p-3 rounded-lg text-sm font-medium transition-all ${
-                          isSelected ? 'bg-primary-500 text-white shadow-md' : 
-                          isBooked ? 'bg-surface-high text-on-surface-variant cursor-not-allowed opacity-50' : 
-                          'bg-surface-lowest text-on-surface hover:bg-primary-100 hover:text-primary-700 border border-outline-variant/20'
-                        }`}
-                      >
-                        {s.time}
-                      </button>
-                    )
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-12 text-on-surface-variant bg-surface-low rounded-xl border border-outline-variant/20">
-                  No slots available for this date.
-                </div>
-              )}
             </div>
           </div>
         )}
 
-        {/* STEP 4 - Patient Details */}
-        {step === 4 && (
-          <div className="animate-in slide-in-from-right-8 duration-500 flex justify-center">
-            <div className="w-full max-w-md bg-surface-lowest rounded-2xl p-8 shadow-sm border border-outline-variant/20">
-              <div className="flex items-center gap-4 mb-6 -ml-2">
-                <Button variant="ghost" size="icon" onClick={handleBack} className="text-on-surface-variant hover:bg-surface-low rounded-full">
-                  <ChevronLeft className="w-6 h-6" />
-                </Button>
-                <h1 className="text-2xl font-semibold text-on-surface">Patient Details</h1>
-              </div>
-
-              <form onSubmit={onSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-on-surface mb-1.5">Full Name</label>
-                  <input required value={patientName} onChange={e=>setPatientName(e.target.value)} type="text" className="w-full rounded-lg bg-surface-low border border-outline-variant/30 px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="John Doe" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-on-surface mb-1.5">Phone Number</label>
-                  <input required value={patientPhone} onChange={e=>setPatientPhone(e.target.value)} type="tel" className="w-full rounded-lg bg-surface-low border border-outline-variant/30 px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="+91 9876543210" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-on-surface mb-1.5">Email (Optional)</label>
-                  <input value={patientEmail} onChange={e=>setPatientEmail(e.target.value)} type="email" className="w-full rounded-lg bg-surface-low border border-outline-variant/30 px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="john@example.com" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-on-surface mb-1.5">Reason for Visit</label>
-                  <textarea required value={reason} onChange={e=>setReason(e.target.value)} rows={3} className="w-full rounded-lg bg-surface-low border border-outline-variant/30 px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Briefly describe your symptoms..." />
-                </div>
-
-                <Button type="submit" disabled={bookMutation.isPending} className="w-full h-11 bg-primary-500 hover:bg-primary-600 text-white rounded-lg mt-2 font-medium">
-                  {bookMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "Confirm Booking"}
-                </Button>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 5 - Success */}
+        {/* STEP 5 */}
         {step === 5 && (
-          <div className="animate-in zoom-in-95 duration-500 flex justify-center py-12">
-            <div className="w-full max-w-sm text-center">
-              <div className="w-24 h-24 bg-medical-green/10 text-medical-green rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-12 h-12" />
+          <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <Button variant="ghost" size="icon" onClick={() => setStep(4)}><ArrowLeft className="w-5 h-5"/></Button>
+              <h1 className="text-2xl font-bold">Patient Details</h1>
+            </div>
+            
+            <div className="bg-surface-lowest rounded-xl border border-outline-variant p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Full Name *</label>
+                <Input value={patient.name} onChange={e => setPatient({...patient, name: e.target.value})} placeholder="Rahul Kumar" />
               </div>
-              <h1 className="text-3xl font-bold text-on-surface mb-2">Booking Confirmed!</h1>
-              <p className="text-on-surface-variant mb-6">Your appointment has been scheduled successfully.</p>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Phone Number *</label>
+                <Input value={patient.phone} onChange={e => setPatient({...patient, phone: e.target.value})} placeholder="9876543210" type="tel" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Reason for visit *</label>
+                <Input value={patient.reason} onChange={e => setPatient({...patient, reason: e.target.value})} placeholder="e.g. Follow up, Fever, Knee pain" />
+              </div>
               
-              <div className="bg-surface-lowest border border-outline-variant/20 rounded-2xl p-6 mb-8 shadow-sm">
-                <p className="text-sm font-medium text-on-surface-variant uppercase tracking-wider mb-2">Token Number</p>
-                <div className="text-5xl font-mono font-bold text-primary-600 mb-6">#{bookMutation.data?.tokenNumber || '14'}</div>
-                
-                <div className="w-40 h-40 mx-auto border-4 border-surface-low rounded-xl bg-surface-lowest flex items-center justify-center p-2 mb-2">
-                  <div className="w-full h-full bg-[url('https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=example')] bg-cover opacity-50" />
-                </div>
-                <p className="text-xs text-on-surface-variant">Show this at reception</p>
-              </div>
-
-              <div className="space-y-3">
-                <Button className="w-full h-11 bg-primary-500 hover:bg-primary-600">
-                  <CalendarPlus className="w-4 h-4 mr-2" /> Add to Calendar
-                </Button>
-                <Button variant="outline" className="w-full h-11 border-outline-variant/30 text-on-surface" onClick={() => router.push('/portal/register')}>
-                  <UserPlus className="w-4 h-4 mr-2" /> Register for Portal
-                </Button>
-              </div>
+              <Button 
+                className="w-full mt-6" 
+                size="lg" 
+                onClick={handleBook} 
+                disabled={loading}
+              >
+                {loading ? "Confirming..." : "Confirm Booking"}
+              </Button>
             </div>
           </div>
         )}
 
-      </div>
+        {/* STEP 6 (Success) */}
+        {step === 6 && successData && (
+          <div className="animate-in zoom-in duration-500 max-w-lg mx-auto text-center mt-10">
+            <div className="w-20 h-20 rounded-full bg-secondary text-on-secondary mx-auto flex items-center justify-center mb-6 shadow-lg animate-bounce">
+              <Check className="w-10 h-10" />
+            </div>
+            <h1 className="text-3xl font-bold text-on-surface mb-2">Booking Confirmed!</h1>
+            <p className="text-on-surface-variant mb-8">Your appointment has been scheduled successfully.</p>
+            
+            <div className="bg-surface-lowest rounded-2xl border border-outline-variant p-6 shadow-sm mb-6 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-2 bg-secondary" />
+              <p className="text-sm text-on-surface-variant font-medium mt-2">TOKEN NUMBER</p>
+              <p className="text-4xl font-mono font-bold text-primary my-2">{successData.appointment?.tokenDisplay}</p>
+              
+              <div className="flex justify-center my-6">
+                <div className="bg-white p-3 rounded-xl shadow-sm border border-outline-variant inline-block">
+                  <QRCodeSVG value={successData.trackingUrl} size={120} />
+                </div>
+              </div>
+              
+              <div className="border-t border-outline-variant/50 pt-4 mt-4 text-left space-y-3">
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-5 h-5 text-on-surface-variant" />
+                  <div>
+                    <p className="text-sm font-medium">{new Date(successData.appointment?.appointmentDate).toLocaleDateString()} at {successData.appointment?.timeSlot}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <User className="w-5 h-5 text-on-surface-variant" />
+                  <div>
+                    <p className="text-sm font-medium">{patient.name}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <Button className="w-full" size="lg" asChild>
+              <a href={successData.trackingUrl} target="_blank" rel="noreferrer">
+                View Live Tracking
+              </a>
+            </Button>
+            <Button variant="outline" className="w-full mt-3" asChild>
+              <a href="/hospitals">Back to Home</a>
+            </Button>
+          </div>
+        )}
+
+      </main>
     </div>
-  )
+  );
+}
+
+export default function BookPage() {
+  return (
+    <Suspense fallback={<div>Loading wizard...</div>}>
+      <BookingWizard />
+    </Suspense>
+  );
 }

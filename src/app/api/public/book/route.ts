@@ -1,189 +1,156 @@
-import logger from '@/lib/logger';
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ApptStatus } from "@prisma/client";
-import { DEMO_HOSPITALS, DEMO_DOCTORS_BY_ORG } from "../hospitals/route";
-import { eventBus } from "@/lib/events";
-import { publishEvent } from "@/lib/events";
-import { notificationService } from "@/lib/notifications";
-import { auditService } from "@/lib/audit";
+import { z } from "zod";
+import { nanoid } from "nanoid";
 
-export async function POST(request: Request) {
+const BookSchema = z.object({
+  clinicId: z.string(),
+  departmentId: z.string().optional(),
+  conditionId: z.string().optional(),
+  doctorId: z.string(),
+  appointmentDate: z.string(), // ISO String
+  timeSlot: z.string(), // "10:00"
+  patientName: z.string().min(2),
+  patientPhone: z.string().min(10),
+  patientEmail: z.string().email().optional().or(z.literal('')),
+  reason: z.string().min(2),
+  symptoms: z.string().optional(),
+});
+
+export async function POST(req: Request) {
   try {
-    const body = await request.json();
-    let orgId = body.orgId;
-    const { doctorId, patientName, patientPhone, date, timeSlot } = body;
+    const body = await req.json();
+    const parsed = BookSchema.safeParse(body);
 
-    if (!doctorId || !patientName || !patientPhone) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid input", details: parsed.error.format() }, { status: 400 });
     }
 
-    if (!orgId) {
-      const org = await prisma.organization.findFirst();
-      if (!org) return NextResponse.json({ error: "No organization found" }, { status: 400 });
-      orgId = org.id;
-    }
+    const {
+      clinicId, doctorId, appointmentDate, timeSlot,
+      patientName, patientPhone, patientEmail, reason
+    } = parsed.data;
 
-    try {
-      // 1. Try DB creation
-      let patient = await prisma.patient.findFirst({
-        where: { name: patientName, phone: patientPhone, organizationId: orgId }
-      });
+    // 1. Verify Clinic
+    const clinic = await prisma.organization.findUnique({
+      where: { id: clinicId, isActive: true }
+    });
+    if (!clinic) return NextResponse.json({ error: "Clinic not found or inactive" }, { status: 404 });
 
-      if (!patient) {
-        const count = await prisma.patient.count({ where: { organizationId: orgId } });
-        patient = await prisma.patient.create({
-          data: {
-            organizationId: orgId,
-            patientCode: `PAT-${1000 + count + 1}`,
-            name: patientName,
-            phone: patientPhone,
-            dob: new Date("1990-01-01"),
-            gender: "Not Specified"
-          }
-        });
+    // 2. Verify Doctor
+    const doctor = await prisma.user.findFirst({
+      where: { id: doctorId, organizationId: clinicId, role: "DOCTOR", isActive: true },
+      include: { profile: true }
+    });
+    if (!doctor) return NextResponse.json({ error: "Doctor not found or unavailable" }, { status: 404 });
+
+    const apptDate = new Date(appointmentDate);
+    
+    // 3. Verify Slot (Mocking Redis lock via DB transaction check)
+    // Query existing appointments for (doctorId, date, timeSlot) with status NOT IN (CANCELLED, NO_SHOW)
+    const existing = await prisma.healthAppointment.findFirst({
+      where: {
+        doctorId,
+        appointmentDate: apptDate,
+        timeSlot,
+        status: { notIn: ["CANCELLED"] }
       }
+    });
 
-      // 2. Create the appointment in DB
-      const appointmentDate = date ? new Date(date) : new Date();
-      const appointment = await prisma.healthAppointment.create({
-        data: {
-          organizationId: orgId,
-          patientId: patient.id,
-          doctorId: doctorId,
-          appointmentDate,
-          timeSlot: timeSlot || "10:00 AM",
-          status: ApptStatus.SCHEDULED
-        },
-        include: {
-          organization: true,
-          doctor: true
-        }
-      });
-
-      const bookingResponse = {
-        message: "Appointment booked successfully",
-        tokenNumber: appointment.tokenNumber,
-        patientCode: patient.patientCode,
-        hospitalName: appointment.organization?.name || "City Care Super Multi-Speciality Hospital",
-        doctorName: appointment.doctor?.name || "Dr. Rajesh Sharma"
-      };
-
-      // Broadcast real-time appointment event (Redis channel)
-      await publishEvent(`org:${orgId}:doctor:${doctorId}`, {
-        type: "appointment.created",
-        timestamp: new Date().toISOString(),
-        payload: {
-          id: appointment.id,
-          orgId,
-          appointmentId: appointment.id,
-          tokenNumber: bookingResponse.tokenNumber,
-          patientName,
-          timeSlot: timeSlot || "10:00 AM",
-        }
-      });
-      await publishEvent(`org:${orgId}:appointments`, {
-        type: "appointment.created",
-        timestamp: new Date().toISOString(),
-        payload: {
-          id: appointment.id,
-          orgId,
-          appointmentId: appointment.id,
-          tokenNumber: bookingResponse.tokenNumber,
-          patientName,
-          doctorName: bookingResponse.doctorName,
-        }
-      });
-
-      // In-memory EventBus broadcast (for non-Redis fallback)
-      eventBus.broadcast('appointment.created', {
-        appointmentId: appointment.id,
-        tokenNumber: bookingResponse.tokenNumber,
-        patientName,
-        doctorId,
-        timeSlot: timeSlot || "10:00 AM",
-        hospitalName: bookingResponse.hospitalName
-      }, orgId, doctorId);
-
-      // WhatsApp/SMS notification simulation
-      notificationService.send({
-        recipientPhone: patientPhone,
-        patientName,
-        template: 'APPOINTMENT_CONFIRM',
-        data: {
-          tokenNumber: bookingResponse.tokenNumber,
-          hospitalName: bookingResponse.hospitalName,
-          doctorName: bookingResponse.doctorName,
-          date,
-          timeSlot
-        }
-      });
-
-      // Audit log
-      auditService.log({
-        actor: patientPhone,
-        role: 'PATIENT',
-        action: 'APPOINTMENT_BOOKED_ONLINE',
-        resource: 'HealthAppointment',
-        resourceId: appointment.id,
-        details: { tokenNumber: bookingResponse.tokenNumber, patientName, doctorName: bookingResponse.doctorName }
-      });
-
-      return NextResponse.json(bookingResponse, { status: 201 });
-    } catch (dbErr) {
-      logger.warn({ err: dbErr }, "DB offline – returning fallback booking confirmation");
-
-      const tokenNumber = Math.floor(100 + Math.random() * 899);
-      const randomPatientCode = `PAT-${Math.floor(1000 + Math.random() * 9000)}`;
-      const hospitalObj = DEMO_HOSPITALS.find(h => h.id === orgId);
-      const doctorList = DEMO_DOCTORS_BY_ORG[orgId] || Object.values(DEMO_DOCTORS_BY_ORG).flat();
-      const doctorObj = doctorList.find((d: any) => d.id === doctorId);
-
-      const bookingResponse = {
-        message: "Appointment booked successfully",
-        tokenNumber,
-        patientCode: randomPatientCode,
-        hospitalName: hospitalObj?.name || "City Care Super Multi-Speciality Hospital",
-        doctorName: doctorObj?.name || "Dr. Rajesh Sharma"
-      };
-
-      // In-memory EventBus broadcast
-      eventBus.broadcast('appointment.created', {
-        appointmentId: `fall-${Date.now()}`,
-        tokenNumber: bookingResponse.tokenNumber,
-        patientName,
-        doctorId,
-        timeSlot: timeSlot || "10:00 AM",
-        hospitalName: bookingResponse.hospitalName
-      }, orgId, doctorId);
-
-      notificationService.send({
-        recipientPhone: patientPhone,
-        patientName,
-        template: 'APPOINTMENT_CONFIRM',
-        data: {
-          tokenNumber: bookingResponse.tokenNumber,
-          hospitalName: bookingResponse.hospitalName,
-          doctorName: bookingResponse.doctorName,
-          date,
-          timeSlot
-        }
-      });
-
-      auditService.log({
-        actor: patientPhone,
-        role: 'PATIENT',
-        action: 'APPOINTMENT_BOOKED_ONLINE',
-        resource: 'HealthAppointment',
-        resourceId: `fall-${Date.now()}`,
-        details: { tokenNumber: bookingResponse.tokenNumber, patientName, doctorName: bookingResponse.doctorName }
-      });
-
-      return NextResponse.json(bookingResponse, { status: 201 });
+    if (existing) {
+      return NextResponse.json({ error: "Slot already booked" }, { status: 409 });
     }
+
+    // 4. Upsert Patient
+    let patient = await prisma.patient.findFirst({
+      where: { organizationId: clinicId, phone: patientPhone }
+    });
+
+    if (!patient) {
+      patient = await prisma.patient.create({
+        data: {
+          organizationId: clinicId,
+          patientCode: `PT-${Date.now().toString().slice(-6)}`,
+          name: patientName,
+          phone: patientPhone,
+          email: patientEmail,
+          gender: "UNKNOWN", // Defaulting for quick booking
+        }
+      });
+    }
+
+    // 5. Generate Token
+    // Count today's appointments for doctorId to generate token
+    const startOfDay = new Date(apptDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(apptDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const count = await prisma.healthAppointment.count({
+      where: {
+        doctorId,
+        appointmentDate: { gte: startOfDay, lte: endOfDay }
+      }
+    });
+
+    const tokenNumber = count + 1;
+    const tokenDisplay = `Q-${tokenNumber.toString().padStart(3, '0')}`;
+    const publicToken = nanoid(12);
+
+    // 6. Transaction to create Appointment and Billing
+    const transaction = await prisma.$transaction(async (tx) => {
+      const appointment = await tx.healthAppointment.create({
+        data: {
+          organizationId: clinicId,
+          patientId: patient!.id,
+          doctorId,
+          appointmentDate: apptDate,
+          timeSlot,
+          status: 'SCHEDULED',
+          tokenNumber,
+          tokenDisplay,
+          publicToken,
+          reason,
+        }
+      });
+
+      const consultationFee = doctor.profile?.consultationFee || 500;
+
+      const billing = await tx.billing.create({
+        data: {
+          organizationId: clinicId,
+          appointmentId: appointment.id,
+          invoiceNo: `INV-${Date.now()}`,
+          consultationFee,
+          totalAmount: consultationFee,
+          paymentStatus: 'UNPAID',
+        }
+      });
+
+      return { appointment, billing };
+    });
+
+    // Fire & Forget: Publish real-time events via whatever mechanism you have
+    // eventBus.publish(`org:${clinicId}:appointments`, transaction.appointment);
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+    return NextResponse.json({
+      success: true,
+      appointment: {
+        id: transaction.appointment.id,
+        tokenNumber,
+        tokenDisplay,
+        publicToken,
+        appointmentDate: transaction.appointment.appointmentDate,
+        timeSlot: transaction.appointment.timeSlot,
+      },
+      trackingUrl: `${baseUrl}/t/${publicToken}`,
+      patient: { id: patient.id, name: patient.name, patientCode: patient.patientCode }
+    });
 
   } catch (error) {
-    logger.error({ err: error }, "Booking error");
-    return NextResponse.json({ error: "Failed to book appointment" }, { status: 500 });
+    console.error("Booking API Error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

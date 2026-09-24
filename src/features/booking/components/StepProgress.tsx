@@ -1,46 +1,64 @@
-import { Check } from "lucide-react"
-import { cn } from "@/lib/utils"
+"use client";
 
-interface StepProgressProps {
-  currentStep: number
-  steps: string[]
-}
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function StepProgress({ currentStep, steps }: StepProgressProps) {
+type StepProgressProps = {
+  currentStep: number;
+  onStepClick?: (step: number) => void;
+};
+
+export function StepProgress({ currentStep, onStepClick }: StepProgressProps) {
+  const steps = [
+    { label: "Clinic" },
+    { label: "Condition" },
+    { label: "Doctor" },
+    { label: "Time" },
+    { label: "Details" },
+    { label: "Confirm" }
+  ];
+
   return (
-    <div className="flex items-center justify-between w-full relative mb-8">
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full z-0">
-        <div 
-          className="h-full bg-primary transition-all duration-300 rounded-full"
-          style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
-        />
-      </div>
-      {steps.map((step, index) => {
-        const stepNum = index + 1
-        const isCompleted = stepNum < currentStep
-        const isCurrent = stepNum === currentStep
+    <div className="max-w-3xl mx-auto mb-8 px-4 w-full">
+      <div className="flex items-center justify-between relative">
+        {steps.map((step, idx) => {
+          const stepNum = idx + 1;
+          const isCompleted = stepNum < currentStep;
+          const isActive = stepNum === currentStep;
+          const isUpcoming = stepNum > currentStep;
 
-        return (
-          <div key={step} className="relative z-10 flex flex-col items-center gap-2">
-            <div 
-              className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors border-2",
-                isCompleted ? "bg-primary border-primary text-white" :
-                isCurrent ? "bg-white dark:bg-slate-950 border-primary text-primary" :
-                "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-400"
-              )}
-            >
-              {isCompleted ? <Check className="w-4 h-4" /> : stepNum}
+          return (
+            <div key={step.label} className="flex flex-col items-center relative z-10 flex-1">
+              <button
+                disabled={!isCompleted && !onStepClick}
+                onClick={() => isCompleted && onStepClick && onStepClick(stepNum)}
+                className={cn(
+                  "w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all",
+                  isCompleted ? "bg-secondary text-on-secondary cursor-pointer hover:bg-secondary/90" : 
+                  isActive ? "bg-primary text-on-primary shadow-md scale-110" : 
+                  "bg-surface-high text-on-surface-variant cursor-not-allowed"
+                )}
+              >
+                {isCompleted ? <Check className="w-5 h-5" /> : stepNum}
+              </button>
+              <span className={cn(
+                "hidden sm:block text-xs mt-2 font-medium transition-colors",
+                isActive ? "text-primary font-bold" : "text-on-surface-variant"
+              )}>
+                {step.label}
+              </span>
             </div>
-            <span className={cn(
-              "text-xs font-medium hidden sm:block absolute -bottom-6 w-max",
-              isCurrent ? "text-primary" : "text-slate-500 dark:text-slate-400"
-            )}>
-              {step}
-            </span>
-          </div>
-        )
-      })}
+          );
+        })}
+
+        {/* Connecting Lines */}
+        <div className="absolute top-4 md:top-5 left-0 right-0 h-0.5 bg-surface-high -z-10 px-8">
+          <div 
+            className="h-full bg-secondary transition-all duration-300"
+            style={{ width: `${Math.max(0, (currentStep - 1) / (steps.length - 1)) * 100}%` }}
+          />
+        </div>
+      </div>
     </div>
-  )
+  );
 }
