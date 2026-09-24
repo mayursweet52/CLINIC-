@@ -21,6 +21,7 @@ const NAV_GROUPS = [
     label: "MAIN",
     items: [
       { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["DOCTOR", "RECEPTIONIST", "PHARMACIST", "ADMIN"] },
+      { href: "/doctor/patients", label: "My Patients", icon: Users, roles: ["DOCTOR"] },
     ],
   },
   {
