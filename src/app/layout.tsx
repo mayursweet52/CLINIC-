@@ -1,10 +1,20 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Plus_Jakarta_Sans } from "next/font/google"
 import "./globals.css"
 import { Providers } from "./providers"
 import { Toaster } from "sonner"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const inter = Inter({ 
+  subsets: ["latin"], 
+  variable: "--font-inter",
+  display: "swap",
+})
+
+const jakarta = Plus_Jakarta_Sans({ 
+  subsets: ["latin"], 
+  variable: "--font-jakarta",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   title: {
@@ -20,8 +30,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} min-h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 antialiased dark:bg-slate-950 dark:text-slate-50`}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jakarta.variable}`}>
+      <body className="min-h-screen font-sans antialiased">
         <Providers>
           {children}
           <Toaster position="top-right" richColors />

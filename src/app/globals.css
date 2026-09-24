@@ -1,18 +1,55 @@
 @import "tailwindcss";
 
 @theme {
-  /* Primary — Teal */
-  --color-primary-50: #f0fdfa;
-  --color-primary-100: #ccfbf1;
-  --color-primary-200: #99f6e4;
-  --color-primary-300: #5eead4;
-  --color-primary-400: #2dd4bf;
-  --color-primary-500: #14b8a6;
-  --color-primary-600: #0d9488;
-  --color-primary-700: #0f766e;
-  --color-primary-800: #115e59;
-  --color-primary-900: #134e4a;
-  --color-primary-950: #042f2e;
+  /* Primary — Deep Medical Blue */
+  --color-primary-50: #e6f0ff;
+  --color-primary-100: #cce5ff;
+  --color-primary-200: #93ccff;
+  --color-primary-500: #006194;
+  --color-primary-600: #007bb9;
+  --color-primary-700: #004b73;
+
+  /* Secondary — Teal */
+  --color-secondary-50: #e0f5f1;
+  --color-secondary-100: #86f2e4;
+  --color-secondary-500: #006a61;
+  --color-secondary-600: #008a7f;
+
+  /* Tertiary — Orange */
+  --color-tertiary-50: #fff4e5;
+  --color-tertiary-100: #ffdcc0;
+  --color-tertiary-500: #894d00;
+  --color-tertiary-600: #ac6200;
+
+  /* Medical Green */
+  --color-medical-green: #0B6634;
+
+  /* Surface hierarchy */
+  --color-surface-lowest: #ffffff;
+  --color-surface-low: #eff4ff;
+  --color-surface: #f8f9ff;
+  --color-surface-high: #dce9ff;
+  --color-surface-highest: #d3e4fe;
+
+  /* Text colors */
+  --color-on-surface: #0b1c30;
+  --color-on-surface-variant: #3f4850;
+  --color-outline: #707881;
+  --color-outline-variant: #bfc7d2;
+
+  /* Status */
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error: #ffffff;
+
+  /* Fonts */
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-label: var(--font-jakarta), system-ui, sans-serif;
+
+  /* Border radius */
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+  --radius-full: 0.75rem;
 
   /* Semantic tokens (used by shadcn components) */
   --color-background: hsl(0 0% 100%);
@@ -35,17 +72,12 @@
   --color-input: hsl(214.3 31.8% 91.4%);
   --color-ring: hsl(173 80% 40%);
 
-  /* Border radius */
   --radius: 0.5rem;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: 14px;
   --radius-2xl: 18px;
-
-  /* Font */
-  --font-sans: 'Inter', system-ui, sans-serif;
 }
+
 /* Dark mode overrides */
 .dark {
   --color-background: hsl(222.2 84% 4.9%);
@@ -70,22 +102,15 @@
 }
 
 /* Base styles */
+html { font-size: 14px; -webkit-font-smoothing: antialiased; }
+body { @apply bg-surface text-on-surface; }
+h1, h2, h3 { @apply tracking-tight; }
+*:focus-visible { @apply outline-none ring-2 ring-primary-500 ring-offset-2; }
+
 *,
 ::before,
 ::after {
   border-color: var(--color-border);
-}
-
-body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-html {
-  font-size: 14px;
 }
 
 /* Custom scrollbar */
@@ -94,7 +119,7 @@ html {
 ::-webkit-scrollbar-thumb { background-color: var(--color-slate-300, #cbd5e1); border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background-color: var(--color-slate-400, #94a3b8); }
 
-/* Animation keyframes (replaces tailwindcss-animate plugin for v4 compat) */
+/* Animation keyframes */
 @keyframes accordion-down {
   from { height: 0; }
   to { height: var(--radix-accordion-content-height); }
