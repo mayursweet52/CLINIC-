@@ -126,26 +126,38 @@ export default function PatientLoginPage() {
 
           {/* Demo Credentials Box */}
           <div className="mt-8 bg-surface-low rounded-xl p-4 border border-outline-variant/20">
-            <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Demo Account</h3>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded-lg hover:bg-surface-lowest transition-colors text-sm">
-              <div>
-                <span className="font-medium text-on-surface mr-2">Phone:</span>
-                <span className="text-on-surface-variant">9876543210</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-medium text-on-surface">Password:</span>
-                <span className="text-on-surface-variant font-mono">Patient@123</span>
-              </div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                Demo Account
+              </h3>
               <button 
+                type="button"
                 onClick={copyDemo}
-                className="flex items-center gap-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-lowest hover:bg-surface text-primary-600 border border-outline-variant/30 text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
               >
                 {copied ? (
-                  <><CheckCircle2 className="w-3.5 h-3.5 text-medical-green" /> Copied!</>
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-medical-green" />
+                    <span>Copied!</span>
+                  </>
                 ) : (
-                  <><Copy className="w-3.5 h-3.5" /> Copy</>
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy</span>
+                  </>
                 )}
               </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="p-2.5 rounded-lg bg-surface-lowest border border-outline-variant/20">
+                <span className="text-on-surface-variant block text-[11px] mb-0.5">Phone Number</span>
+                <span className="font-mono font-semibold text-on-surface">9876543210</span>
+              </div>
+              <div className="p-2.5 rounded-lg bg-surface-lowest border border-outline-variant/20">
+                <span className="text-on-surface-variant block text-[11px] mb-0.5">Password</span>
+                <span className="font-mono font-semibold text-on-surface">Patient@123</span>
+              </div>
             </div>
           </div>
 
