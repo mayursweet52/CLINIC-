@@ -123,13 +123,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-xs text-on-surface-variant mt-4">
-            Are you a patient?{" "}
-            <a href="/portal/login" className="text-primary-600 font-semibold hover:underline">
-              Go to Patient Portal →
-            </a>
-          </p>
-
           {/* Demo Credentials Box */}
           <div className="mt-8 bg-surface-low rounded-xl p-4 border border-outline-variant/20">
             <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Demo Credentials</h3>
