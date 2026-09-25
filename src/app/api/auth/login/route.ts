@@ -14,6 +14,13 @@ const DEMO_USERS_MAP: Record<string, { id: string; name: string; role: string; o
     orgId: "org-1",
     orgName: "Aarogya Clinic",
   },
+  "dr.smith@clinic.com": {
+    id: "doc-101",
+    name: "Dr. Smith",
+    role: "DOCTOR",
+    orgId: "org-1",
+    orgName: "Aarogya Clinic",
+  },
   "kavita.nair@aarogyaclinic.in": {
     id: "rec-101",
     name: "Kavita Nair",
@@ -76,11 +83,12 @@ export async function POST(request: Request) {
       }
 
       if (!user) {
+        const isDoc = normalizedEmail.startsWith("dr.") || normalizedEmail.includes("doctor");
         user = {
-          id: "demo-user-100",
+          id: isDoc ? "doc-101" : "demo-user-100",
           name: normalizedEmail.split("@")[0],
           email: normalizedEmail,
-          role: "ADMIN",
+          role: isDoc ? "DOCTOR" : "ADMIN",
           organizationId: "org-1",
           organization: { name: "Clinic Enterprise" },
         };
