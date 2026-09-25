@@ -42,7 +42,7 @@ const DEFAULT_ROLE_PERMS: Record<string, string[]> = {
   ADMIN: ['*'],
   SUPERADMIN: ['*'],
   DOCTOR: ['patient:*', 'appointment:*', 'visit:*', 'prescription:*', 'record:*', 'doctor:*'],
-  RECEPTIONIST: ['patient:*', 'appointment:*', 'billing:*', 'reception:*'],
+  RECEPTIONIST: ['patient:*', 'appointment:*', 'billing:*', 'reception:*', 'record:*'],
   PHARMACIST: ['pharmacy:*', 'inventory:*', 'prescription:*', 'medicine:*']
 };
 
