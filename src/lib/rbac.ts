@@ -38,11 +38,22 @@ export async function getUserPermissions(userId: string): Promise<string[]> {
   }
 }
 
+const DEFAULT_ROLE_PERMS: Record<string, string[]> = {
+  ADMIN: ['*'],
+  SUPERADMIN: ['*'],
+  DOCTOR: ['patient:*', 'appointment:*', 'visit:*', 'prescription:*', 'record:*', 'doctor:*'],
+  RECEPTIONIST: ['patient:*', 'appointment:*', 'billing:*', 'reception:*'],
+  PHARMACIST: ['pharmacy:*', 'inventory:*', 'prescription:*', 'medicine:*']
+};
+
 export function can(user: { id?: string; role?: string; permissions?: string[] }, permissionKey: string): boolean {
   if (!user) return false;
-  if (user.role === 'ADMIN') return true;
+  const role = user.role?.toUpperCase() || '';
+  if (role === 'ADMIN' || role === 'SUPERADMIN') return true;
   
-  const perms = user.permissions || [];
+  const roleDefaults = DEFAULT_ROLE_PERMS[role] || [];
+  const perms = [...(user.permissions || []), ...roleDefaults];
+
   if (perms.includes('*')) return true;
   if (perms.includes(permissionKey)) return true;
 
