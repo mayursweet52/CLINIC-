@@ -27,3 +27,18 @@ export const useDispense = () => {
     }
   });
 };
+
+export const useAddMedicine = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const { api } = await import('@/lib/api-client');
+      const res = await api.post<any>('/pharmacy/inventory', data);
+      return res?.data ?? res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      toast.success("Medicine added successfully");
+    }
+  });
+};

@@ -6,6 +6,7 @@ import { StatCard } from "@/components/shared/StatCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePendingPrescriptions, useInventory } from "@/features/pharmacy/hooks";
 import { DispenseDialog } from "@/features/pharmacy/components/DispenseDialog";
+import { AddMedicineDialog } from "@/features/pharmacy/components/AddMedicineDialog";
 import { Clock, CheckCircle, AlertTriangle, Boxes, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ export default function PharmacyPage() {
   const { data: inventory, isLoading: inventoryLoading } = useInventory();
   
   const [selectedRx, setSelectedRx] = useState<any>(null);
+  const [showAddMedicine, setShowAddMedicine] = useState(false);
   const [searchInv, setSearchInv] = useState("");
   const [showLowStock, setShowLowStock] = useState(false);
 
@@ -32,7 +34,7 @@ export default function PharmacyPage() {
     <div className="space-y-6 h-full flex flex-col pb-12">
       <div className="flex justify-between items-center shrink-0">
         <PageHeader title="Pharmacy" description="Manage prescriptions and inventory" />
-        <Button className="bg-primary-600 hover:bg-primary-700 text-white shadow-sm">
+        <Button className="bg-primary-600 hover:bg-primary-700 text-white shadow-sm" onClick={() => setShowAddMedicine(true)}>
           <Plus className="mr-2 h-4 w-4" /> Add Medicine
         </Button>
       </div>
@@ -180,6 +182,10 @@ export default function PharmacyPage() {
           queryClient.invalidateQueries({ queryKey: ["prescriptions", "pending"] });
           queryClient.invalidateQueries({ queryKey: ["inventory"] });
         }}
+      />
+      <AddMedicineDialog
+        open={showAddMedicine}
+        onOpenChange={setShowAddMedicine}
       />
     </div>
   );

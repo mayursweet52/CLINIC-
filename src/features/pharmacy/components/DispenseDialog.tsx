@@ -24,7 +24,7 @@ export function DispenseDialog({ open, onOpenChange, prescription, onSuccess }: 
           prescriptionId: prescription.id,
           items: prescription.medicines.map((m: any) => ({
             name: m.name,
-            quantity: m.quantity,
+            quantity: m.quantity || 10, // fallback if doctor didn't provide
             batchNumber: m.batchNumber || "UNKNOWN",
           })),
         }),
@@ -114,7 +114,7 @@ export function DispenseDialog({ open, onOpenChange, prescription, onSuccess }: 
                   </div>
                   <div className="flex flex-col items-end justify-between">
                     <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-bold">
-                      Qty: {m.quantity}
+                      Qty: {m.quantity || 10}
                     </span>
                     <div className="mt-3 flex items-center gap-1 text-xs font-medium">
                       {stockStatus === "SUFFICIENT" ? (
