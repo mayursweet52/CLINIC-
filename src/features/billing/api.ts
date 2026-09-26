@@ -1,32 +1,51 @@
 export const getBills = async () => {
-  return [
-    { id: 'INV-1001', patientName: 'John Doe', amount: 1500, date: '2026-09-22', status: 'Pending' },
-    { id: 'INV-1002', patientName: 'Jane Smith', amount: 2000, date: '2026-09-21', status: 'Paid' },
-    { id: 'INV-1003', patientName: 'Mike Johnson', amount: 500, date: '2026-09-20', status: 'Partial' },
-  ];
+  const res = await fetch('/api/billing');
+  if (!res.ok) throw new Error('Failed to fetch bills');
+  const data = await res.json();
+  
+  // Format for UI
+  return data.map((b: any) => ({
+    id: b.id,
+    patientName: b.appointment?.patient?.name || 'Unknown',
+    amount: b.totalAmount,
+    date: new Date(b.createdAt).toISOString().split('T')[0],
+    status: b.paymentStatus === 'PAID' ? 'Paid' : b.paymentStatus === 'PARTIAL' ? 'Partial' : 'Pending',
+    raw: b
+  }));
 };
 
 export const getBill = async (id: string) => {
+  const res = await fetch(`/api/billing/${id}`);
+  if (!res.ok) throw new Error('Failed to fetch bill details');
+  const b = await res.json();
+
   return {
-    id,
-    patientName: 'John Doe',
-    patientEmail: 'john@example.com',
-    patientPhone: '+91 9876543210',
-    date: '2026-09-22',
-    dueDate: '2026-09-29',
-    status: 'Pending',
+    id: b.id,
+    patientName: b.appointment?.patient?.name || 'Unknown',
+    patientEmail: b.appointment?.patient?.email || 'N/A',
+    patientPhone: b.appointment?.patient?.phone || 'N/A',
+    date: new Date(b.createdAt).toISOString().split('T')[0],
+    dueDate: new Date(b.createdAt).toISOString().split('T')[0], // same for now
+    status: b.paymentStatus === 'PAID' ? 'Paid' : b.paymentStatus === 'PARTIAL' ? 'Partial' : 'Pending',
     items: [
-      { id: '1', description: 'Consultation', qty: 1, rate: 500, amount: 500 },
-      { id: '2', description: 'Blood Test', qty: 1, rate: 1000, amount: 1000 },
+      { id: '1', description: 'Consultation', qty: 1, rate: b.consultationFee, amount: b.consultationFee },
+      ...(b.medicineCharges > 0 ? [{ id: '2', description: 'Medicines', qty: 1, rate: b.medicineCharges, amount: b.medicineCharges }] : [])
     ],
-    subtotal: 1500,
+    subtotal: b.totalAmount,
     tax: 0,
-    total: 1500,
+    total: b.totalAmount,
+    raw: b
   };
 };
 
 export const markBillPaid = async (data: { id: string, method: string }) => {
-  return { success: true };
+  const res = await fetch(`/api/billing`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ billId: data.id, paymentStatus: 'PAID' })
+  });
+  if (!res.ok) throw new Error('Failed to mark paid');
+  return res.json();
 };
 
 export const createBill = async () => {
