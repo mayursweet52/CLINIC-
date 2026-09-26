@@ -271,7 +271,7 @@ export default function MedicalRecordsPage() {
     <div className="space-y-6 pb-12">
       {/* Page Header */}
       <PageHeader
-        title="Medical Records (EHR)"
+        label="Medical Records (EHR)"
         description="Electronic Health Records, clinical consultations, diagnostics, and prescriptions history"
         breadcrumbs={[
           { label: 'Home', href: '/' },
@@ -291,22 +291,22 @@ export default function MedicalRecordsPage() {
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="TOTAL EHR RECORDS"
+          label="TOTAL EHR RECORDS"
           value={totalRecords.toString()}
           icon={FileText}
         />
         <StatCard
-          title="CONSULTATIONS"
+          label="CONSULTATIONS"
           value={consultationsCount.toString()}
           icon={Stethoscope}
         />
         <StatCard
-          title="LAB REPORTS"
+          label="LAB REPORTS"
           value={labReportsCount.toString()}
           icon={FlaskConical}
         />
         <StatCard
-          title="PRESCRIPTIONS"
+          label="PRESCRIPTIONS"
           value={prescriptionsCount.toString()}
           icon={Pill}
         />
@@ -345,9 +345,9 @@ export default function MedicalRecordsPage() {
         <TableSkeleton cols={6} rows={5} />
       ) : filteredRecords.length === 0 ? (
         <EmptyState
-          title="No medical records found"
+          label="No medical records found"
           description="Try adjusting your search criteria or filter to locate patient health records."
-          actionText="Clear Search"
+          // "Clear Search"
           onAction={() => {
             setSearchQuery('');
             setTypeFilter('all');
@@ -439,7 +439,7 @@ export default function MedicalRecordsPage() {
             <InspectorPanel
               isOpen={Boolean(activeRecord)}
               onClose={() => setSelectedRecord(null)}
-              title="Record Summary"
+              label="Record Summary"
               description={activeRecord?.id}
             >
               {activeRecord && (
