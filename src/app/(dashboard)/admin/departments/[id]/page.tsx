@@ -56,6 +56,11 @@ export default function DepartmentDetailPage({ params }: { params: Promise<{ id:
   const [cForm, setCForm] = useState({ name: "", slug: "", icon: "", keywords: "" });
   const [cSaving, setCSaving] = useState(false);
 
+  const [assignDialog, setAssignDialog] = useState(false);
+  const [availableDoctors, setAvailableDoctors] = useState<any[]>([]);
+  const [selectedDoctors, setSelectedDoctors] = useState<string[]>([]);
+  const [assignSaving, setAssignSaving] = useState(false);
+
   useEffect(() => {
     fetchDetail();
   }, [id]);
@@ -102,6 +107,41 @@ export default function DepartmentDetailPage({ params }: { params: Promise<{ id:
       }
     } finally {
       setCSaving(false);
+    }
+  };
+
+  const fetchAvailableDoctors = async () => {
+    try {
+      const res = await fetch("/api/staff");
+      if (res.ok) {
+        const allStaff = await res.json();
+        setAvailableDoctors(allStaff.filter((s: any) => s.role === "DOCTOR"));
+        setSelectedDoctors(dept?.doctors.map((d: any) => d.doctor.id) || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const openAssignDialog = () => {
+    fetchAvailableDoctors();
+    setAssignDialog(true);
+  };
+
+  const handleAssignSave = async () => {
+    setAssignSaving(true);
+    try {
+      const res = await fetch(`/api/admin/departments/${id}/doctors`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doctorIds: selectedDoctors }),
+      });
+      if (res.ok) {
+        setAssignDialog(false);
+        fetchDetail();
+      }
+    } finally {
+      setAssignSaving(false);
     }
   };
 
@@ -182,7 +222,7 @@ export default function DepartmentDetailPage({ params }: { params: Promise<{ id:
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-on-surface">Doctors ({dept.doctors.length})</h2>
-              <Button size="sm" variant="secondary" className="gap-2">
+              <Button size="sm" variant="secondary" className="gap-2" onClick={openAssignDialog}>
                 <UserPlus className="w-4 h-4" />
                 Assign
               </Button>
@@ -274,6 +314,35 @@ export default function DepartmentDetailPage({ params }: { params: Promise<{ id:
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={assignDialog} onOpenChange={setAssignDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Doctors</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {availableDoctors.length === 0 ? <p>No doctors available.</p> : availableDoctors.map(d => (
+              <label key={d.id} className="flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  checked={selectedDoctors.includes(d.id)} 
+                  onChange={(e) => {
+                    if (e.target.checked) setSelectedDoctors([...selectedDoctors, d.id]);
+                    else setSelectedDoctors(selectedDoctors.filter(id => id !== d.id));
+                  }} 
+                />
+                <span>{d.name} ({d.email})</span>
+              </label>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignDialog(false)}>Cancel</Button>
+            <Button onClick={handleAssignSave} disabled={assignSaving}>{assignSaving ? 'Saving...' : 'Save Assignments'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+

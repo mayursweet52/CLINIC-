@@ -13,51 +13,77 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Users, UserCheck, Stethoscope, UserMinus, Search, Mail, Phone, Building, Edit, ShieldAlert, Key } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function StaffPage() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedStaff, setSelectedStaff] = useState<any | null>(null);
+  const queryClient = useQueryClient();
 
-  const mockData = [
-    { id: '1', name: 'Vikram Singh', role: 'Superadmin', email: 'vikram.singh@aarogyaclinic.in', phone: '+91 9876543210', status: 'Active', dept: 'Management' },
-    { id: '2', name: 'Dr. Ananya Sharma', role: 'Doctor', email: 'ananya.sharma@aarogyaclinic.in', phone: '+91 9876543211', status: 'Active', dept: 'Cardiology' },
-    { id: '3', name: 'Kavita Nair', role: 'Receptionist', email: 'kavita.nair@aarogyaclinic.in', phone: '+91 9876543212', status: 'Inactive', dept: 'Front Desk' },
-    { id: '4', name: 'Suresh Patel', role: 'Pharmacist', email: 'suresh.patel@aarogyaclinic.in', phone: '+91 9876543213', status: 'Active', dept: 'Pharmacy' },
-  ];
+  const { data: staffList = [], isLoading } = useQuery({
+    queryKey: ["staff"],
+    queryFn: async () => {
+      const res = await fetch("/api/staff");
+      if (!res.ok) throw new Error("Failed to fetch staff");
+      return res.json();
+    }
+  });
 
-  const filteredData = mockData.filter(item => 
-    !search || item.name.toLowerCase().includes(search.toLowerCase()) || item.email.toLowerCase().includes(search.toLowerCase())
+  const addStaff = useMutation({
+    mutationFn: async (newStaff: any) => {
+      const res = await fetch("/api/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newStaff)
+      });
+      if (!res.ok) throw new Error("Failed to add staff");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      toast.success("Staff added successfully");
+      setIsAddOpen(false);
+    },
+    onError: () => toast.error("Failed to add staff")
+  });
+
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "", role: "DOCTOR" });
+
+  const filteredData = staffList.filter((item: any) => 
+    !search || item.name.toLowerCase().includes(search.toLowerCase()) || 
+    item.email.toLowerCase().includes(search.toLowerCase())
   );
 
   const renderMain = () => (
-    <div className="bg-surface-lowest rounded-xl shadow-sm border border-outline-variant/20 overflow-hidden flex flex-col h-full">
-      <div className="p-4 border-b border-outline-variant/20 flex gap-4 items-center bg-surface-lowest">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant" />
+    <div className="bg-surface-lowest rounded-xl shadow-sm border border-outline-variant/20 flex flex-col h-full overflow-hidden">
+      <div className="p-4 border-b border-outline-variant/20 flex items-center justify-between shrink-0">
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
           <Input 
-            placeholder="Search staff by name or email..." 
+            placeholder="Search staff..." 
+            className="pl-9 bg-surface-low border-outline-variant/30 focus-visible:ring-primary-500 rounded-full h-9"
             value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9 bg-surface-low border-outline-variant/30 text-on-surface focus-visible:ring-primary-500" 
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
-
-      <div className="flex-1 overflow-auto">
+      <div className="overflow-auto flex-1">
         <table className="w-full text-sm text-left">
-          <thead className="text-xs text-on-surface-variant uppercase bg-surface-low border-b border-outline-variant/20 sticky top-0 z-10">
+          <thead className="text-xs text-on-surface-variant uppercase bg-surface-low/50 sticky top-0 z-10 shadow-sm border-b border-outline-variant/20">
             <tr>
-              <th className="px-6 py-4 font-medium">Staff Member</th>
-              <th className="px-6 py-4 font-medium">Role</th>
-              <th className="px-6 py-4 font-medium">Department</th>
-              <th className="px-6 py-4 font-medium">Status</th>
+              <th className="px-6 py-4 font-semibold tracking-wider">Staff Member</th>
+              <th className="px-6 py-4 font-semibold tracking-wider">Role</th>
+              <th className="px-6 py-4 font-semibold tracking-wider">Department</th>
+              <th className="px-6 py-4 font-semibold tracking-wider">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-outline-variant/10">
-            {filteredData.map((staff) => (
+            {isLoading ? (
+              <tr><td colSpan={4} className="px-6 py-8 text-center text-on-surface-variant">Loading...</td></tr>
+            ) : filteredData.map((staff: any) => (
               <tr 
-                key={staff.id}
+                key={staff.id} 
                 onClick={() => setSelectedStaff(staff)}
                 className={`hover:bg-primary-50/50 dark:hover:bg-primary-900/10 cursor-pointer transition-colors ${selectedStaff?.id === staff.id ? 'bg-primary-50 dark:bg-primary-900/20' : ''}`}
               >
@@ -71,11 +97,11 @@ export default function StaffPage() {
                   </div>
                 </td>
                 <td className="px-6 py-4 font-medium text-on-surface">{staff.role}</td>
-                <td className="px-6 py-4 text-on-surface-variant">{staff.dept}</td>
-                <td className="px-6 py-4"><StatusBadge status={staff.status} /></td>
+                <td className="px-6 py-4 text-on-surface-variant">{staff.department || staff.dept || '-'}</td>
+                <td className="px-6 py-4"><StatusBadge status={staff.isActive !== false ? 'Active' : 'Inactive'} /></td>
               </tr>
             ))}
-            {filteredData.length === 0 && (
+            {!isLoading && filteredData.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-6 py-12 text-center text-on-surface-variant">
                   No staff members found.
@@ -103,7 +129,7 @@ export default function StaffPage() {
       <InspectorPanel
         title={selectedStaff.name}
         subtitle={selectedStaff.role}
-        status={selectedStaff.status}
+        status={selectedStaff.isActive !== false ? 'Active' : 'Inactive'}
       >
         <div className="space-y-6">
           <div className="bg-surface-low rounded-xl p-4 border border-outline-variant/20 space-y-4">
@@ -113,28 +139,15 @@ export default function StaffPage() {
             </div>
             <div className="flex items-center gap-3 text-sm text-on-surface">
               <Phone className="w-4 h-4 text-on-surface-variant" />
-              <span>{selectedStaff.phone}</span>
+              <span>{selectedStaff.phone || '-'}</span>
             </div>
             <div className="flex items-center gap-3 text-sm text-on-surface">
               <Building className="w-4 h-4 text-on-surface-variant" />
-              <span>{selectedStaff.dept} Department</span>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Permissions</h4>
-            <div className="flex flex-wrap gap-2">
-              <span className="px-2.5 py-1 rounded-md bg-surface-high text-xs text-on-surface font-medium border border-outline-variant/20">System Login</span>
-              {selectedStaff.role === 'Superadmin' && <span className="px-2.5 py-1 rounded-md bg-primary-100 text-primary-700 text-xs font-medium">Full Access</span>}
-              {selectedStaff.role === 'Doctor' && <span className="px-2.5 py-1 rounded-md bg-secondary-100 text-secondary-700 text-xs font-medium">Write Rx</span>}
-              {selectedStaff.role === 'Pharmacist' && <span className="px-2.5 py-1 rounded-md bg-medical-green/20 text-medical-green text-xs font-medium">Inventory</span>}
+              <span>{selectedStaff.department || selectedStaff.dept || '-'}</span>
             </div>
           </div>
 
           <div className="pt-4 border-t border-outline-variant/20 space-y-3">
-            <Button className="w-full bg-primary-100 hover:bg-primary-200 text-primary-700 font-medium">
-              <Edit className="w-4 h-4 mr-2" /> Edit Profile
-            </Button>
             <Button variant="outline" className="w-full border-outline-variant/30 text-on-surface hover:bg-surface-low" onClick={() => toast.success("Password reset link sent")}>
               <Key className="w-4 h-4 mr-2" /> Reset Password
             </Button>
@@ -156,13 +169,6 @@ export default function StaffPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 shrink-0">
-        <StatCard label="Total Staff" value="48" icon={Users} color="primary" />
-        <StatCard label="Active" value="42" icon={UserCheck} color="success" />
-        <StatCard label="On Leave" value="6" icon={UserMinus} color="tertiary" />
-        <StatCard label="Doctors" value="15" icon={Stethoscope} color="secondary" />
-      </div>
-
       <div className="flex-1 min-h-0">
         <SplitPane main={renderMain()} inspector={renderInspector()} mainCols={8} />
       </div>
@@ -175,34 +181,43 @@ export default function StaffPage() {
           <div className="py-4 space-y-4">
             <div className="space-y-2">
               <Label className="text-on-surface">Full Name</Label>
-              <Input placeholder="John Doe" className="bg-surface-low border-outline-variant/30 focus-visible:ring-primary-500" />
+              <Input 
+                value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })}
+                placeholder="John Doe" className="bg-surface-low border-outline-variant/30" 
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-on-surface">Email</Label>
-              <Input type="email" placeholder="john@example.com" className="bg-surface-low border-outline-variant/30 focus-visible:ring-primary-500" />
+              <Input 
+                type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })}
+                placeholder="john@example.com" className="bg-surface-low border-outline-variant/30" 
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-on-surface">Phone Number</Label>
-              <Input placeholder="+91 9876543210" className="bg-surface-low border-outline-variant/30 focus-visible:ring-primary-500" />
+              <Input 
+                value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+91 9876543210" className="bg-surface-low border-outline-variant/30" 
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-on-surface">Role</Label>
-              <Select>
+              <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v })}>
                 <SelectTrigger className="bg-surface-low border-outline-variant/30 focus-visible:ring-primary-500">
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="doctor">Doctor</SelectItem>
-                  <SelectItem value="receptionist">Receptionist</SelectItem>
-                  <SelectItem value="pharmacist">Pharmacist</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="DOCTOR">Doctor</SelectItem>
+                  <SelectItem value="RECEPTIONIST">Receptionist</SelectItem>
+                  <SelectItem value="PHARMACIST">Pharmacist</SelectItem>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddOpen(false)} className="border-outline-variant/30">Cancel</Button>
-            <Button onClick={() => { setIsAddOpen(false); toast.success("Staff added successfully"); }} className="bg-primary-600 text-white hover:bg-primary-700">Add Staff</Button>
+            <Button disabled={addStaff.isPending} onClick={() => addStaff.mutate(formData)} className="bg-primary-600 text-white hover:bg-primary-700">Add Staff</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
