@@ -272,7 +272,7 @@ export default function MedicalRecordsPage() {
       {/* Page Header */}
       <PageHeader
         title="Medical Records (EHR)"
-        subtitle="Electronic Health Records, clinical consultations, diagnostics, and prescriptions history"
+        description="Electronic Health Records, clinical consultations, diagnostics, and prescriptions history"
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Medical Records', href: '/records' }
@@ -342,7 +342,7 @@ export default function MedicalRecordsPage() {
 
       {/* Split Pane: Records Table & Detail Inspector */}
       {isLoading ? (
-        <TableSkeleton columns={6} rows={5} />
+        <TableSkeleton cols={6} rows={5} />
       ) : filteredRecords.length === 0 ? (
         <EmptyState
           title="No medical records found"
@@ -355,7 +355,7 @@ export default function MedicalRecordsPage() {
         />
       ) : (
         <SplitPane
-          left={
+          main={
             <div className="bg-surface-lowest rounded-xl border border-outline-variant/30 overflow-hidden shadow-xs">
               <div className="px-5 py-4 border-b border-outline-variant/20 flex items-center justify-between">
                 <h3 className="font-semibold text-on-surface flex items-center gap-2">
@@ -435,12 +435,12 @@ export default function MedicalRecordsPage() {
               </div>
             </div>
           }
-          right={
+          inspector={
             <InspectorPanel
               isOpen={Boolean(activeRecord)}
               onClose={() => setSelectedRecord(null)}
               title="Record Summary"
-              subtitle={activeRecord?.id}
+              description={activeRecord?.id}
             >
               {activeRecord && (
                 <div className="space-y-6">

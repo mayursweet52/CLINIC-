@@ -32,7 +32,7 @@ export async function GET() {
       prisma.user.count({ where: { role: { not: "SUPERADMIN" } } }),
       prisma.patient.count(),
       prisma.billing.aggregate({
-        _sum: { amount: true },
+        _sum: { totalAmount: true },
         where: { paymentStatus: "PAID" },
       }),
     ]);
@@ -41,7 +41,7 @@ export async function GET() {
       clinics: totalClinics,
       staff: totalStaff,
       patients: totalPatients,
-      revenue: totalRevenueData._sum.amount || 0,
+      revenue: totalRevenueData._sum?.totalAmount || 0,
     });
   } catch (error) {
     console.error("SuperAdmin Stats API Error:", error);
