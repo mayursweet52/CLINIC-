@@ -20,6 +20,8 @@ const NAV_GROUPS = [
   {
     label: "MAIN",
     items: [
+      { href: "/superadmin", label: "Overview", icon: LayoutDashboard, roles: ["SUPERADMIN"] },
+      { href: "/superadmin/clinics", label: "Clinics", icon: Building2, roles: ["SUPERADMIN"] },
       { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["DOCTOR", "RECEPTIONIST", "PHARMACIST", "ADMIN"] },
       { href: "/doctor/patients", label: "My Patients", icon: Users, roles: ["DOCTOR"] },
     ],

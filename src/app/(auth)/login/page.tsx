@@ -29,7 +29,8 @@ export default function LoginPage() {
     try {
       const res = await login.mutateAsync(data);
       const role = (res as any).role?.toUpperCase() || (res as any).user?.role?.toUpperCase() || '';
-      if (role === 'DOCTOR') router.push('/doctor');
+      if (role === 'SUPERADMIN') router.push('/superadmin');
+      else if (role === 'DOCTOR') router.push('/doctor');
       else if (role === 'RECEPTIONIST') router.push('/reception');
       else if (role === 'PHARMACIST') router.push('/pharmacy');
       else router.push('/admin');
@@ -45,6 +46,7 @@ export default function LoginPage() {
   };
 
   const demoAccounts = [
+    { role: "SuperAdmin", email: "superadmin@clinicos.in" },
     { role: "Doctor", email: "ananya.sharma@aarogyaclinic.in" },
     { role: "Reception", email: "kavita.nair@aarogyaclinic.in" },
     { role: "Pharmacist", email: "suresh.patel@aarogyaclinic.in" },
