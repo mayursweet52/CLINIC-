@@ -322,6 +322,27 @@ export const POST = withPermission('appointment:create', async (request: Request
       status: formatStatus(newAppointment.status),
     };
 
+    if (newAppointment.doctorId) {
+      publishEvent(`org:${orgId}:doctor:${newAppointment.doctorId}`, {
+        type: "appointment.created",
+        payload: {
+          appointmentId: newAppointment.id,
+          patientName: newAppointment.patient?.name,
+          timeSlot: newAppointment.timeSlot,
+          tokenNumber: newAppointment.tokenDisplay || `TKN-${newAppointment.tokenNumber}`
+        },
+        orgId,
+        doctorId: newAppointment.doctorId
+      });
+      publishEvent(`org:${orgId}:appointments`, {
+        type: "appointment.created",
+        payload: {
+          appointmentId: newAppointment.id,
+        },
+        orgId
+      });
+    }
+
     return NextResponse.json(
       { message: "Appointment booked successfully", appointment: responseData },
       { status: 201 }
@@ -365,6 +386,21 @@ export const PUT = withPermission('appointment:update', async (request: Request)
       after: updated,
       req: request
     });
+
+    if (updated.doctorId) {
+      publishEvent(`org:${updated.organizationId}:doctor:${updated.doctorId}`, {
+        type: status === "Arrived" ? "patient.checked_in" : "appointment.updated",
+        payload: {
+          appointmentId: updated.id,
+          patientName: updated.patient?.name,
+          timeSlot: updated.timeSlot,
+          status: updated.status,
+          tokenNumber: updated.tokenDisplay
+        },
+        orgId: updated.organizationId,
+        doctorId: updated.doctorId
+      });
+    }
 
     return NextResponse.json({
       message: "Status updated",
