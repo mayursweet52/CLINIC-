@@ -322,23 +322,27 @@ export const POST = withPermission('appointment:create', async (request: Request
       status: formatStatus(newAppointment.status),
     };
 
-    if (newAppointment.doctorId) {
+      if (newAppointment.doctorId) {
       publishEvent(`org:${orgId}:doctor:${newAppointment.doctorId}`, {
         type: "appointment.created",
         payload: {
+          id: newAppointment.id,
+          orgId,
           appointmentId: newAppointment.id,
           patientName: newAppointment.patient?.name,
           timeSlot: newAppointment.timeSlot,
           tokenNumber: newAppointment.tokenDisplay || `TKN-${newAppointment.tokenNumber}`
-        },
+        } as any,
         orgId,
         doctorId: newAppointment.doctorId
       });
       publishEvent(`org:${orgId}:appointments`, {
         type: "appointment.created",
         payload: {
+          id: newAppointment.id,
+          orgId,
           appointmentId: newAppointment.id,
-        },
+        } as any,
         orgId
       });
     }
@@ -391,12 +395,14 @@ export const PUT = withPermission('appointment:update', async (request: Request)
       publishEvent(`org:${updated.organizationId}:doctor:${updated.doctorId}`, {
         type: status === "Arrived" ? "patient.checked_in" : "appointment.updated",
         payload: {
+          id: updated.id,
+          orgId: updated.organizationId,
           appointmentId: updated.id,
           patientName: updated.patient?.name,
           timeSlot: updated.timeSlot,
           status: updated.status,
           tokenNumber: updated.tokenDisplay
-        },
+        } as any,
         orgId: updated.organizationId,
         doctorId: updated.doctorId
       });

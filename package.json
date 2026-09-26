@@ -15,6 +15,7 @@
     "worker:feedback": "node --import tsx src/workers/feedback.worker.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.24.0",
     "@hookform/resolvers": "^5.9.1",
     "@prisma/client": "^6.4.1",
     "@radix-ui/react-alert-dialog": "^1.1.23",

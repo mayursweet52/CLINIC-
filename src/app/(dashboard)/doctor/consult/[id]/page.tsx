@@ -8,14 +8,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Save, CheckCircle2, Clipboard, Stethoscope, Pill, FlaskConical, Calendar } from "lucide-react";
+import { Save, CheckCircle2, Clipboard, Stethoscope, Pill, FlaskConical, Calendar, Bot } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { AIAssistantPanel } from "@/components/consult/AIAssistantPanel";
 
 export default function ConsultationPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const { id } = resolvedParams;
   const router = useRouter();
 
+  const [showAi, setShowAi] = useState(false);
   const [loading, setLoading] = useState(true);
   const [appointment, setAppointment] = useState<any>(null);
   const [visit, setVisit] = useState<any>(null);
@@ -144,27 +146,32 @@ export default function ConsultationPage({ params }: { params: Promise<{ id: str
   if (!appointment) return <div className="p-8 text-center text-error">Appointment not found</div>;
 
   return (
-    <div className="space-y-6 flex flex-col h-full pb-6">
-      <div className="flex justify-between items-center shrink-0">
-        <PageHeader 
-          breadcrumb={[
-            { label: "Dashboard", href: "/doctor" },
-            { label: "Consultation" }
-          ]}
-          title={`Consultation: ${appointment.patient?.name || "Patient"}`} 
-          description={`Token #${appointment.tokenNumber || "-"} | Status: ${appointment.status}`} 
-        />
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={saveSoap} disabled={saving}>
-            <Save className="w-4 h-4 mr-2" />
-            Save Draft
-          </Button>
-          <Button className="bg-primary-600 hover:bg-primary-700 text-white shadow-sm" onClick={completeConsultation}>
-            <CheckCircle2 className="w-4 h-4 mr-2" />
-            Complete Visit
-          </Button>
+    <div className="flex w-full h-full overflow-hidden">
+      <div className={`flex-1 space-y-6 flex flex-col h-full pb-6 overflow-y-auto ${showAi ? 'pr-4' : ''}`}>
+        <div className="flex justify-between items-center shrink-0">
+          <PageHeader 
+            breadcrumb={[
+              { label: "Dashboard", href: "/doctor" },
+              { label: "Consultation" }
+            ]}
+            title={`Consultation: ${appointment.patient?.name || "Patient"}`} 
+            description={`Token #${appointment.tokenNumber || "-"} | Status: ${appointment.status}`} 
+          />
+          <div className="flex gap-3">
+            <Button variant={showAi ? "default" : "outline"} className={showAi ? "bg-primary-50 text-primary hover:bg-primary-100" : ""} onClick={() => setShowAi(!showAi)}>
+              <Bot className="w-4 h-4 mr-2" />
+              AI Assistant
+            </Button>
+            <Button variant="outline" onClick={saveSoap} disabled={saving}>
+              <Save className="w-4 h-4 mr-2" />
+              Save Draft
+            </Button>
+            <Button className="bg-primary-600 hover:bg-primary-700 text-white shadow-sm" onClick={completeConsultation}>
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+              Complete Visit
+            </Button>
+          </div>
         </div>
-      </div>
 
       <div className="bg-surface-lowest rounded-2xl shadow-sm border border-outline-variant/20 flex-1 flex flex-col min-h-[500px] overflow-hidden">
         <Tabs defaultValue="soap" className="flex flex-col h-full">
@@ -304,6 +311,14 @@ export default function ConsultationPage({ params }: { params: Promise<{ id: str
           </div>
         </Tabs>
       </div>
+      </div>
+      <AIAssistantPanel 
+        patientId={appointment.patientId} 
+        isOpen={showAi} 
+        onClose={() => setShowAi(false)}
+        soap={soap}
+        medicines={medicines}
+      />
     </div>
   );
 }

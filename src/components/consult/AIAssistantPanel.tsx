@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Bot, Zap, Stethoscope, AlertTriangle, FileText, Loader2, RefreshCw } from "lucide-react";
+import { X, Bot, Zap, Stethoscope, AlertTriangle, FileText, Loader2, RefreshCw, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
