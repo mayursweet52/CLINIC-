@@ -9,8 +9,9 @@ export async function POST(request: Request) {
     }
 
     const existing = otpStore.get(phone);
-    if (existing && existing.expiresAt - 4 * 60 * 1000 > Date.now()) {
-      return NextResponse.json({ error: 'Please wait before requesting another OTP' }, { status: 429 });
+    // Allow resend after 30 seconds (expiresAt is +5 mins, so 5 - 4.5 = 0.5 mins)
+    if (existing && existing.expiresAt - 4.5 * 60 * 1000 > Date.now()) {
+      return NextResponse.json({ error: 'Please wait 30 seconds before requesting another OTP' }, { status: 429 });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();

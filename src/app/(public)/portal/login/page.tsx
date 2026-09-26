@@ -25,8 +25,8 @@ export default function PatientLoginOTPPage() {
     return () => clearInterval(timer);
   }, [step, countdown]);
 
-  const handleSendOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendOTP = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
     if (phone.length < 10) {
       return toast.error("Please enter a valid phone number");
     }
