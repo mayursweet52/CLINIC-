@@ -32,6 +32,20 @@ export async function POST(request: Request) {
     let patient;
     try {
       patient = await prisma.patient.findFirst({ where: { phone } });
+      if (!patient) {
+        // Fetch first organization to use as default
+        const org = await prisma.organization.findFirst();
+        // Create patient if it doesn't exist
+        patient = await prisma.patient.create({
+          data: {
+            phone,
+            name: "Unknown",
+            gender: "MALE", // Default fallback
+            organizationId: org?.id || 'default_org',
+            patientCode: `PT-${Date.now().toString().slice(-6)}`,
+          }
+        });
+      }
     } catch {
       // DB might be down
     }

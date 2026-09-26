@@ -45,6 +45,21 @@ function BookingWizard() {
   // Success state
   const [successData, setSuccessData] = useState<any>(null);
 
+  // Pre-fill if logged in as patient
+  useEffect(() => {
+    fetch("/api/portal/me")
+      .then(res => {
+        if (res.ok) return res.json();
+        throw new Error();
+      })
+      .then(data => {
+        if (data && data.name) {
+          setPatient(p => ({ ...p, name: data.name, phone: data.phone || "" }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Step 1 Data
   useEffect(() => {
     if (step === 1) fetchClinics();

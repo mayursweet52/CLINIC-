@@ -17,7 +17,7 @@ export async function GET() {
     );
 
     const { payload } = await jose.jwtVerify(token, secret);
-    const patientId = payload.patientId as string;
+    const patientId = payload.userId as string;
 
     const patient = await prisma.patient.findUnique({
       where: { id: patientId },
