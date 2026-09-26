@@ -13,6 +13,7 @@ import {
   Settings,
   HeartPulse,
   Building2,
+  Calendar,
 } from "lucide-react"
 import { useAuth } from "@/features/auth/useAuth"
 
@@ -24,6 +25,7 @@ const NAV_GROUPS = [
       { href: "/superadmin/clinics", label: "Clinics", icon: Building2, roles: ["SUPERADMIN"] },
       { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["DOCTOR", "RECEPTIONIST", "PHARMACIST", "ADMIN"] },
       { href: "/doctor/patients", label: "My Patients", icon: Users, roles: ["DOCTOR"] },
+      { href: "/doctor/schedule", label: "My Schedule", icon: Calendar, roles: ["DOCTOR"] },
     ],
   },
   {

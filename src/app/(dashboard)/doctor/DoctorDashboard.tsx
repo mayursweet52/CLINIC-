@@ -243,8 +243,8 @@ export function DoctorDashboard({ user }: { user: any }) {
                   <Button variant="outline" size="sm" className="flex-1">
                     Reschedule
                   </Button>
-                  <Button size="sm" className="flex-1 bg-primary-500 text-white hover:bg-primary-600">
-                    Start Consultation
+                  <Button size="sm" className="flex-1 bg-primary-500 text-white hover:bg-primary-600" asChild>
+                    <a href={`/doctor/consult/${selectedAppointment.id}`}>Start Consultation</a>
                   </Button>
                 </>
               }

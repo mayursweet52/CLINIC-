@@ -1,0 +1,511 @@
+<USER_REQUEST>
+🧩 TUKDA 1: SuperAdmin Flow (6 chhote tukde)
+1.1 — SuperAdmin Login
+Page: /login
+
+Kaam: Email + password daalo → login
+
+API: POST /api/auth/login
+
+DB: User table se check (role = SUPERADMIN)
+
+Result: Redirect → /superadmin
+
+1.2 — SuperAdmin Dashboard
+Page: /superadmin
+
+Kaam: KPI cards dikhao — Total Clinics, Users, Patients, Revenue
+
+API: GET /api/superadmin/stats
+
+DB: Organization, User, Patient count
+
+1.3 — Clinic List
+Page: /superadmin/clinics
+
+Kaam: Saari clinics ki list
+
+API: GET /api/superadmin/clinics
+
+DB: Organization.findMany()
+
+1.4 — Add Clinic Form
+Page: /superadmin/clinics/new
+
+Kaam: Form bharo — name, address, city, owner email, phone
+
+API: —
+
+DB: —
+
+1.5 — Create Clinic
+Kaam: Submit dabao → clinic + admin user bane
+
+API: POST /api/superadmin/clinics
+
+DB: Organization.create() + User.create() (role ADMIN)
+
+Result: Credentials dialog (email + password)
+
+1.6 — Logout
+Kaam: Logout dabao
+
+API: POST /api/auth/logout
+
+Result: Redirect → /login
+
+🧩 TUKDA 2: Clinic Admin Flow (10 chhote tukde)
+2.1 — Admin Login
+Page: /login
+
+Kaam: Email + password → login
+
+API: POST /api/auth/login
+
+DB: User (role = ADMIN)
+
+Result: Redirect → /admin
+
+2.2 — Admin Dashboard
+Page: /admin
+
+Kaam: KPI cards — Staff, Patients, Revenue, Doctors
+
+API: GET /api/admin/stats
+
+DB: User, Patient, Billing count
+
+2.3 — Department List
+Page: /admin/departments
+
+Kaam: 4 department cards dikhao
+
+API: GET /api/admin/departments
+
+DB: Department.findMany()
+
+2.4 — Add Department
+Kaam: "+ Add Department" → dialog → name, icon, slug → save
+
+API: POST /api/admin/departments
+
+DB: Department.create()
+
+2.5 — Department Detail
+Page: /admin/departments/[id]
+
+Kaam: Conditions + assigned doctors dikhao
+
+API: GET /api/admin/departments/[id]
+
+DB: Department + Condition + DoctorDepartment
+
+2.6 — Add Condition
+Kaam: "+ Add Condition" → name, icon → save
+
+API: POST /api/admin/conditions
+
+DB: Condition.create()
+
+2.7 — Assign Doctors
+Kaam: "Assign" → doctor list → checkbox → save
+
+API: POST /api/admin/departments/[id]/doctors
+
+DB: DoctorDepartment.createMany()
+
+2.8 — Staff List
+Page: /admin/staff
+
+Kaam: Staff list + 4 KPI cards
+
+API: GET /api/admin/staff
+
+DB: User.findMany() (filter by org)
+
+2.9 — Add Staff
+Kaam: "+ Add Staff" → form → role select → save
+
+API: POST /api/admin/staff
+
+DB: User.create() + agar Doctor hai toh DoctorProfile.create()
+
+Result: Credentials dialog
+
+2.10 — Clinic Settings
+Page: /admin/settings
+
+Kaam: Clinic name, address, phone, hours, toggles
+
+API: GET/PATCH /api/admin/settings
+
+DB: ClinicSettings model
+
+🧩 TUKDA 3: Doctor Flow (8 chhote tukde)
+3.1 — Doctor Login
+Page: /login
+
+Kaam: Email + password → login
+
+API: POST /api/auth/login
+
+DB: User (role = DOCTOR)
+
+Result: Redirect → /doctor
+
+3.2 — Doctor Dashboard
+Page: /doctor
+
+Kaam: Aaj ki queue, KPI cards, live badge
+
+API: GET /api/doctor/dashboard
+
+DB: HealthAppointment (today, doctorId)
+
+3.3 — My Schedule
+Page: /doctor/schedule
+
+Kaam: Weekly slots grid
+
+API: GET /api/doctor/schedule
+
+DB: DoctorAvailability
+
+3.4 — My Patients
+Page: /doctor/patients
+
+Kaam: Sirf is doctor ke patients
+
+API: GET /api/doctor/patients
+
+DB: HealthAppointment (doctorId filter) → unique patients
+
+3.5 — Patient Detail
+Page: /doctor/patients/[id]
+
+Kaam: Full chart — visits, prescriptions, bills
+
+API: GET /api/doctor/patients/[id]
+
+DB: check relationship (403 if not)
+
+3.6 — Consultation Page
+Page: /doctor/consult/[id]
+
+Kaam: SOAP notes editor
+
+API: GET/PATCH /api/doctor/consult/[id]
+
+DB: Visit + SOAPNote
+
+3.7 — Prescription + Lab + Follow-up
+Kaam: 3 tabs — add medicines, order tests, schedule follow-up
+
+API: POST /api/doctor/prescriptions, POST /api/doctor/lab-orders
+
+DB: Prescription, LabOrder, FollowUp
+
+3.8 — Complete Consultation
+Kaam: "Complete" dabao → visit complete → auto-bill
+
+API: POST /api/doctor/consult/[id]/complete
+
+DB: Visit.update() + Billing.create()
+
+🧩 TUKDA 4: Receptionist Flow (7 chhote tukde)
+4.1 — Reception Login
+Page: /login
+
+Kaam: Email + password
+
+API: POST /api/auth/login
+
+DB: User (role = RECEPTIONIST)
+
+Result: Redirect → /reception
+
+4.2 — Reception Dashboard
+Page: /reception
+
+Kaam: Aaj ki queue table
+
+API: GET /api/reception/queue
+
+DB: HealthAppointment (today)
+
+4.3 — Register New Patient
+Kaam: "+ New Patient" → name, phone, age, gender
+
+API: POST /api/reception/patients
+
+DB: Patient.create()
+
+4.4 — Book Appointment
+Kaam: Patient select → doctor → date → slot → confirm
+
+API: POST /api/reception/appointments
+
+DB: HealthAppointment.create()
+
+4.5 — Check-In Patient
+Kaam: "Check In" dabao → status ARRIVED
+
+API: PATCH /api/reception/appointments/[id]/checkin
+
+DB: HealthAppointment.update()
+
+Result: Doctor ko real-time update (SSE)
+
+4.6 — Billing View
+Page: /billing
+
+Kaam: Invoice list, collect payment
+
+API: GET /api/billing
+
+DB: Billing.findMany()
+
+4.7 — Collect Payment
+Kaam: Payment mode select → cash/online → mark PAID
+
+API: POST /api/billing/[id]/pay
+
+DB: Billing.update() + Payment.create()
+
+🧩 TUKDA 5: Pharmacist Flow (6 chhote tukde)
+5.1 — Pharmacist Login
+Page: /login
+
+Kaam: Email + password
+
+API: POST /api/auth/login
+
+DB: User (role = PHARMACIST)
+
+Result: Redirect → /pharmacy
+
+5.2 — Pending Prescriptions
+Page: /pharmacy (Pending tab)
+
+Kaam: Doctor ki likhi Rx list
+
+API: GET /api/pharmacy/pending
+
+DB: Prescription (status = PENDING)
+
+5.3 — Dispense Dialog
+Kaam: Rx click → modal → patient info, meds, stock status
+
+API: GET /api/pharmacy/prescriptions/[id]
+
+DB: Prescription + InventoryItem
+
+5.4 — Verify & Dispense
+Kaam: "Verify & Dispense" → stock decrement + bill update
+
+API: POST /api/pharmacy/dispense
+
+DB: $transaction — InventoryItem.update() + InventoryLog.create() + Prescription.update() + Billing.update()
+
+5.5 — Inventory Management
+Page: /pharmacy (Inventory tab)
+
+Kaam: Medicine list, low stock filter
+
+API: GET /api/pharmacy/inventory
+
+DB: InventoryItem.findMany()
+
+5.6 — Add Medicine
+Kaam: "+ Add Medicine" → name, batch, qty, price, expiry → save
+
+API: POST /api/pharmacy/inventory
+
+DB: InventoryItem.create() + InventoryLog.create()
+
+🧩 TUKDA 6: Patient Flow (12 chhote tukde)
+6.1 — Patient Login
+Page: /portal/login
+
+Kaam: Phone + password (NO OTP)
+
+API: POST /api/portal/login
+
+DB: Patient (phone + passwordHash)
+
+Result: Redirect → /portal
+
+6.2 — Patient Dashboard
+Page: /portal
+
+Kaam: 4 stats cards, next appointment, quick actions
+
+API: GET /api/portal/me
+
+DB: Patient + appointments + prescriptions + bills
+
+6.3 — Book Appointment (Step 1)
+Page: /book
+
+Kaam: Clinic select
+
+API: GET /api/public/clinics
+
+DB: Organization
+
+6.4 — Book Appointment (Step 2)
+Kaam: Condition select (ya "Not sure")
+
+API: GET /api/public/clinics/[slug]/departments
+
+DB: Department + Condition
+
+6.5 — Book Appointment (Step 3)
+Kaam: Doctor select
+
+API: GET /api/public/clinics/[slug]/doctors
+
+DB: User (DOCTOR) + DoctorDepartment
+
+6.6 — Book Appointment (Step 4)
+Kaam: Date + slot select
+
+API: GET /api/doctor/[id]/slots
+
+DB: DoctorAvailability + HealthAppointment
+
+Note: Redis slot lock
+
+6.7 — Book Appointment (Step 5)
+Kaam: Name, phone, email, reason, symptoms
+
+API: —
+
+DB: —
+
+6.8 — Booking Success
+Kaam: Submit → token + QR + tracking URL
+
+API: POST /api/public/book
+
+DB: HealthAppointment.create() + Billing.create() (draft)
+
+Result: Confetti + Q-001 + QR
+
+6.9 — My Appointments
+Page: /portal/appointments
+
+Kaam: Upcoming / Past / Cancelled tabs
+
+API: GET /api/portal/appointments
+
+DB: HealthAppointment (patientId filter)
+
+6.10 — My Prescriptions
+Page: /portal/prescriptions
+
+Kaam: List + expand + download PDF
+
+API: GET /api/portal/prescriptions, GET /api/prescriptions/[id]/pdf
+
+DB: Prescription
+
+6.11 — My Bills
+Page: /portal/bills
+
+Kaam: Pending → Pay Now, Paid → Download
+
+API: GET /api/portal/bills
+
+DB: Billing (patientId filter)
+
+6.12 — Tracking + Payment + Feedback
+Pages: /t/[token], /pay/[token], /receipt/[token], /feedback/[id]
+
+Kaam: Live timeline → Razorpay → receipt → 5-star rating
+
+API: GET /api/public/track/[token], POST /api/portal/payments/create-order, POST /api/public/feedback
+
+DB: HealthAppointment, Billing, Review
+
+🧩 TUKDA 7: Cross-Role Real-Time (5 chhote tukde)
+7.1 — Booking → Doctor Dashboard
+Patient book kare → Doctor ke dashboard par naya appointment dikhe (bina refresh)
+
+API: SSE org:{orgId}:doctor:{doctorId}
+
+Event: appointment.created
+
+7.2 — Reception Check-In → Doctor
+Reception check-in kare → Doctor ko "Arrived" dikhe
+
+API: SSE same channel
+
+Event: appointment.updated
+
+7.3 — Doctor Complete → Pharmacy
+Doctor consult complete → Pharmacy Pending tab mein Rx aaye
+
+API: SSE org:{orgId}:pharmacy
+
+Event: prescription.created
+
+7.4 — Pharmacy Dispense → Billing
+Dispense hone par billing update → Patient tracking par "Pay Now"
+
+API: SSE org:{orgId}:billing
+
+Event: prescription.dispensed
+
+7.5 — Payment → Tracking
+Payment hone par patient ke tracking page par "Paid" ✅
+
+API: SSE org:{orgId}:appointment:{id}
+
+Event: bill.paid
+
+🧩 TUKDA 8: Demo Setup (3 chhote tukde)
+8.1 — Seed Data Bharna
+1 SuperAdmin, 1 Admin, 3 Doctors, 1 Receptionist, 1 Pharmacist
+
+5 Patients, 5 Appointments, 3 Prescriptions, 3 Bills, 8 Inventory
+
+Command: node prisma/seed.mjs
+
+8.2 — Gmail OTP Hatana
+Patient register: OTP nahi, direct register
+
+Forgot password: demo mein reset button
+
+Staff verification: skip
+
+8.3 — Demo Credentials Ready
+Upar wali table ke saare credentials
+
+Har login page par demo creds box
+
+📊 Chhote Tukde Ka Count
+Role	Tukde
+SuperAdmin	6
+Clinic Admin	10
+Doctor	8
+Receptionist	7
+Pharmacist	6
+Patient	12
+Cross-Role Real-Time	5
+Demo Setup	3
+Total	57 chhote tukde
+🎯 Ab Kaise Use Karein
+Har tukda ek independent task hai. Ek-ek karke:
+
+Build karo
+
+Test karo
+
+Tick karo ✅
+
+Agla tukda
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-09-26T12:04:14+05:30.
+</ADDITIONAL_METADATA>
